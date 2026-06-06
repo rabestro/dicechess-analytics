@@ -21,7 +21,7 @@ async def list_players(
     """
     List players, optionally filtering by username or ordering by rating.
     """
-    query = select(Player).order_by(Player.rating_classic.desc().nulls_last())
+    query = select(Player).order_by(Player.username.asc().nulls_last())
 
     if username:
         query = query.filter(Player.username.ilike(f"%{username}%"))

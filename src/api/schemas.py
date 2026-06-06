@@ -9,7 +9,6 @@ class PlayerBase(BaseModel):
     id: UUID
     username: Optional[str] = None
     player_type: str
-    rating_classic: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -43,3 +42,29 @@ class GameDetail(GameBase):
     turns: List[TurnBase] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PlayerCreate(BaseModel):
+    username: str
+    player_type: str
+
+
+class TurnCreate(BaseModel):
+    turn_number: int
+    active_color: str
+    dice_sorted: str
+    played_moves: List[str] = []
+    position_fen: str
+    position_after_fen: str
+    thinking_time_ms: Optional[int] = None
+
+
+class GameCreate(BaseModel):
+    source: str
+    mode: str = "classic"
+    result: Optional[int] = None
+    termination: Optional[str] = None
+    started_at: Optional[datetime] = None
+    white_player: PlayerCreate
+    black_player: PlayerCreate
+    turns: List[TurnCreate]
