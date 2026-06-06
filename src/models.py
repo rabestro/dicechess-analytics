@@ -35,8 +35,6 @@ class Player(Base):
     external_id = Column(String(50), unique=True, nullable=True)
     username = Column(String(50), nullable=True)
     player_type = Column(String(10), nullable=False, server_default="human")
-    rating_classic = Column(Integer, nullable=True)
-    rating_x2 = Column(Integer, nullable=True)
     metadata_json = Column(JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(
@@ -57,6 +55,8 @@ class Game(Base):
     )
     white_player = relationship("Player", foreign_keys=[white_player_id])
     black_player = relationship("Player", foreign_keys=[black_player_id])
+    white_rating = Column(Integer, nullable=True)
+    black_rating = Column(Integer, nullable=True)
     mode = Column(String(10), nullable=False, server_default="classic")
     result = Column(SmallInteger, nullable=True)
     termination = Column(

@@ -3,6 +3,7 @@ import datetime
 # ruff: noqa: C901
 import json
 import sqlite3
+import sys
 import uuid
 
 import xxhash
@@ -38,6 +39,14 @@ def get_fen_hash(normalized_fen: str) -> int:
 
 
 def main():
+    limit_games = None
+    if len(sys.argv) > 1 and sys.argv[1] == "--limit":
+        try:
+            limit_games = int(sys.argv[2])
+        except (IndexError, ValueError):
+            print("Usage: python src/importer.py [--limit N]")
+            sys.exit(1)
+
     print("Connecting to PostgreSQL...")
     Base.metadata.create_all(engine)
 
@@ -189,9 +198,6 @@ def main():
                     "external_id": str(w_id),
                     "username": w_username,
                     "player_type": "human",
-                    "rating_classic": int(row["white_player_rating"])
-                    if row["white_player_rating"]
-                    else None,
                 }
             )
             players_cache.add(w_id)
@@ -202,9 +208,6 @@ def main():
                     "external_id": str(b_id),
                     "username": b_username,
                     "player_type": "human",
-                    "rating_classic": int(row["black_player_rating"])
-                    if row["black_player_rating"]
-                    else None,
                 }
             )
             players_cache.add(b_id)
@@ -368,6 +371,12 @@ def main():
                 "source": "dicechess.com",
                 "white_player_id": w_uuid,
                 "black_player_id": b_uuid,
+                "white_rating": int(row["white_player_rating"])
+                if row["white_player_rating"]
+                else None,
+                "black_rating": int(row["black_player_rating"])
+                if row["black_player_rating"]
+                else None,
                 "mode": "classic",
                 "result": row["result"],
                 "termination": "unknown",
@@ -387,6 +396,10 @@ def main():
 
         if processed_count % batch_size == 0:
             flush_batches()
+
+        if limit_games and processed_count >= limit_games:
+            print(f"Reached limit of {limit_games} games. Stopping.")
+            break
 
     # Final flush
     flush_batches()
