@@ -54,16 +54,11 @@
         </nav>
       </header>
 
-      <!-- Main Content Layout -->
       {#if currentTab === 'play-bot'}
         {#if playWithBotStore.gameStatus === 'idle'}
-          <div class="rounded-2xl bg-slate-800/50 border border-slate-700/50 backdrop-blur-xl p-6 min-h-[500px]">
-            <BotLobby />
-          </div>
+          <BotLobby />
         {:else}
-          <div class="rounded-2xl bg-slate-800/50 border border-slate-700/50 backdrop-blur-xl p-6 min-h-[500px]">
-            <PlayBot />
-          </div>
+          <PlayBot />
         {/if}
       {:else}
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
