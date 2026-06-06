@@ -1,0 +1,8 @@
+[tasks]
+check = "uv run ruff check . && uv run ruff format --check ."
+format = "uv run ruff check --fix . && uv run ruff format ."
+db_up = "docker compose up -d"
+db_down = "docker compose down"
+migrate = "uv run alembic upgrade head"
+makemigrations = "uv run alembic revision --autogenerate -m"
+setup = "uv sync && pre-commit install"
