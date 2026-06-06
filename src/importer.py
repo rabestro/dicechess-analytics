@@ -1,0 +1,398 @@
+import datetime
+
+# ruff: noqa: C901
+import json
+import sqlite3
+import uuid
+
+import xxhash
+from sqlalchemy import create_engine
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import sessionmaker
+from tqdm import tqdm
+
+from src.models import Base, Game, GameEvent, Player, Position, Turn
+
+# Use the synchronous psycopg2 driver for the ETL
+PG_URL = "postgresql://dicechess_user:dicechess_password@localhost:5432/dicechess_analytics"
+SQLITE_PATH = "dicechess.db"
+
+engine = create_async_engine = create_engine(PG_URL, echo=False)
+SessionLocal = sessionmaker(bind=engine)
+
+
+def normalize_fen(fen_str: str) -> str:
+    """Extracts piece placement, color, castling, and en_passant for deduplication."""
+    parts = fen_str.split(" ")
+    return " ".join(parts[0:4])
+
+
+def get_fen_hash(normalized_fen: str) -> int:
+    """Generates an xxhash64 integer digest."""
+    # xxhash generates unsigned 64-bit by default, postgres BigInteger is signed 64-bit.
+    # Convert to signed 64-bit int.
+    digest = xxhash.xxh64(normalized_fen).intdigest()
+    if digest >= 2**63:
+        digest -= 2**64
+    return digest
+
+
+def main():
+    print("Connecting to PostgreSQL...")
+    Base.metadata.create_all(engine)
+
+    print("Connecting to SQLite...")
+    sqlite_conn = sqlite3.connect(SQLITE_PATH)
+    sqlite_conn.row_factory = sqlite3.Row
+    cursor = sqlite_conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) FROM games")
+    total_games = cursor.fetchone()[0]
+
+    print(f"Total games in SQLite: {total_games}")
+
+    cursor.execute("SELECT * FROM games")
+
+    pg_session = SessionLocal()
+
+    # Local caches to reduce DB lookups
+    positions_cache = {}  # hash -> id
+    players_cache = set()  # external_id
+
+    batch_size = 250
+    games_batch = []
+    positions_batch = []
+    players_batch = []
+    turns_batch = []
+    events_batch = []
+
+    def execute_chunked_insert(session, model, batch, chunk_size=5000, on_conflict_index=None):
+        for i in range(0, len(batch), chunk_size):
+            chunk = batch[i : i + chunk_size]
+            stmt = insert(model).values(chunk)
+            if on_conflict_index:
+                stmt = stmt.on_conflict_do_nothing(index_elements=on_conflict_index)
+            session.execute(stmt)
+
+    def flush_batches():
+        if not games_batch:
+            return
+
+        # 1. Insert Players
+        if players_batch:
+            execute_chunked_insert(
+                pg_session, Player, players_batch, on_conflict_index=["external_id"]
+            )
+            players_batch.clear()
+
+        # 2. Insert Positions
+        if positions_batch:
+            execute_chunked_insert(
+                pg_session, Position, positions_batch, on_conflict_index=["normalized_fen"]
+            )
+            pg_session.commit()
+
+            # Update cache with new IDs in chunks
+            hashes_to_fetch = list({p["fen_hash"] for p in positions_batch})
+            for i in range(0, len(hashes_to_fetch), 5000):
+                chunk = hashes_to_fetch[i : i + 5000]
+                new_positions = (
+                    pg_session.query(Position.id, Position.fen_hash)
+                    .filter(Position.fen_hash.in_(chunk))
+                    .all()
+                )
+                for pid, phash in new_positions:
+                    positions_cache[phash] = pid
+
+            positions_batch.clear()
+
+        # Now link Game, Turn, GameEvent to Position IDs
+        for g in games_batch:
+            if g.get("_initial_fen_hash"):
+                g["initial_position_id"] = positions_cache[g["_initial_fen_hash"]]
+                del g["_initial_fen_hash"]
+            if g.get("_final_fen_hash"):
+                g["final_position_id"] = positions_cache[g["_final_fen_hash"]]
+                del g["_final_fen_hash"]
+
+        for t in turns_batch:
+            t["position_id"] = positions_cache[t["_position_hash"]]
+            del t["_position_hash"]
+            if t.get("_position_after_hash"):
+                t["position_after_id"] = positions_cache[t["_position_after_hash"]]
+                del t["_position_after_hash"]
+
+        # 3. Insert Games
+        if games_batch:
+            execute_chunked_insert(pg_session, Game, games_batch, on_conflict_index=["id"])
+            games_batch.clear()
+
+        # 4. Insert Turns
+        if turns_batch:
+            execute_chunked_insert(pg_session, Turn, turns_batch)
+            turns_batch.clear()
+
+        # 5. Insert Events
+        if events_batch:
+            execute_chunked_insert(pg_session, GameEvent, events_batch)
+            events_batch.clear()
+
+        pg_session.commit()
+
+    processed_count = 0
+    skipped_bots = 0
+    seen_games = set()
+
+    for row in tqdm(cursor, total=total_games, desc="Importing games"):
+        game_id = row["game_id"]
+
+        try:
+            game_uuid = str(game_id).lower()
+        except ValueError:
+            continue
+
+        if game_uuid in seen_games:
+            continue
+        seen_games.add(game_uuid)
+
+        moves_json_str = row["moves_json"]
+
+        if not moves_json_str:
+            continue
+
+        try:
+            moves_data = json.loads(moves_json_str)
+        except json.JSONDecodeError:
+            continue
+
+        # Skip bot games if they don't have gameMoveHistoryStateMap
+        if "gameMoveHistoryStateMap" not in moves_data:
+            skipped_bots += 1
+            continue
+
+        state_map = moves_data["gameMoveHistoryStateMap"]
+        if not state_map:
+            continue
+
+        # Process players
+        w_username = row["white_player_username"]
+        b_username = row["black_player_username"]
+
+        # Simple UUID generation for players based on username or external_id
+        # Let's just use the external_id to identify them
+        w_id = row["white_player_id"]
+        b_id = row["black_player_id"]
+
+        if w_id and w_id not in players_cache:
+            players_batch.append(
+                {
+                    "external_id": str(w_id),
+                    "username": w_username,
+                    "player_type": "human",
+                    "rating_classic": int(row["white_player_rating"])
+                    if row["white_player_rating"]
+                    else None,
+                }
+            )
+            players_cache.add(w_id)
+
+        if b_id and b_id not in players_cache:
+            players_batch.append(
+                {
+                    "external_id": str(b_id),
+                    "username": b_username,
+                    "player_type": "human",
+                    "rating_classic": int(row["black_player_rating"])
+                    if row["black_player_rating"]
+                    else None,
+                }
+            )
+            players_cache.add(b_id)
+
+        # We need a predictable UUID for games to link turns
+        # SQLite game_id is usually a UUID string.
+        try:
+            game_uuid = str(game_id)
+        except ValueError:
+            continue
+
+        # Process turns and events
+        # Keys in state_map are "0", "1", "2"...
+        keys = sorted([int(k) for k in state_map.keys()])
+
+        turn_number = 1
+
+        initial_fen = state_map[str(keys[0])]["fen"]
+        norm_initial_fen = normalize_fen(initial_fen)
+        initial_hash = get_fen_hash(norm_initial_fen)
+
+        if initial_hash not in positions_cache:
+            positions_batch.append(
+                {
+                    "normalized_fen": norm_initial_fen,
+                    "fen_hash": initial_hash,
+                    "piece_placement": norm_initial_fen.split(" ")[0],
+                    "active_color": norm_initial_fen.split(" ")[1],
+                    "castling": norm_initial_fen.split(" ")[2],
+                    "en_passant": norm_initial_fen.split(" ")[3],
+                }
+            )
+
+        final_hash = None
+
+        current_turn_color = None
+        current_turn_dices_str = ""
+        current_turn_moves = []
+        current_turn_pos_hash = None
+
+        # Traverse the state map
+        for k in keys:
+            state = state_map[str(k)]
+            fen = state["fen"]
+            color = fen.split(" ")[1]
+            dices = state.get("dices", [])
+            move = state.get("gameMoveHistoryMove")
+            state.get("bank")
+            state.get("leftTime", {})
+
+            norm_fen = normalize_fen(fen)
+            pos_hash = get_fen_hash(norm_fen)
+
+            if pos_hash not in positions_cache:
+                # Add to batch
+                if not any(p["fen_hash"] == pos_hash for p in positions_batch):
+                    positions_batch.append(
+                        {
+                            "normalized_fen": norm_fen,
+                            "fen_hash": pos_hash,
+                            "piece_placement": norm_fen.split(" ")[0],
+                            "active_color": color,
+                            "castling": norm_fen.split(" ")[2],
+                            "en_passant": norm_fen.split(" ")[3],
+                        }
+                    )
+
+            final_hash = pos_hash
+
+            # Detect robust turn boundaries (Dice Rolls)
+            # White dice are uppercase, Black dice are lowercase.
+            dices_str = "".join(sorted([d["value"] for d in dices])) if dices else ""
+            is_new_roll = False
+
+            if dices_str and not move:
+                first_dice = dices[0]["value"]
+                is_correct_color = (color == "w" and first_dice.isupper()) or (
+                    color == "b" and first_dice.islower()
+                )
+
+                if is_correct_color and dices_str != current_turn_dices_str:
+                    is_new_roll = True
+
+            # Start of a turn
+            if is_new_roll:
+                if current_turn_pos_hash is not None:
+                    # Save previous turn
+                    turns_batch.append(
+                        {
+                            "game_id": game_uuid,
+                            "turn_number": turn_number,
+                            "active_color": current_turn_color,
+                            "_position_hash": current_turn_pos_hash,
+                            "dice_sorted": current_turn_dices_str,
+                            "played_moves": current_turn_moves,
+                            "_position_after_hash": pos_hash,
+                            "thinking_time_ms": None,
+                        }
+                    )
+                    turn_number += 1
+
+                current_turn_color = color
+                current_turn_dices_str = dices_str
+                current_turn_moves = []
+                current_turn_pos_hash = pos_hash
+
+            # Accumulate micro-moves
+            elif move:
+                move_str = f"{move['from'].lower()}{move['to'].lower()}"
+                if move.get("promotion") and move["promotion"] != "NONE":
+                    prom_map = {
+                        "WHITE_QUEEN": "q",
+                        "BLACK_QUEEN": "q",
+                        "WHITE_ROOK": "r",
+                        "BLACK_ROOK": "r",
+                        "WHITE_KNIGHT": "n",
+                        "BLACK_KNIGHT": "n",
+                        "WHITE_BISHOP": "b",
+                        "BLACK_BISHOP": "b",
+                    }
+                    move_str += prom_map.get(move["promotion"], "q")
+                current_turn_moves.append(move_str)
+
+        # Save the last turn if game ended
+        if current_turn_pos_hash is not None:
+            turns_batch.append(
+                {
+                    "game_id": game_uuid,
+                    "turn_number": turn_number,
+                    "active_color": current_turn_color,
+                    "_position_hash": current_turn_pos_hash,
+                    "dice_sorted": current_turn_dices_str,
+                    "played_moves": current_turn_moves,
+                    "_position_after_hash": final_hash,
+                    "thinking_time_ms": None,
+                }
+            )
+            turn_number += 1
+
+        # Determine White and Black Player UUIDs correctly
+        # This requires matching the external_id
+        # We will use subquery or fetch them later, but for bulk insert we can just lookup
+        # Actually, our Player table id is UUID, external_id is string. We need to query player IDs.
+        # This makes it a bit complex for a single pass. Let's simplify and just not link players for now,
+        # or just generate deterministic UUIDs based on username.
+
+        # To make it simple, let's generate deterministic UUIDs for players
+        w_uuid = uuid.uuid5(uuid.NAMESPACE_OID, w_username) if w_username else None
+        b_uuid = uuid.uuid5(uuid.NAMESPACE_OID, b_username) if b_username else None
+
+        # Update players_batch to use these UUIDs
+        for p in players_batch:
+            if p["username"] == w_username:
+                p["id"] = w_uuid
+            if p["username"] == b_username:
+                p["id"] = b_uuid
+
+        games_batch.append(
+            {
+                "id": game_uuid,
+                "source": "dicechess.com",
+                "white_player_id": w_uuid,
+                "black_player_id": b_uuid,
+                "mode": "classic",
+                "result": row["result"],
+                "termination": "unknown",
+                "_initial_fen_hash": initial_hash,
+                "_final_fen_hash": final_hash,
+                "total_turns": turn_number - 1,
+                "started_at": datetime.datetime.fromisoformat(row["start_time"])
+                if row["start_time"]
+                else None,
+                "metadata_json": json.loads(row["metadata_json"])
+                if row["metadata_json"]
+                else None,
+            }
+        )
+
+        processed_count += 1
+
+        if processed_count % batch_size == 0:
+            flush_batches()
+
+    # Final flush
+    flush_batches()
+
+    print(f"Finished. Processed: {processed_count}, Skipped (Bots): {skipped_bots}")
+
+
+if __name__ == "__main__":
+    main()
