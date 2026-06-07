@@ -1,0 +1,45 @@
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    assignees:
+      - "rabestro"
+    reviewers:
+      - "rabestro"
+    rebase-strategy: "auto"
+
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "friday"
+      time: "08:00"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"
+    assignees:
+      - "rabestro"
+    reviewers:
+      - "rabestro"
+
+  - package-ecosystem: "docker-compose"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "08:00"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"
+    assignees:
+      - "rabestro"
+    reviewers:
+      - "rabestro"
