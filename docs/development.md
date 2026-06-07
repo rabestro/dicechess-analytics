@@ -50,7 +50,7 @@ Once started, the API documentation is available at:
 
 ## Task Runner Reference
 
-`mise` tasks are configured in [mise.toml](file:///Users/jegors/Repositories/dicechess-analytics/mise.toml) for easy execution:
+`mise` tasks are configured in `mise.toml` for easy execution:
 
 | Command | Task | Description |
 | :--- | :--- | :--- |

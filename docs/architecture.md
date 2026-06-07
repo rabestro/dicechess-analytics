@@ -119,7 +119,7 @@ A standard chess FEN string contains 6 fields:
 For deduplication, the halfmove clock and fullmove number are stripped, since they do not change the tactical properties of the position. The normalized FEN only contains the first 4 fields:
 ```python
 def normalize_fen(fen_str: str) -> str:
-    parts = fen_str.strip().split(" ")
+    parts = fen_str.split()
     while len(parts) < 4:
         parts.append("-")
     return " ".join(parts[0:4])

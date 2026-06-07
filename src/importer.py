@@ -24,7 +24,7 @@ SessionLocal = sessionmaker(bind=engine)
 
 def normalize_fen(fen_str: str) -> str:
     """Extracts piece placement, color, castling, and en_passant for deduplication."""
-    parts = fen_str.split(" ")
+    parts = fen_str.split()
     return " ".join(parts[0:4])
 
 
