@@ -4,6 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from src.models import GameEventType
+
 
 class PlayerBase(BaseModel):
     id: UUID
@@ -45,7 +47,7 @@ class GameEventBase(BaseModel):
     id: int
     sequence_number: int
     turn_number: Optional[int] = None
-    event_type: str
+    event_type: GameEventType
     actor_color: Optional[str] = None
     clock_white_ms: Optional[int] = None
     clock_black_ms: Optional[int] = None

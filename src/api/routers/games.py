@@ -106,9 +106,7 @@ async def get_game(game_id: UUID, db: AsyncSession = Depends(get_db)):
             "id": event.id,
             "sequence_number": event.sequence_number,
             "turn_number": event.turn_number,
-            "event_type": event.event_type.value
-            if hasattr(event.event_type, "value")
-            else event.event_type,
+            "event_type": event.event_type,
             "actor_color": event.actor_color,
             "clock_white_ms": event.clock_white_ms,
             "clock_black_ms": event.clock_black_ms,
