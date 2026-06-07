@@ -44,7 +44,7 @@ run = "uv run alembic upgrade head"
 
 [tasks.makemigrations]
 description = "📝 Generate a new database migration script using Alembic auto-generation"
-run = "uv run alembic revision --autogenerate -m"
+run = "uv run alembic revision --autogenerate --message"
 
 # ==============================================================================
 # Documentation Control
