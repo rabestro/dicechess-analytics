@@ -32,7 +32,7 @@ run = "uv run ruff check . && uv run ruff format --check ."
 # ==============================================================================
 [tasks.db_up]
 description = "🐳 Start PostgreSQL database container in the background"
-run = "docker compose up -d"
+run = "docker compose up --detach"
 
 [tasks.db_down]
 description = "🛑 Stop PostgreSQL database container"
