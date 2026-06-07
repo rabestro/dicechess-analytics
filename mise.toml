@@ -1,10 +1,58 @@
-[tasks]
-check = "uv run ruff check . && uv run ruff format --check ."
-format = "uv run ruff check --fix . && uv run ruff format ."
-db_up = "docker compose up -d"
-db_down = "docker compose down"
-migrate = "uv run alembic upgrade head"
-makemigrations = "uv run alembic revision --autogenerate -m"
-setup = "uv sync && pre-commit install"
-docs = "uv run mkdocs serve"
-docs_build = "uv run mkdocs build"
+[tools]
+# --- Core Runtime & Build ---
+python = "3.12"                  # Backend runtime (FastAPI & Analytics)
+uv = "latest"                    # Fast Python package installer/resolver
+
+# --- CLI Utilities ---
+gh = "latest"                    # GitHub CLI for PRs and issues
+jq = "latest"                    # JSON processor
+yq = "latest"                    # YAML processor
+ripgrep = "latest"               # High-performance code search
+
+# --- Security & Quality ---
+"pipx:pre-commit" = "latest"     # Git hooks manager
+
+# ==============================================================================
+# Setup & Quality Tasks
+# ==============================================================================
+[tasks.setup]
+description = "📦 Install all project dependencies and register Git hooks locally"
+run = "uv sync && pre-commit install"
+
+[tasks.format]
+description = "🧹 Format code using Ruff (linter autofixes and formatter)"
+run = "uv run ruff check --fix . && uv run ruff format ."
+
+[tasks.check]
+description = "✅ Run validation checks (Ruff linter and format verification)"
+run = "uv run ruff check . && uv run ruff format --check ."
+
+# ==============================================================================
+# Database Services & Migrations
+# ==============================================================================
+[tasks.db_up]
+description = "🐳 Start PostgreSQL database container in the background"
+run = "docker compose up -d"
+
+[tasks.db_down]
+description = "🛑 Stop PostgreSQL database container"
+run = "docker compose down"
+
+[tasks.migrate]
+description = "📈 Apply database migrations to the latest schema using Alembic"
+run = "uv run alembic upgrade head"
+
+[tasks.makemigrations]
+description = "📝 Generate a new database migration script using Alembic auto-generation"
+run = "uv run alembic revision --autogenerate -m"
+
+# ==============================================================================
+# Documentation Control
+# ==============================================================================
+[tasks.docs]
+description = "📖 Start the local MkDocs Material documentation dev server"
+run = "uv run mkdocs serve"
+
+[tasks.docs_build]
+description = "🏗️ Compile documentation to static HTML assets"
+run = "uv run mkdocs build"
