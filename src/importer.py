@@ -39,6 +39,8 @@ def get_fen_hash(normalized_fen: str) -> int:
 
 
 def are_dice_equal(dices1, dices2):
+    dices1 = dices1 or []
+    dices2 = dices2 or []
     if len(dices1) != len(dices2):
         return False
     for d1, d2 in zip(dices1, dices2, strict=True):
@@ -259,11 +261,11 @@ def main():
                 if not state or not prev_state:
                     break
                 has_no_move = state.get("gameMoveHistoryMove") is None
-                dices = state.get("dices", [])
+                dices = state.get("dices") or []
                 all_dice_blocked = len(dices) > 0 and all(
                     not d.get("allowed", True) for d in dices
                 )
-                same_dice_as_prev = are_dice_equal(dices, prev_state.get("dices", []))
+                same_dice_as_prev = are_dice_equal(dices, prev_state.get("dices") or [])
 
                 if has_no_move and all_dice_blocked and same_dice_as_prev:
                     trailing_start = i
@@ -305,7 +307,7 @@ def main():
             state = state_map[str(k)]
             fen = state["fen"]
             color = fen.split(" ")[1]
-            dices = state.get("dices", [])
+            dices = state.get("dices") or []
             move = state.get("gameMoveHistoryMove")
             bank = state.get("bank", 1000)
             state.get("leftTime", {})
@@ -345,10 +347,7 @@ def main():
 
             # Double Accept Events
             if bank > current_bank:
-                prev_state = state_map.get(str(k - 1), state)
-                offerer_color = (
-                    prev_state.get("fen", "").split(" ")[1] if prev_state.get("fen") else color
-                )
+                offerer_color = color
                 accepter_color = "b" if offerer_color == "w" else "w"
 
                 events_batch.append(
