@@ -36,6 +36,7 @@ class TurnBase(BaseModel):
     played_moves: Optional[List[str]] = None
     thinking_time_ms: Optional[int] = None
     position_fen: Optional[str] = None
+    position_after_fen: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

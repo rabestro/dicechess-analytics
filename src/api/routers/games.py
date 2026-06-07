@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import aliased, selectinload
 
 from src.api.dependencies import get_db
 from src.api.schemas import GameBase, GameDetail
@@ -66,9 +66,13 @@ async def get_game(game_id: UUID, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Game not found")
 
     # Fetch turns for this game
+    start_pos = aliased(Position)
+    end_pos = aliased(Position)
+
     turns_query = (
-        select(Turn, Position.normalized_fen)
-        .join(Position, Turn.position_id == Position.id)
+        select(Turn, start_pos.normalized_fen, end_pos.normalized_fen)
+        .join(start_pos, Turn.position_id == start_pos.id)
+        .outerjoin(end_pos, Turn.position_after_id == end_pos.id)
         .filter(Turn.game_id == game_id)
         .order_by(Turn.turn_number.asc())
     )
@@ -76,14 +80,15 @@ async def get_game(game_id: UUID, db: AsyncSession = Depends(get_db)):
     turns_result = await db.execute(turns_query)
 
     turns_data = []
-    for turn, fen in turns_result.all():
+    for turn, start_fen, end_fen in turns_result.all():
         turn_dict = {
             "turn_number": turn.turn_number,
             "active_color": turn.active_color,
             "dice_sorted": turn.dice_sorted,
             "played_moves": turn.played_moves,
             "thinking_time_ms": turn.thinking_time_ms,
-            "position_fen": fen,
+            "position_fen": start_fen,
+            "position_after_fen": end_fen,
         }
         turns_data.append(turn_dict)
 
