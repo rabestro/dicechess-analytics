@@ -365,6 +365,9 @@ def main():
             if p["username"] == b_username:
                 p["id"] = b_uuid
 
+        meta_data = json.loads(row["metadata_json"]) if row["metadata_json"] else {}
+        game_mode = "x2" if meta_data.get("allowDoubling") else "classic"
+
         games_batch.append(
             {
                 "id": game_uuid,
@@ -377,7 +380,7 @@ def main():
                 "black_rating": int(row["black_player_rating"])
                 if row["black_player_rating"]
                 else None,
-                "mode": "classic",
+                "mode": game_mode,
                 "result": row["result"],
                 "termination": "unknown",
                 "_initial_fen_hash": initial_hash,
@@ -386,9 +389,7 @@ def main():
                 "started_at": datetime.datetime.fromisoformat(row["start_time"])
                 if row["start_time"]
                 else None,
-                "metadata_json": json.loads(row["metadata_json"])
-                if row["metadata_json"]
-                else None,
+                "metadata_json": meta_data if meta_data else None,
             }
         )
 
