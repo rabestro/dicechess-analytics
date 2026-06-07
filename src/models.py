@@ -1,9 +1,11 @@
+import enum
 import uuid
 
 from sqlalchemy import (
     BigInteger,
     Column,
     DateTime,
+    Enum,
     ForeignKey,
     Integer,
     SmallInteger,
@@ -14,6 +16,14 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from src.database import Base
+
+
+class GameEventType(str, enum.Enum):
+    DOUBLE_OFFER = "DOUBLE_OFFER"
+    DOUBLE_ACCEPT = "DOUBLE_ACCEPT"
+    DOUBLE_DECLINE = "DOUBLE_DECLINE"
+    DRAW_OFFER = "DRAW_OFFER"
+    DRAW_ACCEPT = "DRAW_ACCEPT"
 
 
 class Position(Base):
@@ -95,7 +105,7 @@ class GameEvent(Base):
     )
     sequence_number = Column(SmallInteger, nullable=False)
     turn_number = Column(SmallInteger, nullable=True)
-    event_type = Column(String(20), nullable=False)
+    event_type = Column(Enum(GameEventType, name="game_event_type_enum"), nullable=False)
     actor_color = Column(String(1), nullable=True)
     clock_white_ms = Column(Integer, nullable=True)
     clock_black_ms = Column(Integer, nullable=True)

@@ -468,6 +468,98 @@ def main():
             )
             turn_number += 1
 
+        # Check for DRAW_OFFER and DRAW_ACCEPT heuristically
+        if row["result"] == 0 and keys:
+            max_index = keys[-1]
+            last_state = state_map[str(max_index)]
+
+            # Exclude timeout
+            is_timeout = False
+            left_time = last_state.get("leftTime") or {}
+            if isinstance(left_time, dict) and any(
+                isinstance(t, (int, float)) and t <= 0 for t in left_time.values()
+            ):
+                is_timeout = True
+
+            if not is_timeout:
+                trailing_start = None
+                accepter_clock_key = None
+                for i in range(max_index, 0, -1):
+                    state = state_map.get(str(i))
+                    prev_state = state_map.get(str(i - 1))
+                    if not state or not prev_state:
+                        break
+
+                    has_no_move = state.get("gameMoveHistoryMove") is None
+                    same_dices = are_dice_equal(state.get("dices"), prev_state.get("dices"))
+                    same_fen = state.get("fen") == prev_state.get("fen")
+
+                    if has_no_move and same_dices and same_fen:
+                        trailing_start = i
+
+                        # Find who lost time between prev_state and state
+                        st_time = state.get("leftTime") or {}
+                        prev_time = prev_state.get("leftTime") or {}
+                        if isinstance(st_time, dict) and isinstance(prev_time, dict):
+                            for tk, tv in st_time.items():
+                                if tk in prev_time:
+                                    prev_val = prev_time[tk]
+                                    if (
+                                        isinstance(tv, (int, float))
+                                        and isinstance(prev_val, (int, float))
+                                        and tv < prev_val
+                                    ):
+                                        accepter_clock_key = tk
+                    else:
+                        break
+
+                if trailing_start is not None and accepter_clock_key is not None:
+                    w_id_str = (
+                        str(row["white_player_id"]) if row["white_player_id"] is not None else None
+                    )
+                    b_id_str = (
+                        str(row["black_player_id"]) if row["black_player_id"] is not None else None
+                    )
+
+                    accepter_color = None
+                    offerer_color = None
+
+                    if accepter_clock_key in (w_id_str, "white", "w"):
+                        accepter_color = "w"
+                        offerer_color = "b"
+                    elif accepter_clock_key in (b_id_str, "black", "b"):
+                        accepter_color = "b"
+                        offerer_color = "w"
+
+                    if accepter_color:
+                        events_batch.append(
+                            {
+                                "game_id": game_uuid,
+                                "sequence_number": sequence_number,
+                                "turn_number": turn_number - 1,
+                                "event_type": "DRAW_OFFER",
+                                "actor_color": offerer_color,
+                                "clock_white_ms": None,
+                                "clock_black_ms": None,
+                                "payload": None,
+                            }
+                        )
+                        sequence_number += 1
+
+                        events_batch.append(
+                            {
+                                "game_id": game_uuid,
+                                "sequence_number": sequence_number,
+                                "turn_number": turn_number - 1,
+                                "event_type": "DRAW_ACCEPT",
+                                "actor_color": accepter_color,
+                                "clock_white_ms": None,
+                                "clock_black_ms": None,
+                                "payload": None,
+                            }
+                        )
+                        sequence_number += 1
+
         # Determine White and Black Player UUIDs correctly
         # This requires matching the external_id
         # We will use subquery or fetch them later, but for bulk insert we can just lookup
