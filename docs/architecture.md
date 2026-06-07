@@ -23,8 +23,8 @@ erDiagram
     positions {
         bigint id PK
         string normalized_fen UK
-        bigint fen_hash IX
-        string piece_placement IX
+        bigint fen_hash "IX"
+        string piece_placement "IX"
         string active_color
         string castling
         string en_passant
@@ -43,7 +43,7 @@ erDiagram
         bigint initial_position_id FK
         bigint final_position_id FK
         smallint total_turns
-        datetime started_at IX
+        datetime started_at "IX"
         jsonb metadata_json
         datetime created_at
     }
