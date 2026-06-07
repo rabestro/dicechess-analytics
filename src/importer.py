@@ -38,6 +38,21 @@ def get_fen_hash(normalized_fen: str) -> int:
     return digest
 
 
+def are_dice_equal(dices1, dices2):
+    dices1 = dices1 or []
+    dices2 = dices2 or []
+    if len(dices1) != len(dices2):
+        return False
+    for d1, d2 in zip(dices1, dices2, strict=True):
+        if (
+            d1.get("value") != d2.get("value")
+            or d1.get("allowed") != d2.get("allowed")
+            or d1.get("used") != d2.get("used")
+        ):
+            return False
+    return True
+
+
 def main():
     limit_games = None
     if len(sys.argv) > 1 and sys.argv[1] == "--limit":
@@ -219,9 +234,48 @@ def main():
         except ValueError:
             continue
 
+        # Process metadata
+        meta_data = {}
+        if row["metadata_json"]:
+            try:
+                parsed = json.loads(row["metadata_json"])
+                if isinstance(parsed, dict):
+                    meta_data = parsed
+            except json.JSONDecodeError:
+                pass
+        game_mode = "x2" if meta_data.get("allowDoubling") else "classic"
+
         # Process turns and events
         # Keys in state_map are "0", "1", "2"...
         keys = sorted([int(k) for k in state_map.keys()])
+
+        # Precompute double decline index if any
+        allow_doubling = meta_data.get("allowDoubling", False)
+        double_decline_start_index = None
+        if allow_doubling and keys:
+            max_index = keys[-1]
+            trailing_start = None
+            for i in range(max_index, 0, -1):
+                state = state_map.get(str(i))
+                prev_state = state_map.get(str(i - 1))
+                if not state or not prev_state:
+                    break
+                has_no_move = state.get("gameMoveHistoryMove") is None
+                dices = state.get("dices") or []
+                all_dice_blocked = len(dices) > 0 and all(
+                    not d.get("allowed", True) for d in dices
+                )
+                same_dice_as_prev = are_dice_equal(dices, prev_state.get("dices") or [])
+
+                if has_no_move and all_dice_blocked and same_dice_as_prev:
+                    trailing_start = i
+                else:
+                    break
+            if trailing_start is not None and max_index - trailing_start >= 1:
+                double_decline_start_index = trailing_start
+
+        current_bank = state_map[str(keys[0])].get("bank", 1000)
+        sequence_number = 1
 
         turn_number = 1
 
@@ -253,10 +307,77 @@ def main():
             state = state_map[str(k)]
             fen = state["fen"]
             color = fen.split(" ")[1]
-            dices = state.get("dices", [])
+            dices = state.get("dices") or []
             move = state.get("gameMoveHistoryMove")
-            state.get("bank")
+            bank = state.get("bank", 1000)
             state.get("leftTime", {})
+
+            # Double Decline Events
+            if double_decline_start_index is not None and k == double_decline_start_index:
+                offerer_color = color
+                decliner_color = "b" if offerer_color == "w" else "w"
+
+                events_batch.append(
+                    {
+                        "game_id": game_uuid,
+                        "sequence_number": sequence_number,
+                        "turn_number": turn_number,
+                        "event_type": "DOUBLE_OFFER",
+                        "actor_color": offerer_color,
+                        "clock_white_ms": None,
+                        "clock_black_ms": None,
+                        "payload": None,
+                    }
+                )
+                sequence_number += 1
+
+                events_batch.append(
+                    {
+                        "game_id": game_uuid,
+                        "sequence_number": sequence_number,
+                        "turn_number": turn_number,
+                        "event_type": "DOUBLE_DECLINE",
+                        "actor_color": decliner_color,
+                        "clock_white_ms": None,
+                        "clock_black_ms": None,
+                        "payload": None,
+                    }
+                )
+                sequence_number += 1
+
+            # Double Accept Events
+            if bank > current_bank:
+                offerer_color = color
+                accepter_color = "b" if offerer_color == "w" else "w"
+
+                events_batch.append(
+                    {
+                        "game_id": game_uuid,
+                        "sequence_number": sequence_number,
+                        "turn_number": turn_number,
+                        "event_type": "DOUBLE_OFFER",
+                        "actor_color": offerer_color,
+                        "clock_white_ms": None,
+                        "clock_black_ms": None,
+                        "payload": None,
+                    }
+                )
+                sequence_number += 1
+
+                events_batch.append(
+                    {
+                        "game_id": game_uuid,
+                        "sequence_number": sequence_number,
+                        "turn_number": turn_number,
+                        "event_type": "DOUBLE_ACCEPT",
+                        "actor_color": accepter_color,
+                        "clock_white_ms": None,
+                        "clock_black_ms": None,
+                        "payload": {"bank": bank},
+                    }
+                )
+                sequence_number += 1
+                current_bank = bank
 
             norm_fen = normalize_fen(fen)
             pos_hash = get_fen_hash(norm_fen)
@@ -364,16 +485,6 @@ def main():
                 p["id"] = w_uuid
             if p["username"] == b_username:
                 p["id"] = b_uuid
-
-        meta_data = {}
-        if row["metadata_json"]:
-            try:
-                parsed = json.loads(row["metadata_json"])
-                if isinstance(parsed, dict):
-                    meta_data = parsed
-            except json.JSONDecodeError:
-                pass
-        game_mode = "x2" if meta_data.get("allowDoubling") else "classic"
 
         games_batch.append(
             {
