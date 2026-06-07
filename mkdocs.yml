@@ -59,6 +59,7 @@ markdown_extensions:
 
 nav:
   - Overview: index.md
+  - Milestones & Roadmap: milestones.md
   - Architecture & Schema: architecture.md
   - Development & Setup: development.md
   - API Specification: api_specification.md
