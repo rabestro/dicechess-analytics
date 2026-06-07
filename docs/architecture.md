@@ -85,21 +85,25 @@ erDiagram
 
 ### 1. Players (`players`)
 Stores player profiles. The player can be either a human user or an AI bot.
+
 *   `player_type`: Can be `"human"` or `"bot"`.
 *   Ratings are dynamic and calculated at runtime, so they are excluded from this table schema.
 
 ### 2. Positions (`positions`)
 Represents unique chess board layouts.
+
 *   **FEN Hashing**: Positions are deduplicated using a normalized FEN string (see details below).
 *   `piece_placement`: The first part of the FEN string, representing piece layouts on the board (e.g. `rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR`).
 
 ### 3. Games (`games`)
 Aggregates metadata for a single chess match.
+
 *   `result`: Can be `1` (White wins), `-1` (Black wins), or `0` (Draw).
 *   `termination`: Reason the game concluded (e.g., `"mate"`, `"resign"`, `"draw"`, `"timeout"`).
 
 ### 4. Turns (`turns`)
 Records every turn of the game. A single turn consists of a dice roll and up to 3 micro-moves.
+
 *   `dice_sorted`: The rolled dice values sorted alphabetically (e.g. `"125"` for Pawn, Knight, Queen).
 *   `played_moves`: An array of micro-moves made during the turn (e.g. `["e2e4", "g1f3"]`).
 
@@ -140,6 +144,7 @@ def get_fen_hash(normalized_fen: str) -> int:
 
 ### Resolution Flow
 When saving a turn or game, the backend follows a "get-or-create" loop:
+
 1.  **Normalize FEN**: Strip move counts.
 2.  **Lookup by Normalized FEN**: Query the `positions` table using the unique `normalized_fen` field.
 3.  **Insert if Missing**: If the position is not in the database, calculate its signed `xxhash64` hash and insert the new `Position` record.
