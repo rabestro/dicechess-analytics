@@ -103,6 +103,8 @@ async def get_game(game_id: UUID, db: AsyncSession = Depends(get_db)):
         "metadata_json": game.metadata_json,
         "white_player": game.white_player,
         "black_player": game.black_player,
+        "white_rating": game.white_rating,
+        "black_rating": game.black_rating,
         "turns": turns_data,
     }
 
