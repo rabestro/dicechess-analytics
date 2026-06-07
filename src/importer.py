@@ -365,7 +365,14 @@ def main():
             if p["username"] == b_username:
                 p["id"] = b_uuid
 
-        meta_data = json.loads(row["metadata_json"]) if row["metadata_json"] else {}
+        meta_data = {}
+        if row["metadata_json"]:
+            try:
+                parsed = json.loads(row["metadata_json"])
+                if isinstance(parsed, dict):
+                    meta_data = parsed
+            except json.JSONDecodeError:
+                pass
         game_mode = "x2" if meta_data.get("allowDoubling") else "classic"
 
         games_batch.append(
