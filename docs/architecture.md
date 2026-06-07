@@ -110,6 +110,11 @@ Records every turn of the game. A single turn consists of a dice roll and up to 
 ### 5. Game Events (`game_events`)
 A granular ledger logging the raw stream of events for a game. It is used for full game state reconstruction and chat logs.
 
+**Event Types from Dice Chess:**
+*   `DOUBLE_OFFER`: Emitted when a player proposes to double the bet.
+*   `DOUBLE_ACCEPT`: Emitted when the opponent accepts the doubling offer. The `payload` contains the new bank value (e.g., `{"bank": 800}`).
+*   `DOUBLE_DECLINE`: Emitted when the opponent declines the offer, resulting in an immediate loss.
+
 ---
 
 ## Position Deduplication Strategy
