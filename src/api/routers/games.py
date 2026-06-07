@@ -20,6 +20,7 @@ async def list_games(
     ),
     min_turns: Optional[int] = Query(None, description="Minimum number of turns in the game"),
     limit: int = Query(50, le=200),
+    offset: int = Query(0, ge=0, description="Number of games to skip"),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -38,6 +39,8 @@ async def list_games(
     if min_turns:
         query = query.filter(Game.total_turns >= min_turns)
 
+    if offset:
+        query = query.offset(offset)
     query = query.limit(limit)
 
     result = await db.execute(query)

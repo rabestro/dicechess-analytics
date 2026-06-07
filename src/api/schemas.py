@@ -21,6 +21,8 @@ class GameBase(BaseModel):
     result: Optional[int] = None
     total_turns: Optional[int] = None
     started_at: Optional[datetime] = None
+    white_rating: Optional[int] = None
+    black_rating: Optional[int] = None
     white_player: Optional[PlayerBase] = None
     black_player: Optional[PlayerBase] = None
 

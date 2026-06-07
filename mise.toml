@@ -56,3 +56,7 @@ run = "uv run mkdocs serve"
 [tasks.docs_build]
 description = "🏗️ Compile documentation to static HTML assets"
 run = "uv run mkdocs build"
+
+[tasks.dev]
+description = "🚀 Start the FastAPI backend development server"
+run = "uv run uvicorn src.api.main:app --reload --port 8000"
