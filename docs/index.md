@@ -28,6 +28,7 @@ The project consists of three main components:
 ## What is Dice Chess?
 
 **Dice Chess** is a chess variant where a turn consists of:
+
 1.  **Dice Roll**: The active player rolls three standard six-sided dice. The numbers correspond to chess pieces:
     *   **1**: Pawn ♙
     *   **2**: Knight ♘
