@@ -8,7 +8,7 @@ from sqlalchemy.orm import aliased, selectinload
 
 from src.api.dependencies import get_db
 from src.api.schemas import GameBase, GameDetail
-from src.models import Game, Position, Turn
+from src.models import Game, GameEvent, Position, Turn
 
 router = APIRouter(prefix="/api/games", tags=["Games"])
 
@@ -92,6 +92,30 @@ async def get_game(game_id: UUID, db: AsyncSession = Depends(get_db)):
         }
         turns_data.append(turn_dict)
 
+    # Fetch events for this game
+    events_query = (
+        select(GameEvent)
+        .filter(GameEvent.game_id == game_id)
+        .order_by(GameEvent.sequence_number.asc())
+    )
+    events_result = await db.execute(events_query)
+
+    events_data = []
+    for event in events_result.scalars().all():
+        event_dict = {
+            "id": event.id,
+            "sequence_number": event.sequence_number,
+            "turn_number": event.turn_number,
+            "event_type": event.event_type.value
+            if hasattr(event.event_type, "value")
+            else event.event_type,
+            "actor_color": event.actor_color,
+            "clock_white_ms": event.clock_white_ms,
+            "clock_black_ms": event.clock_black_ms,
+            "payload": event.payload,
+        }
+        events_data.append(event_dict)
+
     # Convert SQLAlchemy model to Pydantic compatible dict
     game_dict = {
         "id": game.id,
@@ -106,6 +130,7 @@ async def get_game(game_id: UUID, db: AsyncSession = Depends(get_db)):
         "white_rating": game.white_rating,
         "black_rating": game.black_rating,
         "turns": turns_data,
+        "events": events_data,
     }
 
     return game_dict
