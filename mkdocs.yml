@@ -1,6 +1,6 @@
 site_name: Dice Chess Analytics
 site_description: High-performance analytical backend and data pipeline for Dice Chess.
-site_author: rabestro
+site_author: "Jegors Čemisovs"
 site_url: https://rabestro.github.io/dicechess-analytics/
 
 theme:
@@ -46,7 +46,11 @@ markdown_extensions:
       pygments_lang_class: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.tasklist:
