@@ -4,11 +4,11 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import aliased, selectinload
+from sqlalchemy.orm import selectinload
 
 from src.api.dependencies import get_db
 from src.api.schemas import GameBase, GameDetail
-from src.models import Game, GameEvent, Position, Turn
+from src.models import Game, Turn
 
 router = APIRouter(prefix="/api/games", tags=["Games"])
 
@@ -55,7 +55,13 @@ async def get_game(game_id: UUID, db: AsyncSession = Depends(get_db)):
     """
     query = (
         select(Game)
-        .options(selectinload(Game.white_player), selectinload(Game.black_player))
+        .options(
+            selectinload(Game.white_player),
+            selectinload(Game.black_player),
+            selectinload(Game.turns).selectinload(Turn.start_position),
+            selectinload(Game.turns).selectinload(Turn.end_position),
+            selectinload(Game.events),
+        )
         .filter(Game.id == game_id)
     )
 
@@ -65,70 +71,4 @@ async def get_game(game_id: UUID, db: AsyncSession = Depends(get_db)):
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    # Fetch turns for this game
-    start_pos = aliased(Position)
-    end_pos = aliased(Position)
-
-    turns_query = (
-        select(Turn, start_pos.normalized_fen, end_pos.normalized_fen)
-        .join(start_pos, Turn.position_id == start_pos.id)
-        .outerjoin(end_pos, Turn.position_after_id == end_pos.id)
-        .filter(Turn.game_id == game_id)
-        .order_by(Turn.turn_number.asc())
-    )
-
-    turns_result = await db.execute(turns_query)
-
-    turns_data = []
-    for turn, start_fen, end_fen in turns_result.all():
-        turn_dict = {
-            "turn_number": turn.turn_number,
-            "active_color": turn.active_color,
-            "dice_sorted": turn.dice_sorted,
-            "played_moves": turn.played_moves,
-            "thinking_time_ms": turn.thinking_time_ms,
-            "position_fen": start_fen,
-            "position_after_fen": end_fen,
-        }
-        turns_data.append(turn_dict)
-
-    # Fetch events for this game
-    events_query = (
-        select(GameEvent)
-        .filter(GameEvent.game_id == game_id)
-        .order_by(GameEvent.sequence_number.asc())
-    )
-    events_result = await db.execute(events_query)
-
-    events_data = []
-    for event in events_result.scalars().all():
-        event_dict = {
-            "id": event.id,
-            "sequence_number": event.sequence_number,
-            "turn_number": event.turn_number,
-            "event_type": event.event_type,
-            "actor_color": event.actor_color,
-            "clock_white_ms": event.clock_white_ms,
-            "clock_black_ms": event.clock_black_ms,
-            "payload": event.payload,
-        }
-        events_data.append(event_dict)
-
-    # Convert SQLAlchemy model to Pydantic compatible dict
-    game_dict = {
-        "id": game.id,
-        "source": game.source,
-        "mode": game.mode,
-        "result": game.result,
-        "total_turns": game.total_turns,
-        "started_at": game.started_at,
-        "metadata_json": game.metadata_json,
-        "white_player": game.white_player,
-        "black_player": game.black_player,
-        "white_rating": game.white_rating,
-        "black_rating": game.black_rating,
-        "turns": turns_data,
-        "events": events_data,
-    }
-
-    return game_dict
+    return game
