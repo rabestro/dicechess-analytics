@@ -38,7 +38,7 @@ def get_fen_hash(normalized_fen: str) -> int:
     return digest
 
 
-def are_dice_equal(dices1: list, dices2: list) -> bool:
+def are_dice_equal(dices1: list | None, dices2: list | None) -> bool:
     """
     Compares two lists of dice state dictionaries for equality.
 
