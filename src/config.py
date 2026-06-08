@@ -1,3 +1,4 @@
+import json
 from typing import Any, List
 
 from pydantic import BeforeValidator, field_validator
@@ -5,11 +6,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Annotated
 
 
-def parse_cors(v: Any) -> List[str]:
-    if isinstance(v, str) and not v.startswith("["):
+def parse_cors(v: Any) -> list[str]:
+    if isinstance(v, str):
+        if v.startswith("["):
+            return json.loads(v)
         return [i.strip() for i in v.split(",") if i.strip()]
-    elif isinstance(v, (list, str)):
-        return v
+    elif isinstance(v, list):
+        return [str(i) for i in v]
     raise ValueError(v)
 
 
@@ -30,7 +33,7 @@ class Settings(BaseSettings):
         return v
 
     # API Configuration
-    CORS_ORIGINS: Annotated[List[str], BeforeValidator(parse_cors)] = [
+    CORS_ORIGINS: Annotated[str | List[str], BeforeValidator(parse_cors)] = [
         "http://localhost:5173",
         "http://localhost:3000",
     ]
