@@ -5,11 +5,12 @@ import json
 import sqlite3
 import sys
 import uuid
+from typing import Any
 
 import xxhash
 from sqlalchemy import create_engine, func
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 from tqdm import tqdm
 
 from src.models import Base, Game, GameEvent, Player, Position, Turn
@@ -63,7 +64,7 @@ def are_dice_equal(dices1: list | None, dices2: list | None) -> bool:
     return True
 
 
-def main():
+def main() -> None:
     """
     Main execution loop for the Dice Chess ETL importer.
 
@@ -114,7 +115,13 @@ def main():
     turns_batch = []
     events_batch = []
 
-    def execute_chunked_insert(session, model, batch, chunk_size=5000, on_conflict_index=None):
+    def execute_chunked_insert(
+        session: Session,
+        model: Any,
+        batch: list[dict[str, Any]],
+        chunk_size: int = 5000,
+        on_conflict_index: list[str] | None = None,
+    ) -> None:
         """
         Executes a bulk insert or upsert in chunks to avoid overloading the database memory.
 
@@ -132,7 +139,7 @@ def main():
                 stmt = stmt.on_conflict_do_nothing(index_elements=on_conflict_index)
             session.execute(stmt)
 
-    def flush_batches():
+    def flush_batches() -> None:
         """
         Flushes all accumulated data batches (players, games, turns, events) into the PostgreSQL database.
 
