@@ -20,6 +20,17 @@ from src.database import Base
 
 
 class GameEventType(str, enum.Enum):
+    """
+    Enum representing various events that can occur during a game.
+
+    Attributes:
+        DOUBLE_OFFER (str): A player offered a double.
+        DOUBLE_ACCEPT (str): A player accepted a double offer.
+        DOUBLE_DECLINE (str): A player declined a double offer.
+        DRAW_OFFER (str): A player offered a draw.
+        DRAW_ACCEPT (str): A player accepted a draw offer.
+    """
+
     DOUBLE_OFFER = "DOUBLE_OFFER"
     DOUBLE_ACCEPT = "DOUBLE_ACCEPT"
     DOUBLE_DECLINE = "DOUBLE_DECLINE"
@@ -28,6 +39,13 @@ class GameEventType(str, enum.Enum):
 
 
 class Position(Base):
+    """
+    Represents a unique chess board position with associated metadata.
+
+    This table stores normalized FENs to deduplicate identical board states
+    across multiple games, enabling efficient position analytics.
+    """
+
     __tablename__ = "positions"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
@@ -40,6 +58,13 @@ class Position(Base):
 
 
 class Player(Base):
+    """
+    Represents a player in the Dice Chess system.
+
+    Stores player identity, rating, and metadata. External ID can be
+    used to link to accounts from external services.
+    """
+
     __tablename__ = "players"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -54,6 +79,13 @@ class Player(Base):
 
 
 class Game(Base):
+    """
+    Represents a single completed Dice Chess game.
+
+    Stores the overall game metadata, results, time controls, and financial stakes.
+    Individual turns and events for the game are stored in related tables.
+    """
+
     __tablename__ = "games"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -89,6 +121,13 @@ class Game(Base):
 
 
 class Turn(Base):
+    """
+    Represents a single turn within a game.
+
+    A turn typically consists of a dice roll and subsequent moves played by the active player.
+    It references the board position before and after the turn.
+    """
+
     __tablename__ = "turns"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
@@ -105,6 +144,12 @@ class Turn(Base):
 
 
 class GameEvent(Base):
+    """
+    Represents an event that occurred during a game outside of standard move play.
+
+    Used for tracking offers, acceptances, and declines (e.g., doubling stakes, draws).
+    """
+
     __tablename__ = "game_events"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
