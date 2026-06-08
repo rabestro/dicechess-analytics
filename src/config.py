@@ -30,7 +30,7 @@ class Settings(BaseSettings):
         return v
 
     # API Configuration
-    CORS_ORIGINS: Annotated[List[str], BeforeValidator(parse_cors)] = [
+    CORS_ORIGINS: Annotated[str | List[str], BeforeValidator(parse_cors)] = [
         "http://localhost:5173",
         "http://localhost:3000",
     ]
