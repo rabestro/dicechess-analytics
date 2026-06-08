@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.routers import games, players
+from src.config import settings
 
 app = FastAPI(
     title="Dice Chess Analytics API",
@@ -9,10 +10,10 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Allow CORS for local frontend development
+# Allow CORS configured via settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific domains
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
