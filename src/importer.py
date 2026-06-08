@@ -38,7 +38,17 @@ def get_fen_hash(normalized_fen: str) -> int:
     return digest
 
 
-def are_dice_equal(dices1, dices2):
+def are_dice_equal(dices1: list, dices2: list) -> bool:
+    """
+    Compares two lists of dice state dictionaries for equality.
+
+    Args:
+        dices1 (list): The first list of dice states (e.g., [{'value': 3, 'allowed': True, 'used': False}]).
+        dices2 (list): The second list of dice states to compare against.
+
+    Returns:
+        bool: True if the dice states match in length, values, allowed status, and used status.
+    """
     dices1 = dices1 or []
     dices2 = dices2 or []
     if len(dices1) != len(dices2):
@@ -54,6 +64,20 @@ def are_dice_equal(dices1, dices2):
 
 
 def main():
+    """
+    Main execution loop for the Dice Chess ETL importer.
+
+    This function performs the following operations:
+    1. Connects to the local SQLite database containing raw game states.
+    2. Initializes a PostgreSQL session using SQLAlchemy.
+    3. Fetches games from SQLite and iterates through them.
+    4. Parses the game states to extract players, game metadata, financial stakes, turns, and game events (doubles, draws).
+    5. Normalizes FEN strings and deduplicates unique chess positions.
+    6. Uses batching and `ON CONFLICT DO UPDATE` to efficiently upsert records into PostgreSQL.
+
+    Command-Line Arguments:
+        --limit <int>: (Optional) Limit the number of games to import.
+    """
     limit_games = None
     if len(sys.argv) > 1 and sys.argv[1] == "--limit":
         try:
@@ -91,6 +115,16 @@ def main():
     events_batch = []
 
     def execute_chunked_insert(session, model, batch, chunk_size=5000, on_conflict_index=None):
+        """
+        Executes a bulk insert or upsert in chunks to avoid overloading the database memory.
+
+        Args:
+            session (Session): The active SQLAlchemy session.
+            model (Base): The SQLAlchemy model class being inserted.
+            batch (list): A list of dictionaries representing the records to insert.
+            chunk_size (int): The maximum number of records to process per execute call.
+            on_conflict_index (list): A list of column names (e.g., ["id"]) to specify the conflict target. If provided, `ON CONFLICT DO NOTHING` is appended to the statement.
+        """
         for i in range(0, len(batch), chunk_size):
             chunk = batch[i : i + chunk_size]
             stmt = insert(model).values(chunk)
@@ -99,6 +133,12 @@ def main():
             session.execute(stmt)
 
     def flush_batches():
+        """
+        Flushes all accumulated data batches (players, games, turns, events) into the PostgreSQL database.
+
+        Ensures correct insertion order (Players -> Games -> Turns/Events) and manages the session commit.
+        Clears the in-memory batch lists after successful execution.
+        """
         if not games_batch:
             return
 

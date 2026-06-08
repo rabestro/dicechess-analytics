@@ -9,6 +9,12 @@ from src.models import GameEventType
 
 
 class PlayerBase(BaseModel):
+    """
+    Base Pydantic model for a Player.
+
+    Used to serialize and deserialize basic player information for API responses.
+    """
+
     id: UUID
     username: Optional[str] = None
     player_type: str
@@ -18,6 +24,13 @@ class PlayerBase(BaseModel):
 
 
 class GameBase(BaseModel):
+    """
+    Base Pydantic model for a Game.
+
+    Contains summary information about a game without detailed turns or events.
+    Useful for list endpoints and basic game metadata retrieval.
+    """
+
     id: UUID
     source: str
     mode: str
@@ -40,6 +53,13 @@ class GameBase(BaseModel):
 
 
 class TurnBase(BaseModel):
+    """
+    Base Pydantic model for a Turn.
+
+    Represents a single turn's details, including dice thrown, moves played,
+    and associated position FEN strings before and after the turn.
+    """
+
     turn_number: int
     active_color: str
     dice_sorted: str
@@ -52,6 +72,13 @@ class TurnBase(BaseModel):
 
 
 class GameEventBase(BaseModel):
+    """
+    Base Pydantic model for a GameEvent.
+
+    Represents non-move events like doubling stakes or draw offers,
+    including the clock times at the moment of the event.
+    """
+
     id: int
     sequence_number: int
     turn_number: Optional[int] = None
@@ -65,6 +92,13 @@ class GameEventBase(BaseModel):
 
 
 class GameDetail(GameBase):
+    """
+    Detailed Pydantic model for a Game.
+
+    Inherits from GameBase and adds full collections of associated turns
+    and game events. Used for fetching comprehensive data of a single game.
+    """
+
     metadata_json: Optional[Any] = None
     turns: List[TurnBase] = []
     events: List[GameEventBase] = []
