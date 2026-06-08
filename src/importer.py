@@ -117,7 +117,7 @@ def main() -> None:
 
     def execute_chunked_insert(
         session: Session,
-        model: Any,
+        model: type[Base],
         batch: list[dict[str, Any]],
         chunk_size: int = 5000,
         on_conflict_index: list[str] | None = None,
