@@ -119,8 +119,8 @@ class Game(Base):
     metadata_json = Column(JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    turns = relationship("Turn", backref="game", order_by="Turn.turn_number")
-    events = relationship("GameEvent", backref="game", order_by="GameEvent.sequence_number")
+    turns = relationship("Turn", backref="game", order_by=lambda: Turn.turn_number)
+    events = relationship("GameEvent", backref="game", order_by=lambda: GameEvent.sequence_number)
 
 
 class Turn(Base):
@@ -150,11 +150,15 @@ class Turn(Base):
 
     @property
     def position_fen(self):
-        return self.start_position.normalized_fen if self.start_position else None
+        if "start_position" in self.__dict__ and self.start_position:
+            return self.start_position.normalized_fen
+        return None
 
     @property
     def position_after_fen(self):
-        return self.end_position.normalized_fen if self.end_position else None
+        if "end_position" in self.__dict__ and self.end_position:
+            return self.end_position.normalized_fen
+        return None
 
 
 class GameEvent(Base):

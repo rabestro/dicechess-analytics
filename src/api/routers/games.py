@@ -58,8 +58,9 @@ async def get_game(game_id: UUID, db: AsyncSession = Depends(get_db)):
         .options(
             selectinload(Game.white_player),
             selectinload(Game.black_player),
-            selectinload(Game.turns).selectinload(Turn.start_position),
-            selectinload(Game.turns).selectinload(Turn.end_position),
+            selectinload(Game.turns).options(
+                selectinload(Turn.start_position), selectinload(Turn.end_position)
+            ),
             selectinload(Game.events),
         )
         .filter(Game.id == game_id)
