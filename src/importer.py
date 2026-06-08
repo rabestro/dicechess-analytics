@@ -7,7 +7,7 @@ import sys
 import uuid
 
 import xxhash
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, func
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import sessionmaker
 from tqdm import tqdm
@@ -148,7 +148,36 @@ def main():
 
         # 3. Insert Games
         if games_batch:
-            execute_chunked_insert(pg_session, Game, games_batch, on_conflict_index=["id"])
+            for i in range(0, len(games_batch), 5000):
+                chunk = games_batch[i : i + 5000]
+                stmt = insert(Game).values(chunk)
+                stmt = stmt.on_conflict_do_update(
+                    index_elements=["id"],
+                    set_={
+                        "white_money_delta": func.coalesce(
+                            stmt.excluded.white_money_delta, Game.white_money_delta
+                        ),
+                        "black_money_delta": func.coalesce(
+                            stmt.excluded.black_money_delta, Game.black_money_delta
+                        ),
+                        "time_initial_sec": func.coalesce(
+                            stmt.excluded.time_initial_sec, Game.time_initial_sec
+                        ),
+                        "time_increment_sec": func.coalesce(
+                            stmt.excluded.time_increment_sec, Game.time_increment_sec
+                        ),
+                        "initial_stake_amount": func.coalesce(
+                            stmt.excluded.initial_stake_amount, Game.initial_stake_amount
+                        ),
+                        "final_stake_amount": func.coalesce(
+                            stmt.excluded.final_stake_amount, Game.final_stake_amount
+                        ),
+                        "stake_currency": func.coalesce(
+                            stmt.excluded.stake_currency, Game.stake_currency
+                        ),
+                    },
+                )
+                pg_session.execute(stmt)
             games_batch.clear()
 
         # 4. Insert Turns
@@ -274,12 +303,15 @@ def main():
             if trailing_start is not None and max_index - trailing_start >= 1:
                 double_decline_start_index = trailing_start
 
-        current_bank = state_map[str(keys[0])].get("bank", 1000)
+        first_state_node = state_map.get(str(keys[0]), {})
+        current_bank = first_state_node.get("bank", 1000)
         sequence_number = 1
 
         turn_number = 1
 
-        initial_fen = state_map[str(keys[0])]["fen"]
+        initial_fen = first_state_node.get(
+            "fen", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+        )
         norm_initial_fen = normalize_fen(initial_fen)
         initial_hash = get_fen_hash(norm_initial_fen)
 
@@ -586,6 +618,29 @@ def main():
             if p["username"] == b_username:
                 p["id"] = b_uuid
 
+        # Extract time and stake
+        time_initial_sec = meta_data.get("timeLimit")
+        time_increment_sec = meta_data.get("timeBonus")
+        stake_currency = meta_data.get("currency")
+        money_delta = meta_data.get("moneyDelta")
+        delta_color = str(meta_data.get("color", "")).upper()
+
+        white_money_delta = None
+        black_money_delta = None
+        if delta_color == "WHITE" and money_delta is not None:
+            white_money_delta = float(money_delta)
+        elif delta_color == "BLACK" and money_delta is not None:
+            black_money_delta = float(money_delta)
+
+        # Calculate initial and final stakes
+        initial_stake_amount = None
+        final_stake_amount = None
+        if keys:
+            first_state = state_map[str(keys[0])]
+            initial_stake_amount = first_state.get("bank", 1000)
+            last_state = state_map[str(keys[-1])]
+            final_stake_amount = last_state.get("bank", 1000)
+
         games_batch.append(
             {
                 "id": game_uuid,
@@ -604,6 +659,13 @@ def main():
                 "_initial_fen_hash": initial_hash,
                 "_final_fen_hash": final_hash,
                 "total_turns": turn_number - 1,
+                "time_initial_sec": time_initial_sec,
+                "time_increment_sec": time_increment_sec,
+                "initial_stake_amount": initial_stake_amount,
+                "final_stake_amount": final_stake_amount,
+                "white_money_delta": white_money_delta,
+                "black_money_delta": black_money_delta,
+                "stake_currency": stake_currency,
                 "started_at": datetime.datetime.fromisoformat(row["start_time"])
                 if row["start_time"]
                 else None,

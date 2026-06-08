@@ -8,6 +8,7 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     Integer,
+    Numeric,
     SmallInteger,
     String,
 )
@@ -75,6 +76,13 @@ class Game(Base):
     initial_position_id = Column(BigInteger, ForeignKey("positions.id"), nullable=True)
     final_position_id = Column(BigInteger, ForeignKey("positions.id"), nullable=True)
     total_turns = Column(SmallInteger, nullable=True)
+    time_initial_sec = Column(Integer, nullable=True)
+    time_increment_sec = Column(Integer, nullable=True)
+    initial_stake_amount = Column(Integer, nullable=True)
+    final_stake_amount = Column(Integer, nullable=True)
+    white_money_delta = Column(Numeric, nullable=True)
+    black_money_delta = Column(Numeric, nullable=True)
+    stake_currency = Column(String(20), nullable=True)
     started_at = Column(DateTime(timezone=True), nullable=True, index=True)
     metadata_json = Column(JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
