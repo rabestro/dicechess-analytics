@@ -317,11 +317,15 @@ def main():
                 offerer_color = color
                 decliner_color = "b" if offerer_color == "w" else "w"
 
+                event_turn = turn_number
+                if current_turn_color and color != current_turn_color:
+                    event_turn = turn_number + 1
+
                 events_batch.append(
                     {
                         "game_id": game_uuid,
                         "sequence_number": sequence_number,
-                        "turn_number": turn_number,
+                        "turn_number": event_turn,
                         "event_type": "DOUBLE_OFFER",
                         "actor_color": offerer_color,
                         "clock_white_ms": None,
@@ -335,7 +339,7 @@ def main():
                     {
                         "game_id": game_uuid,
                         "sequence_number": sequence_number,
-                        "turn_number": turn_number,
+                        "turn_number": event_turn,
                         "event_type": "DOUBLE_DECLINE",
                         "actor_color": decliner_color,
                         "clock_white_ms": None,
@@ -350,11 +354,15 @@ def main():
                 offerer_color = color
                 accepter_color = "b" if offerer_color == "w" else "w"
 
+                event_turn = turn_number
+                if current_turn_color and color != current_turn_color:
+                    event_turn = turn_number + 1
+
                 events_batch.append(
                     {
                         "game_id": game_uuid,
                         "sequence_number": sequence_number,
-                        "turn_number": turn_number,
+                        "turn_number": event_turn,
                         "event_type": "DOUBLE_OFFER",
                         "actor_color": offerer_color,
                         "clock_white_ms": None,
@@ -368,7 +376,7 @@ def main():
                     {
                         "game_id": game_uuid,
                         "sequence_number": sequence_number,
-                        "turn_number": turn_number,
+                        "turn_number": event_turn,
                         "event_type": "DOUBLE_ACCEPT",
                         "actor_color": accepter_color,
                         "clock_white_ms": None,
