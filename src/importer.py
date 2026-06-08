@@ -155,25 +155,25 @@ def main():
                     index_elements=["id"],
                     set_={
                         "white_money_delta": func.coalesce(
-                            Game.white_money_delta, stmt.excluded.white_money_delta
+                            stmt.excluded.white_money_delta, Game.white_money_delta
                         ),
                         "black_money_delta": func.coalesce(
-                            Game.black_money_delta, stmt.excluded.black_money_delta
+                            stmt.excluded.black_money_delta, Game.black_money_delta
                         ),
                         "time_initial_sec": func.coalesce(
-                            Game.time_initial_sec, stmt.excluded.time_initial_sec
+                            stmt.excluded.time_initial_sec, Game.time_initial_sec
                         ),
                         "time_increment_sec": func.coalesce(
-                            Game.time_increment_sec, stmt.excluded.time_increment_sec
+                            stmt.excluded.time_increment_sec, Game.time_increment_sec
                         ),
                         "initial_stake_amount": func.coalesce(
-                            Game.initial_stake_amount, stmt.excluded.initial_stake_amount
+                            stmt.excluded.initial_stake_amount, Game.initial_stake_amount
                         ),
                         "final_stake_amount": func.coalesce(
-                            Game.final_stake_amount, stmt.excluded.final_stake_amount
+                            stmt.excluded.final_stake_amount, Game.final_stake_amount
                         ),
                         "stake_currency": func.coalesce(
-                            Game.stake_currency, stmt.excluded.stake_currency
+                            stmt.excluded.stake_currency, Game.stake_currency
                         ),
                     },
                 )
@@ -303,12 +303,15 @@ def main():
             if trailing_start is not None and max_index - trailing_start >= 1:
                 double_decline_start_index = trailing_start
 
-        current_bank = state_map[str(keys[0])].get("bank", 1000)
+        first_state_node = state_map.get(str(keys[0]), {})
+        current_bank = first_state_node.get("bank", 1000)
         sequence_number = 1
 
         turn_number = 1
 
-        initial_fen = state_map[str(keys[0])]["fen"]
+        initial_fen = first_state_node.get(
+            "fen", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+        )
         norm_initial_fen = normalize_fen(initial_fen)
         initial_hash = get_fen_hash(norm_initial_fen)
 
@@ -620,7 +623,7 @@ def main():
         time_increment_sec = meta_data.get("timeBonus")
         stake_currency = meta_data.get("currency")
         money_delta = meta_data.get("moneyDelta")
-        delta_color = meta_data.get("color")
+        delta_color = str(meta_data.get("color", "")).upper()
 
         white_money_delta = None
         black_money_delta = None

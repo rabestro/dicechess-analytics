@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from typing import Any, List, Optional
 from uuid import UUID
 
@@ -29,8 +30,8 @@ class GameBase(BaseModel):
     time_increment_sec: Optional[int] = None
     initial_stake_amount: Optional[int] = None
     final_stake_amount: Optional[int] = None
-    white_money_delta: Optional[float] = None
-    black_money_delta: Optional[float] = None
+    white_money_delta: Optional[Decimal] = None
+    black_money_delta: Optional[Decimal] = None
     stake_currency: Optional[str] = None
     white_player: Optional[PlayerBase] = None
     black_player: Optional[PlayerBase] = None
