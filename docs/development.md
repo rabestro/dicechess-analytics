@@ -7,6 +7,7 @@ Follow this guide to set up the development environment, spin up the database, r
 ## Prerequisites
 
 Ensure you have the following installed on your system:
+
 *   [mise-en-place](https://mise.jdx.dev/) (environment manager and task runner)
 *   [uv](https://github.com/astral-sh/uv) (extremely fast Python package manager)
 *   [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for running PostgreSQL locally)
@@ -27,6 +28,7 @@ Spin up the local PostgreSQL database instance in the background using Docker Co
 mise run db_up
 ```
 This runs a PostgreSQL instance listening on port `5432` with:
+
 *   **Database**: `dicechess_analytics`
 *   **Username**: `dicechess_user`
 *   **Password**: `dicechess_password`
@@ -43,6 +45,7 @@ Start the development FastAPI server with uvicorn (with hot reloading enabled):
 uv run uvicorn src.api.main:app --port 8000 --reload
 ```
 Once started, the API documentation is available at:
+
 *   **Swagger UI**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 *   **ReDoc**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
 
@@ -71,6 +74,7 @@ The project includes an ETL script (`src/importer.py`) to parse historical local
 
 ### Importer Command Options
 Execute the script using `uv run python src/importer.py` with the following flags:
+
 *   `--sqlite-path` / `-s` (Required): Path to the source SQLite `.db` file.
 *   `--limit` / `-l` (Optional): Limit the number of imported games (useful for testing pipeline performance).
 
