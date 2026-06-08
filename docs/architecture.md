@@ -37,6 +37,13 @@ erDiagram
         uuid black_player_id FK
         integer white_rating
         integer black_rating
+        integer time_initial_sec
+        integer time_increment_sec
+        integer initial_stake_amount
+        integer final_stake_amount
+        numeric white_money_delta
+        numeric black_money_delta
+        string stake_currency
         string mode
         smallint result
         string termination
@@ -100,6 +107,8 @@ Aggregates metadata for a single chess match.
 
 *   `result`: Can be `1` (White wins), `-1` (Black wins), or `0` (Draw).
 *   `termination`: Reason the game concluded (e.g., `"mate"`, `"resign"`, `"draw"`, `"timeout"`).
+*   **Time Control**: Captured natively via `time_initial_sec` and `time_increment_sec`.
+*   **Stakes and Profit**: Financial aspect is tracked via `initial_stake_amount` and `final_stake_amount` (can change due to doubling). Actual profit/loss is stored individually in `white_money_delta` and `black_money_delta` to account for site rake.
 
 ### 4. Turns (`turns`)
 Records every turn of the game. A single turn consists of a dice roll and up to 3 micro-moves.

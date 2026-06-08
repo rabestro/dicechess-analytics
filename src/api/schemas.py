@@ -25,6 +25,13 @@ class GameBase(BaseModel):
     started_at: Optional[datetime] = None
     white_rating: Optional[int] = None
     black_rating: Optional[int] = None
+    time_initial_sec: Optional[int] = None
+    time_increment_sec: Optional[int] = None
+    initial_stake_amount: Optional[int] = None
+    final_stake_amount: Optional[int] = None
+    white_money_delta: Optional[float] = None
+    black_money_delta: Optional[float] = None
+    stake_currency: Optional[str] = None
     white_player: Optional[PlayerBase] = None
     black_player: Optional[PlayerBase] = None
 
