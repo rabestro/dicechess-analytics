@@ -229,12 +229,19 @@ def main() -> None:
 
         # 4. Insert Turns
         if turns_batch:
-            execute_chunked_insert(pg_session, Turn, turns_batch)
+            execute_chunked_insert(
+                pg_session, Turn, turns_batch, on_conflict_index=["game_id", "turn_number"]
+            )
             turns_batch.clear()
 
         # 5. Insert Events
         if events_batch:
-            execute_chunked_insert(pg_session, GameEvent, events_batch)
+            execute_chunked_insert(
+                pg_session,
+                GameEvent,
+                events_batch,
+                on_conflict_index=["game_id", "sequence_number"],
+            )
             events_batch.clear()
 
         pg_session.commit()
