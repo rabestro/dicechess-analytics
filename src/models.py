@@ -12,6 +12,7 @@ from sqlalchemy import (
     Numeric,
     SmallInteger,
     String,
+    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import relationship
@@ -143,6 +144,8 @@ class Turn(Base):
 
     __tablename__ = "turns"
 
+    __table_args__ = (UniqueConstraint("game_id", "turn_number", name="uix_turns_game_turn"),)
+
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     game_id = Column(
         UUID(as_uuid=True), ForeignKey("games.id", ondelete="CASCADE"), nullable=False
@@ -179,6 +182,10 @@ class GameEvent(Base):
     """
 
     __tablename__ = "game_events"
+
+    __table_args__ = (
+        UniqueConstraint("game_id", "sequence_number", name="uix_events_game_sequence"),
+    )
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     game_id = Column(
