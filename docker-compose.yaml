@@ -2,14 +2,28 @@ services:
   db:
     image: postgres:18-alpine
     restart: always
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: dicechess_user
-      POSTGRES_PASSWORD: dicechess_password
-      POSTGRES_DB: dicechess_analytics
+      POSTGRES_USER: ${POSTGRES_USER:-dicechess_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dicechess_password}
+      POSTGRES_DB: ${POSTGRES_DB:-dicechess_analytics}
     ports:
       - "5432:5432"
     volumes:
-      - db_data:/var/lib/postgresql
+      - db_data:/var/lib/postgresql/data
+
+  api:
+    build: .
+    restart: always
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-dicechess_user}:${POSTGRES_PASSWORD:-dicechess_password}@db:5432/${POSTGRES_DB:-dicechess_analytics}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
 
 volumes:
   db_data:

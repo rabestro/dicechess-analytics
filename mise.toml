@@ -46,6 +46,10 @@ run = "uv run alembic upgrade head"
 description = "📝 Generate a new database migration script using Alembic auto-generation"
 run = "uv run alembic revision --autogenerate --message"
 
+[tasks.import]
+description = "📥 Import games from SQLite to PostgreSQL"
+run = "uv run python -m src.importer"
+
 # ==============================================================================
 # Documentation Control
 # ==============================================================================
