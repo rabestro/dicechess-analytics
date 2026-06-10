@@ -1,3 +1,7 @@
+"""
+API router for endpoints related to games.
+"""
+
 from typing import List, Optional
 from uuid import UUID
 

@@ -1,3 +1,7 @@
+"""
+Pydantic schemas for data serialization and validation in the API.
+"""
+
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, List, Optional

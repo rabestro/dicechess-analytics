@@ -1,3 +1,7 @@
+"""
+ETL pipeline script to import Dice Chess games from an SQLite source into PostgreSQL.
+"""
+
 import datetime
 
 # ruff: noqa: C901
