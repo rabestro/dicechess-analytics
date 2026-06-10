@@ -257,6 +257,9 @@ def main() -> None:
     for row in tqdm(cursor, total=total_games, desc="Importing games"):
         game_id = row["game_id"]
 
+        if not game_id:
+            continue
+
         try:
             # Check if it is a valid UUID
             parsed_uuid = uuid.UUID(str(game_id))
