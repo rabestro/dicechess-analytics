@@ -35,6 +35,15 @@ theme:
     - content.code.copy
     - content.code.annotate
 
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          options:
+            docstring_style: google
+
 markdown_extensions:
   - admonition
   - attr_list
@@ -63,3 +72,4 @@ nav:
   - Architecture & Schema: architecture.md
   - Development & Setup: development.md
   - API Specification: api_specification.md
+  - Code Reference: code_reference.md

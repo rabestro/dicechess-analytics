@@ -24,3 +24,7 @@ dev = [
     "pre-commit>=4.6.0",
     "ruff>=0.15.16",
 ]
+docs = [
+    "mkdocstrings>=1.0.4",
+    "mkdocstrings-python>=2.0.4",
+]
