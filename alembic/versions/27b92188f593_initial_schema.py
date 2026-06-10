@@ -194,3 +194,7 @@ def downgrade() -> None:
     )
     op.drop_table("players")
     # ### end Alembic commands ###
+
+    # Explicitly drop the extension and enum types
+    op.execute("DROP EXTENSION IF EXISTS pg_trgm CASCADE;")
+    op.execute("DROP TYPE IF EXISTS game_event_type_enum CASCADE;")
