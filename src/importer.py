@@ -257,10 +257,16 @@ def main() -> None:
     for row in tqdm(cursor, total=total_games, desc="Importing games"):
         game_id = row["game_id"]
 
-        try:
-            game_uuid = str(game_id).lower()
-        except ValueError:
+        if not game_id:
             continue
+
+        try:
+            # Check if it is a valid UUID
+            parsed_uuid = uuid.UUID(str(game_id))
+            game_uuid = str(parsed_uuid).lower()
+        except ValueError:
+            # If not a valid UUID (e.g. 'local_xxx'), generate a deterministic one
+            game_uuid = str(uuid.uuid5(uuid.NAMESPACE_OID, str(game_id))).lower()
 
         if game_uuid in seen_games:
             continue
@@ -313,13 +319,6 @@ def main() -> None:
                 }
             )
             players_cache.add(b_id)
-
-        # We need a predictable UUID for games to link turns
-        # SQLite game_id is usually a UUID string.
-        try:
-            game_uuid = str(game_id)
-        except ValueError:
-            continue
 
         # Process metadata
         meta_data = {}
