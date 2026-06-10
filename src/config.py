@@ -1,3 +1,7 @@
+"""
+Configuration management using pydantic-settings.
+"""
+
 import json
 from typing import Any, List
 
@@ -7,6 +11,7 @@ from typing_extensions import Annotated
 
 
 def parse_cors(v: Any) -> list[str]:
+    """Parse CORS origins from a comma-separated string, JSON list, or regular list."""
     if isinstance(v, str):
         if v.startswith("["):
             return json.loads(v)
@@ -25,6 +30,7 @@ class Settings(BaseSettings):
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def assemble_db_connection(cls, v: str | None) -> str:
+        """Ensure the database URL uses the asyncpg driver for PostgreSQL."""
         if isinstance(v, str):
             if v.startswith("postgres://"):
                 return v.replace("postgres://", "postgresql+asyncpg://", 1)

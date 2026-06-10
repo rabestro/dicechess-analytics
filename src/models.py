@@ -1,3 +1,7 @@
+"""
+Database models and schema definitions for the Dice Chess Analytics application.
+"""
+
 import enum
 import uuid
 
@@ -163,12 +167,14 @@ class Turn(Base):
 
     @property
     def position_fen(self) -> str | None:
+        """Get the normalized FEN string of the starting position."""
         if "start_position" in self.__dict__ and self.start_position:
             return self.start_position.normalized_fen
         return None
 
     @property
     def position_after_fen(self) -> str | None:
+        """Get the normalized FEN string of the position after the turn."""
         if "end_position" in self.__dict__ and self.end_position:
             return self.end_position.normalized_fen
         return None

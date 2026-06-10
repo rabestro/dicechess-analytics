@@ -1,3 +1,7 @@
+"""
+Main entry point for the FastAPI web application.
+"""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -25,4 +29,5 @@ app.include_router(players.router)
 
 @app.get("/")
 async def root():
+    """Welcome endpoint providing basic API information."""
     return {"message": "Welcome to Dice Chess Analytics API", "docs": "/docs"}
