@@ -53,7 +53,7 @@ object AppConfig:
         val db   = Option(uri.getPath).getOrElse("").stripPrefix("/")
         if db.isEmpty then Left(s"DATABASE_URL has no database name: $url")
         else Right(DbConfig(s"jdbc:postgresql://$host:$port/$db", user, password))
-      catch case e: IllegalArgumentException => Left(s"Malformed DATABASE_URL: ${e.getMessage}")
+      catch case e: java.net.URISyntaxException => Left(s"Malformed DATABASE_URL: ${e.getMessage}")
 
   private def fromDiscreteVars(env: Map[String, String]): DbConfig =
     val host = env.getOrElse("POSTGRES_HOST", "localhost")

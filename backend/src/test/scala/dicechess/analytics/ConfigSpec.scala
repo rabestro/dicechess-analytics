@@ -23,6 +23,9 @@ class ConfigSpec extends munit.FunSuite:
   test("rejects unsupported schemes"):
     assert(AppConfig.parseDatabaseUrl("mysql://u:p@host/db").isLeft)
 
+  test("reports malformed URLs instead of throwing"):
+    assert(AppConfig.parseDatabaseUrl("postgresql://u:p@host:5432/db with spaces").isLeft)
+
   test("loads defaults compatible with docker-compose when no env is set"):
     val config = AppConfig.load(Map.empty)
     assertEquals(

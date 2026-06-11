@@ -84,6 +84,10 @@ object GamesRepository:
              g.white_money_delta, g.black_money_delta, g.stake_currency,
              wp.id, wp.username, wp.player_type,
              bp.id, bp.username, bp.player_type
+    """
+
+  private val gameTables =
+    fr"""
       FROM games g
       LEFT JOIN players wp ON wp.id = g.white_player_id
       LEFT JOIN players bp ON bp.id = g.black_player_id
@@ -99,7 +103,7 @@ object GamesRepository:
       playerId.map(p => fr"(g.white_player_id = $p OR g.black_player_id = $p)"),
       minTurns.map(t => fr"g.total_turns >= $t")
     )
-    (gameColumns ++ where ++
+    (gameColumns ++ gameTables ++ where ++
       fr"ORDER BY g.started_at DESC NULLS LAST LIMIT $limit OFFSET $offset")
       .query[GameRow]
       .to[List]
@@ -107,13 +111,12 @@ object GamesRepository:
 
   def detail(gameId: UUID): ConnectionIO[Option[GameDetail]] =
     for
-      row <- (gameColumns ++ fr"WHERE g.id = $gameId").query[GameRow].option
-      metadata <- row.fold(Option.empty[Json].pure[ConnectionIO])(_ =>
-        sql"SELECT metadata_json FROM games WHERE id = $gameId".query[Option[Json]].unique
-      )
+      row <- (gameColumns ++ fr", g.metadata_json" ++ gameTables ++ fr"WHERE g.id = $gameId")
+        .query[(GameRow, Option[Json])]
+        .option
       turns  <- row.fold(List.empty[TurnView].pure[ConnectionIO])(_ => turnsOf(gameId))
       events <- row.fold(List.empty[GameEventView].pure[ConnectionIO])(_ => eventsOf(gameId))
-    yield row.map { r =>
+    yield row.map { (r, metadata) =>
       val s = r.toSummary
       GameDetail(
         id = s.id,
