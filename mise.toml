@@ -1,7 +1,8 @@
 [tools]
 # --- Core Runtime & Build ---
-python = "3.12"                  # Backend runtime (FastAPI & Analytics)
+python = "3.12"                  # Legacy backend runtime (FastAPI, until Scala parity)
 uv = "latest"                    # Fast Python package installer/resolver
+java = "temurin-25"              # Scala backend runtime (aligned with the engine repo)
 
 # --- CLI Utilities ---
 gh = "latest"                    # GitHub CLI for PRs and issues
@@ -64,3 +65,33 @@ run = "uv run mkdocs build"
 [tasks.dev]
 description = "🚀 Start the FastAPI backend development server"
 run = "uv run uvicorn src.api.main:app --reload --port 8000"
+
+# ==============================================================================
+# Scala Backend (backend/) — the rewrite target; see backend/README.md
+# GitHub Packages credentials are needed to resolve the engine artifact, hence
+# the GITHUB_ACTOR/GITHUB_TOKEN fallbacks via the gh CLI.
+# ==============================================================================
+[tasks."backend:compile"]
+description = "🔨 Compile the Scala backend"
+dir = "backend"
+run = 'GITHUB_ACTOR="${GITHUB_ACTOR:-$(gh api user --jq .login)}" GITHUB_TOKEN="${GITHUB_TOKEN:-$(gh auth token)}" sbt compile'
+
+[tasks."backend:test"]
+description = "🧪 Run Scala backend tests (real PostgreSQL via testcontainers)"
+dir = "backend"
+run = 'GITHUB_ACTOR="${GITHUB_ACTOR:-$(gh api user --jq .login)}" GITHUB_TOKEN="${GITHUB_TOKEN:-$(gh auth token)}" sbt test'
+
+[tasks."backend:check"]
+description = "✅ Full Scala backend validation (format check, coverage-gated tests)"
+dir = "backend"
+run = 'GITHUB_ACTOR="${GITHUB_ACTOR:-$(gh api user --jq .login)}" GITHUB_TOKEN="${GITHUB_TOKEN:-$(gh auth token)}" sbt scalafmtCheckAll clean coverage test coverageReport'
+
+[tasks."backend:format"]
+description = "✨ Reformat the Scala backend sources"
+dir = "backend"
+run = "sbt scalafmtAll"
+
+[tasks."backend:run"]
+description = "🚀 Start the Scala backend API server (port 8000)"
+dir = "backend"
+run = 'GITHUB_ACTOR="${GITHUB_ACTOR:-$(gh api user --jq .login)}" GITHUB_TOKEN="${GITHUB_TOKEN:-$(gh auth token)}" sbt run'

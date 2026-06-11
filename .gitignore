@@ -216,3 +216,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Scala / sbt (backend)
+.bsp/
+.metals/
+.scala-build/
+project/project/
