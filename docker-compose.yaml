@@ -36,7 +36,7 @@ services:
     image: ghcr.io/rabestro/dicechess-analytics-ui:latest
     restart: always
     ports:
-      - "8030:80"
+      - "8030:8080"
     depends_on:
       - api
 
