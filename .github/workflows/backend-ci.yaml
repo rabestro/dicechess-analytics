@@ -24,6 +24,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -35,6 +37,8 @@ jobs:
       - name: Setup sbt
         uses: sbt/setup-sbt@v1
 
+      # Mirrors `mise run backend:check`; invoked directly so the CI job only needs
+      # the JVM toolchain instead of the full polyglot tool set from mise.toml.
       - name: Run validation (format, coverage, tests on real PostgreSQL)
         run: sbt scalafmtCheckAll clean coverage test coverageReport
         env:

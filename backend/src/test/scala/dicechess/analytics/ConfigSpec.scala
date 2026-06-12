@@ -1,5 +1,7 @@
 package dicechess.analytics
 
+import com.comcast.ip4s.port
+
 class ConfigSpec extends munit.FunSuite:
 
   test("parses the asyncpg URL form used by the Python app"):
@@ -32,7 +34,8 @@ class ConfigSpec extends munit.FunSuite:
       config.map(_.db.jdbcUrl),
       Right("jdbc:postgresql://localhost:5432/dicechess_analytics")
     )
-    assertEquals(config.map(_.port), Right(8000))
+    assertEquals(config.map(_.port), Right(port"8000"))
+    assertEquals(config.map(_.dbPoolSize), Right(16))
     assertEquals(
       config.map(_.corsOrigins),
       Right(List("http://localhost:5173", "http://localhost:3000"))
@@ -41,3 +44,14 @@ class ConfigSpec extends munit.FunSuite:
   test("parses CORS_ORIGINS as a comma-separated list"):
     val config = AppConfig.load(Map("CORS_ORIGINS" -> "https://a.example, https://b.example"))
     assertEquals(config.map(_.corsOrigins), Right(List("https://a.example", "https://b.example")))
+
+  test("fails fast on an invalid HTTP_PORT instead of silently falling back"):
+    assert(AppConfig.load(Map("HTTP_PORT" -> "99999")).isLeft)
+    assert(AppConfig.load(Map("HTTP_PORT" -> "not-a-port")).isLeft)
+
+  test("fails fast on an invalid DB_POOL_SIZE"):
+    assert(AppConfig.load(Map("DB_POOL_SIZE" -> "0")).isLeft)
+    assert(AppConfig.load(Map("DB_POOL_SIZE" -> "many")).isLeft)
+
+  test("accepts a custom DB_POOL_SIZE"):
+    assertEquals(AppConfig.load(Map("DB_POOL_SIZE" -> "32")).map(_.dbPoolSize), Right(32))

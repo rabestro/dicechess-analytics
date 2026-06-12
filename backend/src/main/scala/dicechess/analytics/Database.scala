@@ -27,9 +27,9 @@ object Database:
         .migrate()
     }.void
 
-  def transactor(config: DbConfig): Resource[IO, HikariTransactor[IO]] =
+  def transactor(config: DbConfig, poolSize: Int = 16): Resource[IO, HikariTransactor[IO]] =
     for
-      ce <- ExecutionContexts.fixedThreadPool[IO](16)
+      ce <- ExecutionContexts.fixedThreadPool[IO](poolSize)
       xa <- HikariTransactor.newHikariTransactor[IO](
         driverClassName = "org.postgresql.Driver",
         url = config.jdbcUrl,

@@ -2,6 +2,8 @@ package dicechess.analytics
 
 import java.net.URI
 
+import com.comcast.ip4s.{Host, Port}
+
 /** Database connection settings in JDBC form. */
 final case class DbConfig(jdbcUrl: String, user: String, password: String)
 
@@ -9,23 +11,43 @@ final case class DbConfig(jdbcUrl: String, user: String, password: String)
   *
   * Mirrors the FastAPI configuration: `DATABASE_URL` (any of the `postgres://`, `postgresql://`,
   * `postgresql+asyncpg://` forms) or the discrete `POSTGRES_*` variables, plus `CORS_ORIGINS` as a
-  * comma-separated list.
+  * comma-separated list. Invalid values fail the load instead of silently falling back.
   */
-final case class AppConfig(db: DbConfig, host: String, port: Int, corsOrigins: List[String])
+final case class AppConfig(
+    db: DbConfig,
+    host: Host,
+    port: Port,
+    corsOrigins: List[String],
+    dbPoolSize: Int
+)
 
 object AppConfig:
 
   def load(env: Map[String, String] = sys.env): Either[String, AppConfig] =
-    for db <- dbConfig(env)
+    for
+      db   <- dbConfig(env)
+      host <- parseHost(env.getOrElse("HTTP_HOST", "0.0.0.0"))
+      port <- parsePort(env.getOrElse("HTTP_PORT", "8000"))
+      pool <- parsePoolSize(env.getOrElse("DB_POOL_SIZE", "16"))
     yield AppConfig(
       db = db,
-      host = env.getOrElse("HTTP_HOST", "0.0.0.0"),
-      port = env.get("HTTP_PORT").flatMap(_.toIntOption).getOrElse(8000),
+      host = host,
+      port = port,
       corsOrigins = env
         .get("CORS_ORIGINS")
         .map(_.split(',').map(_.trim).filter(_.nonEmpty).toList)
-        .getOrElse(List("http://localhost:5173", "http://localhost:3000"))
+        .getOrElse(List("http://localhost:5173", "http://localhost:3000")),
+      dbPoolSize = pool
     )
+
+  private def parseHost(value: String): Either[String, Host] =
+    Host.fromString(value).toRight(s"Invalid HTTP_HOST: $value")
+
+  private def parsePort(value: String): Either[String, Port] =
+    value.toIntOption.flatMap(Port.fromInt).toRight(s"Invalid HTTP_PORT: $value")
+
+  private def parsePoolSize(value: String): Either[String, Int] =
+    value.toIntOption.filter(_ > 0).toRight(s"Invalid DB_POOL_SIZE: $value")
 
   private def dbConfig(env: Map[String, String]): Either[String, DbConfig] =
     env.get("DATABASE_URL") match

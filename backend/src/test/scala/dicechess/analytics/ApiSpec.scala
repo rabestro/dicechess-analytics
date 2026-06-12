@@ -170,6 +170,31 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
       }
     }
 
+  test("GET /api/games paginates with limit and offset"):
+    withContainers { pg =>
+      withClient(pg) { client =>
+        getJson(client, "/api/games?limit=1&offset=1").map { json =>
+          val games = json.asArray.getOrElse(fail("expected a JSON array"))
+          assertEquals(games.size, 1)
+          assertEquals(games.head.hcursor.get[String]("id"), Right(game2.toString))
+        }
+      }
+    }
+
+  test("GET /api/games rejects out-of-range limit and offset with 400"):
+    withContainers { pg =>
+      withClient(pg) { client =>
+        def statusOf(uri: String): IO[Status] =
+          client.run(Request[IO](Method.GET, Uri.unsafeFromString(uri))).use(r => IO.pure(r.status))
+        for
+          tooLarge <- statusOf("/api/games?limit=500")
+          negative <- statusOf("/api/games?offset=-1")
+        yield
+          assertEquals(tooLarge, Status.BadRequest)
+          assertEquals(negative, Status.BadRequest)
+      }
+    }
+
   test("GET /api/games/{id} returns a FastAPI-style 404 for unknown games"):
     withContainers { pg =>
       withClient(pg) { client =>
