@@ -25,45 +25,50 @@ description = "🧹 Format code using Ruff (linter autofixes and formatter)"
 run = "uv run ruff check --fix . && uv run ruff format ."
 
 [tasks.check]
-description = "✅ Run validation checks (Ruff linter and format verification)"
+description = "✅ Repo-wide gate: Ruff checks (legacy Python) + Scala backend validation"
+depends = ["backend:check"]
 run = "uv run ruff check . && uv run ruff format --check ."
 
 # ==============================================================================
-# Database Services & Migrations
+# Database & Stack Services
 # ==============================================================================
-[tasks.db_up]
-description = "🐳 Start PostgreSQL database container in the background"
+[tasks."db:up"]
+description = "🐳 Start only the PostgreSQL container in the background"
+run = "docker compose up --detach db"
+
+[tasks."db:down"]
+description = "🛑 Stop and remove only the PostgreSQL container (named volume survives)"
+run = "docker compose rm --force --stop --volumes db"
+
+[tasks."stack:up"]
+description = "🐳 Start the full stack (db + api + ui); ui image is amd64-only for now"
 run = "docker compose up --detach"
 
-[tasks.db_down]
-description = "🛑 Stop PostgreSQL database container"
+[tasks."stack:down"]
+description = "🛑 Stop and remove the full stack"
 run = "docker compose down"
 
-[tasks.migrate]
-description = "📈 Apply database migrations to the latest schema using Alembic"
+[tasks."db:migrate"]
+description = "📈 Apply Alembic migrations (legacy; the Scala backend migrates via Flyway on startup)"
 run = "uv run alembic upgrade head"
 
-[tasks.makemigrations]
-description = "📝 Generate a new database migration script using Alembic auto-generation"
+[tasks."db:makemigrations"]
+description = "📝 Generate a new Alembic migration script (legacy)"
 run = "uv run alembic revision --autogenerate --message"
-
-[tasks.import]
-description = "📥 Import games from SQLite to PostgreSQL"
-run = "uv run python -m src.importer"
 
 # ==============================================================================
 # Documentation Control
 # ==============================================================================
-[tasks.docs]
+[tasks."docs:dev"]
 description = "📖 Start the local MkDocs Material documentation dev server"
 run = "uv run mkdocs serve"
 
-[tasks.docs_build]
+[tasks."docs:build"]
 description = "🏗️ Compile documentation to static HTML assets"
 run = "uv run mkdocs build"
 
 [tasks.dev]
-description = "🚀 Start the FastAPI backend development server"
+description = "🚀 Start the FastAPI backend development server (legacy, until Scala parity)"
 run = "uv run uvicorn src.api.main:app --reload --port 8000"
 
 # ==============================================================================

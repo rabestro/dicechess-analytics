@@ -25,7 +25,7 @@ mise run setup
 ### 2. Start PostgreSQL Container
 Spin up the local PostgreSQL database instance in the background using Docker Compose:
 ```bash
-mise run db_up
+mise run db:up
 ```
 This runs a PostgreSQL instance listening on port `5432` with:
 
@@ -36,7 +36,7 @@ This runs a PostgreSQL instance listening on port `5432` with:
 ### 3. Run Database Migrations
 Apply the initial schema migrations using Alembic:
 ```bash
-mise run migrate
+mise run db:migrate
 ```
 
 ### 4. Run the API Server
@@ -58,13 +58,17 @@ Once started, the API documentation is available at:
 | Command | Task | Description |
 | :--- | :--- | :--- |
 | `mise run setup` | Setup Environment | Synchronizes Python packages and registers pre-commit linters. |
-| `mise run db_up` | Docker DB Up | Launches the PostgreSQL container. |
-| `mise run db_down`| Docker DB Down | Stops and removes the PostgreSQL container. |
-| `mise run migrate`| DB Migrations | Applies all pending Alembic migrations. |
-| `mise run check` | Lint & Format Check | Runs `ruff` checks and code formatting dry-runs. |
+| `mise run db:up` | Docker DB Up | Launches only the PostgreSQL container. |
+| `mise run db:down`| Docker DB Down | Stops and removes only the PostgreSQL container (data volume survives). |
+| `mise run stack:up` | Full Stack Up | Starts db + api + ui (amd64 hosts only until the ui image is multi-arch). |
+| `mise run stack:down` | Full Stack Down | Stops and removes all compose services. |
+| `mise run db:migrate`| DB Migrations | Applies all pending Alembic migrations (legacy; the Scala backend uses Flyway). |
+| `mise run check` | Repo-Wide Gate | Runs `ruff` checks plus the full Scala backend validation (`backend:check`). |
 | `mise run format` | Code Auto-Formatter | Runs `ruff` to automatically fix formatting and lint errors. |
-| `mise run docs` | Run Docs Server | Starts the MkDocs dev server at [http://localhost:8000](http://localhost:8000). |
-| `mise run docs_build`| Compile Static Docs | Compiles the documentation site into static HTML inside `site/`. |
+| `mise run backend:test` | Scala Fast Loop | Runs the Scala backend test suite without the coverage/clean overhead. |
+| `mise run dev` | Legacy API Server | Starts the FastAPI dev server (until Scala parity). |
+| `mise run docs:dev` | Run Docs Server | Starts the MkDocs dev server at [http://localhost:8000](http://localhost:8000). |
+| `mise run docs:build`| Compile Static Docs | Compiles the documentation site into static HTML inside `site/`. |
 
 ---
 

@@ -22,17 +22,24 @@ Example: `bug/6-fix-mermaid-syntax`
 
 ## Developer Workflows
 - **Core Runner**: Use `mise run <task>` from the root of the repository for all development tasks.
-- **Code Formatting**: `mise run format` runs Ruff checks (with autofixes) and formatter.
-- **Local CI validation**: `mise run check` runs format verification and linter checks.
+- **Task Naming Convention**: bare verbs for repo-wide lifecycle tasks (`setup`, `format`,
+  `check`, `dev`); `domain:action` with a colon for namespaced tasks (`db:up`,
+  `backend:test`, `docs:build`). Same convention as dicechess-engine-scala.
+- **Code Formatting**: `mise run format` runs Ruff checks (with autofixes) and formatter;
+  `mise run backend:format` runs scalafmt for the Scala backend.
+- **Local CI validation**: `mise run check` is the repo-wide gate — Ruff checks for the
+  legacy Python code plus the full Scala backend validation (`backend:check`).
 - **Service Control**:
-  - `mise run db_up`: Starts PostgreSQL container in background.
-  - `mise run db_down`: Stops PostgreSQL container.
+  - `mise run db:up`: Starts only the PostgreSQL container in background.
+  - `mise run db:down`: Stops and removes only the PostgreSQL container.
+  - `mise run stack:up` / `stack:down`: Full stack (db + api + ui); the ui image is
+    amd64-only for now, so this works on the server but not on Apple Silicon.
 - **Database Migrations**:
-  - `mise run migrate`: Applies database migrations using Alembic.
-  - `mise run makemigrations "description"`: Auto-generates a new migration script.
+  - `mise run db:migrate`: Applies database migrations using Alembic.
+  - `mise run db:makemigrations "description"`: Auto-generates a new migration script.
 - **Documentation**:
-  - `mise run docs`: Runs local hot-reloaded development server.
-  - `mise run docs_build`: Compiles all pages to static HTML assets.
+  - `mise run docs:dev`: Runs local hot-reloaded development server.
+  - `mise run docs:build`: Compiles all pages to static HTML assets.
 
 ## Approved Milestones
 
