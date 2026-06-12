@@ -1,7 +1,5 @@
 [tools]
 # --- Core Runtime & Build ---
-python = "3.12"                  # Legacy backend runtime (FastAPI, until Scala parity)
-uv = "latest"                    # Fast Python package installer/resolver
 java = "temurin-25"              # Scala backend runtime (aligned with the engine repo)
 
 # --- CLI Utilities ---
@@ -19,8 +17,8 @@ scalafmt = "3.11.1"           # native CLI; MUST match version in backend/.scala
 # Setup & Quality Tasks
 # ==============================================================================
 [tasks.setup]
-description = "📦 Install all project dependencies and register Git hooks locally"
-run = "uv sync && lefthook install"
+description = "📦 Install tooling and register Git hooks locally"
+run = "lefthook install"
 
 [tasks."hook:install"]
 description = "🪝 Register Git hooks via lefthook"
@@ -31,13 +29,12 @@ description = "🪝 Run all pre-commit hooks against every file (CI / manual tri
 run = "lefthook run pre-commit --all-files"
 
 [tasks.format]
-description = "🧹 Format code using Ruff (linter autofixes and formatter)"
-run = "uv run ruff check --fix . && uv run ruff format ."
+description = "✨ Reformat the Scala backend sources"
+depends = ["backend:format"]
 
 [tasks.check]
-description = "✅ Repo-wide gate: Ruff checks (legacy Python) + Scala backend validation"
+description = "✅ Repo-wide gate: full Scala backend validation"
 depends = ["backend:check"]
-run = "uv run ruff check . && uv run ruff format --check ."
 
 # ==============================================================================
 # Database & Stack Services
@@ -58,17 +55,6 @@ run = "docker compose up --detach"
 description = "🛑 Stop and remove the full stack"
 run = "docker compose down"
 
-[tasks."db:migrate"]
-description = "📈 Apply Alembic migrations (legacy; the Scala backend migrates via Flyway on startup)"
-run = "uv run alembic upgrade head"
-
-[tasks."db:makemigrations"]
-description = "📝 Generate a new Alembic migration script (legacy)"
-run = "uv run alembic revision --autogenerate --message"
-
-# ==============================================================================
-# Documentation Control
-# ==============================================================================
 [tasks."docs:dev"]
 description = "📖 Start the local Astro/Starlight documentation dev server"
 dir = "docs"
@@ -79,15 +65,6 @@ description = "🏗️ Compile documentation to static HTML assets"
 dir = "docs"
 run = "npm run build"
 
-[tasks.dev]
-description = "🚀 Start the FastAPI backend development server (legacy, until Scala parity)"
-run = "uv run uvicorn src.api.main:app --reload --port 8000"
-
-# ==============================================================================
-# Scala Backend (backend/) — the rewrite target; see backend/README.md
-# GitHub Packages credentials are needed to resolve the engine artifact, hence
-# the GITHUB_ACTOR/GITHUB_TOKEN fallbacks via the gh CLI.
-# ==============================================================================
 [tasks."backend:compile"]
 description = "🔨 Compile the Scala backend"
 dir = "backend"

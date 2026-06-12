@@ -1,55 +1,72 @@
 # Dice Chess Analytics
 
-High-performance analytical backend and data pipeline for Dice Chess. Ingests, normalizes, and analyzes millions of games using PostgreSQL and FastAPI.
+High-performance analytical backend for Dice Chess. Stores, normalizes, and analyzes
+140k+ games using Scala 3, PostgreSQL, and the
+[dicechess engine](https://github.com/rabestro/dicechess-engine-scala) as the single
+source of truth for game rules.
 
 ## Overview
 
-The `dicechess-analytics` project acts as the core data engine, designed to efficiently store and analyze game history, positions, and aggregate metrics. It leverages async database operations, bulk ETL pipelines, and specialized indexing to perform fast lookups on board states and statistical performance.
+The `dicechess-analytics` project is the data engine of the Dice Chess ecosystem: it
+stores game history, turns, and deduplicated board positions, and serves them through a
+typed REST API consumed by
+[dicechess-analytics-ui](https://github.com/rabestro/dicechess-analytics-ui). The
+long-term goal is position analytics — empirical win statistics and expected value per
+position, the metric that matters most in a dice-driven chess variant.
 
 ## Tech Stack
 
-- **Framework**: [FastAPI](https://fastapi.tiangolo.com/) (Async web server)
-- **Database**: PostgreSQL (with asyncpg)
-- **ORM / Migrations**: [SQLAlchemy](https://www.sqlalchemy.org/) 2.0 & [Alembic](https://alembic.sqlalchemy.org/)
-- **Data Validation**: [Pydantic](https://docs.pydantic.dev/) v2
-- **Environment**: Docker Compose, Python 3.12+, `uv` (Package management)
-- **Task Runner**: [mise](https://mise.jdx.dev/)
+- **Backend**: Scala 3 — http4s (Ember) + Tapir (typed endpoints, Swagger UI at `/docs`)
+- **Database**: PostgreSQL 18; access via Doobie, migrations via Flyway
+- **Game rules**: `lv.id.jc:dicechess-engine-scala` (GitHub Packages Maven)
+- **Tests**: MUnit + testcontainers (real PostgreSQL)
+- **Tooling**: [mise](https://mise.jdx.dev/) (toolchain + tasks), lefthook (git hooks),
+  Docker Compose
+
+See [backend/README.md](backend/README.md) for backend development details
+(requirements, configuration, Rancher Desktop notes).
 
 ## Developer Workflows
 
-This project uses `mise` as the core task runner. Use `mise run <task>` from the root of the repository.
+This project uses `mise` as the core task runner. Use `mise run <task>` from the root of
+the repository.
 
 ### Core Commands
 
-- `mise run check` - Repo-wide gate: Ruff checks (legacy Python) plus the Scala backend validation.
-- `mise run format` - Runs Ruff checks with autofixes and the formatter.
-- `mise run backend:*` - Scala backend tasks (`compile`, `test`, `check`, `format`, `run`); see [backend/README.md](backend/README.md).
+- `mise run setup` - Installs tooling and registers lefthook git hooks.
+- `mise run check` - Repo-wide gate: full Scala backend validation (format, coverage-gated tests).
+- `mise run format` - Reformats the Scala backend sources.
+- `mise run backend:*` - Scala backend tasks (`compile`, `test`, `check`, `format`, `run`).
 
 ### Database & Services
 
 - `mise run db:up` - Starts only the PostgreSQL container in the background.
 - `mise run db:down` - Stops and removes only the PostgreSQL container (the data volume survives).
-- `mise run stack:up` / `stack:down` - Full stack (db + api + ui). The ui image is currently amd64-only, so this works on the server but not on Apple Silicon.
-- `mise run db:migrate` - Applies database migrations using Alembic (legacy; the Scala backend migrates via Flyway on startup).
-- `mise run db:makemigrations "description"` - Auto-generates a new migration script (legacy).
+- `mise run stack:up` / `mise run stack:down` - Full stack (db + api + ui) from published images.
+
+Database schema migrations are applied by the backend itself via Flyway on startup.
 
 ### Documentation
 
-- `mise run docs:dev` - Runs the local hot-reloaded development server (MkDocs).
-- `mise run docs:build` - Compiles all pages to static HTML assets.
+- `mise run docs:dev` - Runs the local Astro/Starlight docs dev server.
+- `mise run docs:build` - Builds the static documentation site.
+
+## Deployment
+
+Every push to `main` touching `backend/**` publishes the multi-arch image
+`ghcr.io/rabestro/dicechess-analytics-api`. The production server needs only two files:
+`docker-compose.yaml` and `.env` (the compose project name is pinned, so the deploy
+directory can live anywhere without losing the data volume). Rollout:
+
+```bash
+docker compose pull && docker compose up -d
+```
 
 ## Roadmap & Milestones
 
-The project is structured around the following key milestones:
-
-1. **v0.1 - Foundation & Local Setup**: Project bootstrapping, initial schemas, basic ETL SQLite importer, and documentation site setup.
-2. **v0.2 - Ingestion API & ETL Optimization**: Transactional endpoints for saving new games, high-throughput ETL updates, and unit/integration testing suite.
-3. **v0.3 - Position Analytics & Deduplication**: FEN normalization, signed xxhash64 bigint mapping in PostgreSQL, database index tuning, and position analytics API endpoints.
-4. **v0.4 - Aggregate Metrics & Materialized Views**: Complex analytical queries (player rating histories, opening stats), PostgreSQL Materialized Views for performance caching, and advanced game search filters.
-5. **v0.5 - Real-Time Dashboard & WebSockets**: Real-time game event streaming and dashboard data endpoints using WebSockets.
-6. **v0.6 - Cache Layer & Query Tuning**: Redis integration for caching position analytics, query optimization, and API load testing.
-7. **v1.0 - Production Readiness & CI/CD**: Production Dockerfile, GitHub Actions CI pipelines, structured logging, and monitoring metrics.
-
-## License
-
-This project is licensed under the [AGPL-3.0 License](LICENSE).
+1. **v0.1 - Foundation & Local Setup** — done: schema, initial data import (140k+ games).
+2. **v0.2 - Ingestion API & Scala rewrite** — read-parity Scala backend in production;
+   next: transactional `POST /api/games` with engine-side validation.
+3. **v0.3 - Position Analytics & Deduplication** — position statistics API.
+4. **v0.4 - Aggregate Metrics & Materialized Views** — rating histories, opening stats.
+5. **v1.0 - Production Readiness & CI/CD** — observability, hardening.
