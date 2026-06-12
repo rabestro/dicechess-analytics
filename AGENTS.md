@@ -41,6 +41,23 @@ Example: `bug/6-fix-mermaid-syntax`
   - `mise run docs:dev`: Runs local hot-reloaded development server.
   - `mise run docs:build`: Compiles all pages to static HTML assets.
 
+## Task Routing & Model Economy
+
+Tasks differ in the AI-model capability they require; route deliberately instead of
+defaulting to the strongest model:
+
+- **Frontier tier** — architecture decisions, engine integration, cross-repo work,
+  ambiguous problems, high blast radius (schema, public APIs, release pipelines).
+- **Mid tier** — well-scoped features following existing patterns, refactors under
+  good test coverage, addressing review feedback.
+- **Routine tier** — config rollouts, documentation fixes, mechanical edits, tests
+  written from a complete spec. The quality gates (`mise run check`, CI, review
+  bots) catch failures cheaply, which is what makes this tier safe.
+
+Orchestrating agents should delegate routine sub-tasks to cheaper models where the
+harness supports it. When in doubt, escalate one tier up: reviewer time is more
+expensive than tokens.
+
 ## Approved Milestones
 
 Assign tasks to these milestones logically. Each milestone must be fully tested before moving to the next.
