@@ -14,15 +14,15 @@ ThisBuild / credentials ++= (for {
   token <- sys.env.get("GITHUB_TOKEN")
 } yield Credentials("GitHub Package Registry", "maven.pkg.github.com", user, token)).toSeq
 
-val DiceChessEngineVersion = "1.2.4"
-val Http4sVersion          = "0.23.30"
-val TapirVersion           = "1.11.25"
-val DoobieVersion          = "1.0.0-RC9"
-val FlywayVersion          = "11.8.2"
-val PostgresDriverVersion  = "42.7.7"
-val LogbackVersion         = "1.5.18"
-val MunitVersion           = "1.3.0"
-val MunitCatsEffectVersion = "2.1.0"
+val DiceChessEngineVersion    = "1.2.4"
+val Http4sVersion             = "0.23.30"
+val TapirVersion              = "1.11.25"
+val DoobieVersion             = "1.0.0-RC9"
+val FlywayVersion             = "11.8.2"
+val PostgresDriverVersion     = "42.7.7"
+val LogbackVersion            = "1.5.18"
+val MunitVersion              = "1.3.0"
+val MunitCatsEffectVersion    = "2.1.0"
 val TestcontainersVersion     = "0.43.0"
 val TestcontainersJavaVersion = "1.21.3"
 val DockerJavaVersion         = "3.7.1"
@@ -60,10 +60,10 @@ lazy val root = (project in file("."))
       "com.dimafeng"  %% "testcontainers-scala-postgresql" % TestcontainersVersion  % Test,
       // The scala wrapper pins testcontainers-java 1.20.x with docker-java 3.4.x, which
       // speaks Docker API 1.32 — rejected by Docker 29+ daemons (min 1.41). Force newer.
-      "org.testcontainers"     % "testcontainers"               % TestcontainersJavaVersion % Test,
-      "org.testcontainers"     % "postgresql"                   % TestcontainersJavaVersion % Test,
-      "com.github.docker-java" % "docker-java-api"              % DockerJavaVersion         % Test,
-      "com.github.docker-java" % "docker-java-transport-zerodep" % DockerJavaVersion        % Test
+      "org.testcontainers"     % "testcontainers"                % TestcontainersJavaVersion % Test,
+      "org.testcontainers"     % "postgresql"                    % TestcontainersJavaVersion % Test,
+      "com.github.docker-java" % "docker-java-api"               % DockerJavaVersion         % Test,
+      "com.github.docker-java" % "docker-java-transport-zerodep" % DockerJavaVersion         % Test
     ),
     // Strict flags as in the engine, except -Yexplicit-nulls and -language:strictEquality:
     // this module glues Java libraries (JDBC, Flyway, Hikari) where both become impractical.

@@ -64,8 +64,8 @@ object AppConfig:
     if !normalized.startsWith("postgresql://") then Left(s"Unsupported DATABASE_URL scheme: $url")
     else
       try
-        val uri      = URI("dummy://" + normalized.stripPrefix("postgresql://"))
-        val userInfo = Option(uri.getUserInfo).getOrElse("")
+        val uri              = URI("dummy://" + normalized.stripPrefix("postgresql://"))
+        val userInfo         = Option(uri.getUserInfo).getOrElse("")
         val (user, password) = userInfo.split(":", 2) match
           case Array(u, p) => (u, p)
           case Array(u)    => (u, "")

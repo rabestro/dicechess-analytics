@@ -11,7 +11,7 @@ object Main extends IOApp.Simple:
     for
       config <- IO.fromEither(AppConfig.load().left.map(msg => IllegalArgumentException(msg)))
       _      <- Database.migrate(config.db)
-      _ <- Database
+      _      <- Database
         .transactor(config.db, config.dbPoolSize)
         .use { xa =>
           val app = Routes(xa, config.corsOrigins).httpApp

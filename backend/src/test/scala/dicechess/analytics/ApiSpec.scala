@@ -242,7 +242,7 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
       withClient(pg) { client =>
         for
           aliceJson <- getJson(client, s"/api/players/$alice")
-          status <- client
+          status    <- client
             .run(Request[IO](Method.GET, Uri.unsafeFromString(s"/api/players/$missing")))
             .use(r => IO.pure(r.status))
         yield

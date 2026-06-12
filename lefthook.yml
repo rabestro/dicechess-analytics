@@ -21,7 +21,7 @@ pre-commit:
     # Native scalafmt CLI: ~44ms per commit. The pinned mise version must match
     # backend/.scalafmt.conf (the native binary does not auto-dispatch versions).
     - name: scalafmt
-      glob: "backend/**/*.scala"
+      glob: "backend/**.{scala,sbt}"
       run: scalafmt --config backend/.scalafmt.conf --test {staged_files}
 
 # Full backend validation (tests + coverage) is too slow for per-commit:

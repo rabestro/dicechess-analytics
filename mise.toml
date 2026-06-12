@@ -13,7 +13,7 @@ ripgrep = "latest"               # High-performance code search
 # --- Security & Quality ---
 lefthook = "latest"              # Git hooks manager (language-agnostic, parallel)
 betterleaks = "latest"              # Secret scanning for staged/pushed commits
-scalafmt = "3.9.4"            # native CLI; MUST match version in backend/.scalafmt.conf
+scalafmt = "3.11.1"           # native CLI; MUST match version in backend/.scalafmt.conf
 
 # ==============================================================================
 # Setup & Quality Tasks
