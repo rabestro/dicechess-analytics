@@ -28,7 +28,7 @@ This project uses `mise` as the core task runner. Use `mise run <task>` from the
 ### Database & Services
 
 - `mise run db:up` - Starts only the PostgreSQL container in the background.
-- `mise run db:down` - Stops the compose services.
+- `mise run db:down` - Stops and removes only the PostgreSQL container (the data volume survives).
 - `mise run stack:up` / `stack:down` - Full stack (db + api + ui). The ui image is currently amd64-only, so this works on the server but not on Apple Silicon.
 - `mise run db:migrate` - Applies database migrations using Alembic (legacy; the Scala backend migrates via Flyway on startup).
 - `mise run db:makemigrations "description"` - Auto-generates a new migration script (legacy).

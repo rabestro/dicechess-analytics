@@ -31,7 +31,7 @@ Example: `bug/6-fix-mermaid-syntax`
   legacy Python code plus the full Scala backend validation (`backend:check`).
 - **Service Control**:
   - `mise run db:up`: Starts only the PostgreSQL container in background.
-  - `mise run db:down`: Stops the compose services.
+  - `mise run db:down`: Stops and removes only the PostgreSQL container.
   - `mise run stack:up` / `stack:down`: Full stack (db + api + ui); the ui image is
     amd64-only for now, so this works on the server but not on Apple Silicon.
 - **Database Migrations**:

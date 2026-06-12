@@ -37,8 +37,8 @@ description = "🐳 Start only the PostgreSQL container in the background"
 run = "docker compose up --detach db"
 
 [tasks."db:down"]
-description = "🛑 Stop and remove the compose services"
-run = "docker compose down"
+description = "🛑 Stop and remove only the PostgreSQL container (named volume survives)"
+run = "docker compose rm --force --stop --volumes db"
 
 [tasks."stack:up"]
 description = "🐳 Start the full stack (db + api + ui); ui image is amd64-only for now"
