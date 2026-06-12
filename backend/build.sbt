@@ -28,6 +28,7 @@ val TestcontainersJavaVersion = "1.21.3"
 val DockerJavaVersion         = "3.7.1"
 
 lazy val root = (project in file("."))
+  .enablePlugins(JavaAppPackaging)
   .settings(
     name := "dicechess-analytics-backend",
     libraryDependencies ++= Seq(
