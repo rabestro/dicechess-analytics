@@ -18,8 +18,14 @@ pre-commit:
       glob: "**/*.py"
       run: uv run ruff check --fix {staged_files} && uv run ruff format {staged_files}
 
-# Scala formatting is too slow for per-commit checks.
-# Run the full backend validation only when backend/ files are pushed.
+    # Native scalafmt CLI: ~44ms per commit. The pinned mise version must match
+    # backend/.scalafmt.conf (the native binary does not auto-dispatch versions).
+    - name: scalafmt
+      glob: "backend/**/*.scala"
+      run: scalafmt --config backend/.scalafmt.conf --test {staged_files}
+
+# Full backend validation (tests + coverage) is too slow for per-commit:
+# run it only when backend/ files are pushed.
 pre-push:
   jobs:
     - name: backend-check
