@@ -20,9 +20,9 @@ import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 <CardGrid stagger>
 	<LinkCard
-		title="Fast API Ingestion"
+		title="Typed REST API"
 		href="./api-specification"
-		description="High-performance REST endpoints for saving completed games, turns, and player profiles."
+		description="Scala 3 backend on http4s + Tapir: endpoint definitions generate the OpenAPI spec, so docs can never drift from the implementation."
 	/>
 	<LinkCard
 		title="Position Deduplication"
@@ -30,9 +30,9 @@ import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 		description="A unique hashing schema utilizing xxhash64 and FEN normalization to map millions of turns to a minimal set of distinct chessboard positions."
 	/>
 	<LinkCard
-		title="ETL Pipeline"
+		title="Engine-Validated Ingestion"
 		href="./development"
-		description="A built-in ETL importer to migrate massive datasets from local SQLite archives to production-ready PostgreSQL databases."
+		description="dicechess-engine-scala is the single source of truth for game rules: every ingested game is validated by the engine before it reaches PostgreSQL."
 	/>
 	<LinkCard
 		title="Relational Game History"

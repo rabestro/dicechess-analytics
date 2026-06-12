@@ -1,9 +1,9 @@
 ---
 title: Development & Setup
-description: Guide to set up the development environment, spin up the database, run migrations, and run the ETL importer.
+description: Guide to set up the development environment, spin up the database, and run the Scala backend.
 ---
 
-Follow this guide to set up the development environment, spin up the database, run migrations, and run the ETL importer.
+Follow this guide to set up the development environment, spin up the database, and run the Scala backend.
 
 ---
 
@@ -12,8 +12,12 @@ Follow this guide to set up the development environment, spin up the database, r
 Ensure you have the following installed on your system:
 
 - [mise-en-place](https://mise.jdx.dev/) (environment manager and task runner)
-- [uv](https://github.com/astral-sh/uv) (extremely fast Python package manager)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for running PostgreSQL locally)
+- [sbt](https://www.scala-sbt.org/) (Scala build tool; `brew install sbt`)
+- A Docker-compatible container runtime for running PostgreSQL locally
+  (e.g. [Rancher Desktop](https://rancherdesktop.io/) or [Colima](https://github.com/abiosoft/colima))
+- [GitHub CLI](https://cli.github.com/) authenticated with your account — the backend depends on
+  the `lv.id.jc:dicechess-engine-scala` artifact from GitHub Packages, which requires
+  authentication even for public packages
 
 ---
 
@@ -21,7 +25,7 @@ Ensure you have the following installed on your system:
 
 ### 1. Project Initialization
 
-Run the setup task to install dependencies via `uv` and register lefthook git hooks:
+Run the setup task to install pinned tools and register lefthook git hooks:
 
 ```bash
 mise run setup
@@ -41,26 +45,23 @@ This runs a PostgreSQL instance listening on port `5432` with:
 - **Username**: `dicechess_user`
 - **Password**: `dicechess_password`
 
-### 3. Run Database Migrations
-
-Apply the initial schema migrations using Alembic:
+### 3. Run the API Server
 
 ```bash
-mise run db:migrate
+mise run backend:run
 ```
 
-### 4. Run the API Server
+Database migrations are applied automatically: the backend runs
+[Flyway](https://flywaydb.org/) on startup, so there is no separate migration step.
+Migration scripts live in `backend/src/main/resources/db/migration/`.
 
-Start the development FastAPI server with uvicorn (with hot reloading enabled):
+GitHub Packages credentials (`GITHUB_ACTOR` / `GITHUB_TOKEN`) are derived automatically
+from the `gh` CLI when not already present in the environment.
 
-```bash
-uv run uvicorn src.api.main:app --port 8000 --reload
-```
+Once started, the interactive API documentation (Swagger UI, generated from the Tapir
+endpoint definitions) is available at:
 
-Once started, the API documentation is available at:
-
-- **Swagger UI**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-- **ReDoc**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+- **Swagger UI**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ---
 
@@ -70,38 +71,38 @@ Once started, the API documentation is available at:
 
 | Command | Description |
 | :--- | :--- |
-| `mise run setup` | Synchronizes Python packages and registers lefthook git hooks. |
+| `mise run setup` | Installs pinned tools and registers lefthook git hooks. |
 | `mise run db:up` | Launches only the PostgreSQL container. |
 | `mise run db:down` | Stops and removes only the PostgreSQL container (data volume survives). |
-| `mise run stack:up` | Starts db + api + ui (amd64 hosts only until the ui image is multi-arch). |
+| `mise run stack:up` | Starts db + api + ui from published images. |
 | `mise run stack:down` | Stops and removes all compose services. |
-| `mise run db:migrate` | Applies all pending Alembic migrations (legacy; the Scala backend uses Flyway). |
-| `mise run check` | Runs `ruff` checks plus the full Scala backend validation (`backend:check`). |
-| `mise run format` | Runs `ruff` to automatically fix formatting and lint errors. |
-| `mise run backend:test` | Runs the Scala backend test suite without the coverage/clean overhead. |
-| `mise run dev` | Starts the FastAPI dev server (until Scala parity). |
+| `mise run check` | Repo-wide gate: full Scala backend validation (scalafmt, coverage-gated tests on real PostgreSQL). |
+| `mise run format` | Runs scalafmt across the Scala backend. |
+| `mise run backend:compile` | Compiles the backend. |
+| `mise run backend:test` | Runs the backend test suite without the coverage/clean overhead. |
+| `mise run backend:run` | Starts the API server on port `8000`. |
 | `mise run docs:dev` | Starts the Astro/Starlight dev server at [http://localhost:4321](http://localhost:4321). |
 | `mise run docs:build` | Compiles the documentation site into static HTML inside `docs/dist/`. |
 
 ---
 
-## Running the SQLite to PostgreSQL ETL Importer
+## Git Hooks
 
-The project includes an ETL script (`src/importer.py`) to parse historical local SQLite database archives and import them into the PostgreSQL database.
+`mise run setup` registers two [lefthook](https://github.com/evilmartians/lefthook) tiers:
 
-### Importer Command Options
+- **pre-commit**: betterleaks secret scan + native scalafmt check on staged files
+  (milliseconds per commit).
+- **pre-push**: a hermetic full-module scalafmt check (~1s). Tests deliberately stay in CI.
 
-Execute the script using `uv run python src/importer.py` with the following flags:
+Run all pre-commit jobs manually across the whole codebase with `mise run hook:run`.
 
-- `--sqlite-path` / `-s` (Required): Path to the source SQLite `.db` file.
-- `--limit` / `-l` (Optional): Limit the number of imported games (useful for testing pipeline performance).
+---
 
-### Example Ingestion Command
+## Data Ingestion
 
-To import a test set of 1,000 games from a local SQLite database:
+The historical archive (140k+ games from the frozen `dicechess-lab` SQLite database) has
+already been imported into the production PostgreSQL instance — the one-time Python ETL
+that performed it was retired together with the rest of the Python codebase.
 
-```bash
-uv run python src/importer.py --sqlite-path ./dicechess.db --limit 1000
-```
-
-The script will read the SQLite records, normalize the board states, resolve/deduplicate positions, insert the player profiles, and commit games transactionally using a progress bar.
+Ongoing ingestion is the scope of milestone **v0.2**: a transactional `POST /api/games`
+endpoint that validates every game against `dicechess-engine-scala` before persisting it.

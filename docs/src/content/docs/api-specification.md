@@ -9,10 +9,11 @@ This document details the REST API endpoints provided by the `dicechess-analytic
 
 ## Interactive Documentation
 
-FastAPI automatically generates interactive OpenAPI documentation. You can access it locally at:
+The OpenAPI specification is generated from the [Tapir](https://tapir.softwaremill.com/)
+endpoint definitions (`backend/src/main/scala/dicechess/analytics/api/Endpoints.scala`),
+so it can never drift from the implementation. Browse it locally at:
 
-- **Swagger UI**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-- **ReDoc**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+- **Swagger UI**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ---
 
@@ -29,7 +30,7 @@ Retrieves a paginated list of games, with optional player and turn filters.
   - `min_turns` (integer, optional): Filter games containing at least this number of turns.
   - `limit` (integer, default: `50`, max: `200`): Limit the number of games returned.
 - **Success Response** (`200 OK`):
-  - **Type**: `Array[GameBase]`
+  - **Type**: `Array[GameSummary]`
   - **Example Payload**:
     ```json
     [
@@ -126,7 +127,7 @@ Retrieves a list of players matching the optional username search criteria.
   - `username` (string, optional): Substring filter on usernames (case-insensitive).
   - `limit` (integer, default: `50`, max: `100`): Limit the number of players returned.
 - **Success Response** (`200 OK`):
-  - **Type**: `Array[PlayerBase]`
+  - **Type**: `Array[PlayerSummary]`
   - **Example Payload**:
     ```json
     [
@@ -147,7 +148,7 @@ Retrieves profile metadata for a specific player.
 - **Path Parameters**:
   - `player_id` (UUID, required): The unique identifier of the player.
 - **Success Response** (`200 OK`):
-  - **Type**: `PlayerBase`
+  - **Type**: `PlayerSummary`
   - **Example Payload**:
     ```json
     {

@@ -17,7 +17,7 @@ gantt
     dateFormat  YYYY-MM-DD
     section Backend & Schema
     v0.1 - Foundation & Local Setup         :done,    des1, 2026-06-01, 2026-06-07
-    v0.2 - Ingestion API & ETL Optimization  :active,  des2, 2026-06-08, 2026-06-21
+    v0.2 - Ingestion API & Scala Rewrite      :active,  des2, 2026-06-08, 2026-06-21
     v0.3 - Position Analytics & Deduplication :         des3, 2026-06-22, 2026-07-05
     section Analytics & Features
     v0.4 - Aggregate Metrics & Views         :         des4, 2026-07-06, 2026-07-19
@@ -31,29 +31,30 @@ gantt
 
 ## Detailed Milestones
 
-### v0.1 - Foundation & Local Setup
+### v0.1 - Foundation & Local Setup ✅
 
-- **Objective**: Establish core infrastructure, local development workflows, database schemas, and initial importer.
-- **Deliverables**:
-  - FastAPI & Pydantic boilerplate setup.
-  - PostgreSQL local database container config (`docker-compose.yaml`).
-  - Initial database schema migrations (`players`, `games`, `turns`, `game_events`, `positions`) managed by Alembic.
-  - Initial documentation site using Astro/Starlight.
+- **Objective**: Establish core infrastructure, local development workflows, and the database schema.
+- **Delivered**:
+  - PostgreSQL schema (`players`, `games`, `turns`, `game_events`, `positions`).
+  - One-time import of the historical archive: 140k+ games from the frozen `dicechess-lab` SQLite database.
+  - Local database container config (`docker-compose.yaml`).
+  - Documentation site using Astro/Starlight.
   - Command tasks configured in `mise.toml`.
 
-### v0.2 - Ingestion API & ETL Optimization
+### v0.2 - Ingestion API & Scala Rewrite
 
-- **Objective**: Implement transactional game saving API and optimize database writes for massive historical imports.
+- **Objective**: Rewrite the backend in Scala 3 and implement the transactional game saving API.
 - **Deliverables**:
-  - `POST /api/games` endpoints to ingest live game/turn results.
-  - Optimize ETL pipeline script (`importer.py`) to leverage async processing and batch inserts (`copy` / `execute_many`).
-  - Implement comprehensive Pytest unit and integration testing suite.
+  - Read-parity Scala 3 backend (http4s + Tapir + Doobie + Flyway) — ✅ in production.
+  - MUnit + testcontainers test suite running against real PostgreSQL — ✅.
+  - `POST /api/games` endpoint ingesting live game/turn results, with every game validated
+    by `dicechess-engine-scala` before persisting.
 
 ### v0.3 - Position Analytics & Deduplication
 
 - **Objective**: Deduplicate unique board states using FEN normalization and construct position analytics endpoints.
 - **Deliverables**:
-  - Position deduplication logic using FEN normalization.
+  - Position deduplication logic using FEN normalization via the engine.
   - xxhash64 signed bigint hash mapping in PostgreSQL.
   - Optimize index parameters for fast position queries.
   - `GET /api/positions/{fen_hash}/analytics` endpoints returning win/draw rates, play frequency, and common continuation moves.
@@ -77,7 +78,7 @@ gantt
 
 - **Objective**: Performance optimizations under concurrent read/write loads.
 - **Deliverables**:
-  - Redis caching layer for position analytics and popular queries.
+  - Caching layer for position analytics and popular queries.
   - Database query optimization using `EXPLAIN ANALYZE` and composite indexes.
   - Load testing the ingestion server to handle peak concurrent traffic.
 
@@ -85,6 +86,6 @@ gantt
 
 - **Objective**: Finalize configuration for cloud deployment and automated workflows.
 - **Deliverables**:
-  - Optimized multi-stage Dockerfile for production server.
+  - Optimized multi-arch (amd64/arm64) production images.
   - GitHub Actions CI/CD workflows for automated formatting, testing, and deployment.
-  - Structured logging setup and monitoring tools (Prometheus/Grafana dashboard).
+  - Structured logging setup and monitoring metrics.
