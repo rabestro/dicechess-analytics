@@ -12,7 +12,7 @@ ripgrep = "latest"               # High-performance code search
 
 # --- Security & Quality ---
 lefthook = "latest"              # Git hooks manager (language-agnostic, parallel)
-gitleaks = "latest"              # Secret scanning for staged/pushed commits
+betterleaks = "latest"              # Secret scanning for staged/pushed commits
 
 # ==============================================================================
 # Setup & Quality Tasks
