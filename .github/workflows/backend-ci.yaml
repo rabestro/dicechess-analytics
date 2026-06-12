@@ -1,0 +1,47 @@
+name: "CI: Scala Backend"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yaml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yaml"
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: sbt
+
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
+
+      # Mirrors `mise run backend:check`; invoked directly so the CI job only needs
+      # the JVM toolchain instead of the full polyglot tool set from mise.toml.
+      - name: Run validation (format, coverage, tests on real PostgreSQL)
+        run: sbt scalafmtCheckAll clean coverage test coverageReport
+        env:
+          # Resolves lv.id.jc:dicechess-engine-scala_3 from GitHub Packages
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
