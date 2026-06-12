@@ -24,10 +24,14 @@ pre-commit:
       glob: "backend/**.{scala,sbt}"
       run: scalafmt --config backend/.scalafmt.conf --test {staged_files}
 
-# Full backend validation (tests + coverage) is too slow for per-commit:
-# run it only when backend/ files are pushed.
+# Pre-push is a hermetic one-second safety net, not a test gate: a full-project
+# format check via the native CLI (no Docker, no network). It catches what the
+# per-commit hook can miss: --no-verify commits, rebase/merge fallout.
+# The full gate (tests + coverage) is `mise run check` before a PR — enforced by CI;
+# heavy/integration checks on pre-push train the --no-verify reflex and block
+# push-as-backup, so they deliberately live in CI only.
 pre-push:
   jobs:
-    - name: backend-check
-      glob: "backend/**/*"
-      run: mise run backend:check
+    - name: scalafmt-all
+      glob: "backend/**.{scala,sbt}"
+      run: scalafmt --config backend/.scalafmt.conf --test backend
