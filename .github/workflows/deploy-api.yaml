@@ -8,18 +8,23 @@ on:
       - ".github/workflows/deploy-api.yaml"
   workflow_dispatch:
 
+# Newest commit wins: cancelling a superseded build prevents an older image
+# from being pushed as :latest after a newer one.
+concurrency:
+  group: deploy-api-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}-api
-
-permissions:
-  contents: read
-  packages: write
 
 jobs:
   build-and-push:
     name: Build & Push
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # checkout
+      packages: write # push to ghcr
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
