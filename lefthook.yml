@@ -9,14 +9,12 @@ pre-commit:
     - name: gitleaks
       run: gitleaks protect --staged --no-banner
 
-    # Python linting + formatting (only when .py files are staged)
-    - name: ruff-check
+    # Python linting + formatting (only when .py files are staged).
+    # check --fix and format both rewrite files: one sequential job avoids
+    # concurrent writes under parallel: true
+    - name: ruff
       glob: "**/*.py"
-      run: uv run ruff check --fix {staged_files}
-
-    - name: ruff-format
-      glob: "**/*.py"
-      run: uv run ruff format {staged_files}
+      run: uv run ruff check --fix {staged_files} && uv run ruff format {staged_files}
 
 # Scala formatting is too slow for per-commit checks.
 # Run the full backend validation only when backend/ files are pushed.
