@@ -22,6 +22,8 @@ ci-cd:
           - 'Dockerfile'
           - 'docker-compose*.yaml'
           - '.pre-commit-config.yaml'
+          - 'backend/build.sbt'
+          - 'backend/project/**'
 
 # Type labels from the branch naming convention
 enhancement:
