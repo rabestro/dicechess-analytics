@@ -56,9 +56,16 @@ Assign tasks to these milestones logically. Each milestone must be fully tested 
 ## Approved GitHub Labels
 
 Use ONLY these labels when generating `gh` commands:
-* **bug** — Something isn't working.
-* **documentation** — Improvements or additions to documentation.
-* **enhancement** — New feature or request.
-* **testing** — Adding unit, property-based, or integration tests.
-* **performance** — Query optimizations and ingestion speedups.
-* **ai-ready** — Mandatory for well-scoped tasks. Acts as a strict contract that the Definition of Done is absolute and ready for an AI agent to implement.
+
+* **Shared core** (identical across all Dice Chess repositories):
+  * **bug** — Something isn't working.
+  * **enhancement** — New feature or request.
+  * **refactoring** — Code restructuring without behavioral changes.
+  * **documentation** — Improvements or additions to documentation.
+  * **testing** — Adding unit, property-based, or integration tests.
+  * **performance** — Query optimizations and ingestion speedups.
+  * **ci-cd** — GitHub Actions, build scripts, or mise configuration.
+  * **dependencies** — Dependency updates (applied by Dependabot).
+
+* **Domains** (this repository only):
+  * **database** — PostgreSQL schema, migrations, and query tuning.
