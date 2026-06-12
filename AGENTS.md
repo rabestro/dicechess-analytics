@@ -33,7 +33,7 @@ Example: `bug/6-fix-mermaid-syntax`
 - **Service Control**:
   - `mise run db:up`: Starts only the PostgreSQL container in background.
   - `mise run db:down`: Stops and removes only the PostgreSQL container.
-  - `mise run stack:up` / `stack:down`: Full stack (db + api + ui) from published images.
+  - `mise run stack:up` / `mise run stack:down`: Full stack (db + api + ui) from published images.
 - **Database Migrations**: applied by the Scala backend itself via Flyway on startup;
   migration scripts live in `backend/src/main/resources/db/migration/`.
 - **Documentation**:

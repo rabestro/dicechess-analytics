@@ -42,7 +42,7 @@ the repository.
 
 - `mise run db:up` - Starts only the PostgreSQL container in the background.
 - `mise run db:down` - Stops and removes only the PostgreSQL container (the data volume survives).
-- `mise run stack:up` / `stack:down` - Full stack (db + api + ui) from published images.
+- `mise run stack:up` / `mise run stack:down` - Full stack (db + api + ui) from published images.
 
 Database schema migrations are applied by the backend itself via Flyway on startup.
 
