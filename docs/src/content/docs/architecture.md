@@ -148,7 +148,9 @@ For deduplication, the halfmove clock and fullmove number are stripped, since th
 
 ```scala
 def normalizeFen(fen: String): String =
-  val parts = fen.split(' ').take(4)
+  // filter: unlike Python's str.split(), Java's split keeps empty
+  // elements produced by leading or consecutive whitespace
+  val parts = fen.split("\s+").filter(_.nonEmpty).take(4)
   (parts ++ Array.fill(4 - parts.length)("-")).mkString(" ")
 ```
 

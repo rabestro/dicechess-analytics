@@ -51,12 +51,14 @@ Retrieves a paginated list of games, with optional player and turn filters.
         "white_player": {
           "id": "d13cb5fa-5f90-449e-b9ef-0a563abde12a",
           "username": "Anonymous",
-          "player_type": "human"
+          "player_type": "human",
+          "rating_classic": null
         },
         "black_player": {
           "id": "c88f98ec-7bf5-45cd-a9bb-5d18ea3abfe1",
           "username": "Bot (Greedy)",
-          "player_type": "bot"
+          "player_type": "bot",
+          "rating_classic": null
         }
       }
     ]
@@ -92,12 +94,14 @@ Retrieves full details of a specific game by its UUID, including all turns and b
       "white_player": {
         "id": "d13cb5fa-5f90-449e-b9ef-0a563abde12a",
         "username": "Anonymous",
-        "player_type": "human"
+        "player_type": "human",
+        "rating_classic": null
       },
       "black_player": {
         "id": "c88f98ec-7bf5-45cd-a9bb-5d18ea3abfe1",
         "username": "Bot (Greedy)",
-        "player_type": "bot"
+        "player_type": "bot",
+        "rating_classic": null
       },
       "turns": [
         {
@@ -134,7 +138,8 @@ Retrieves a list of players matching the optional username search criteria.
       {
         "id": "d13cb5fa-5f90-449e-b9ef-0a563abde12a",
         "username": "Anonymous",
-        "player_type": "human"
+        "player_type": "human",
+        "rating_classic": 1500
       }
     ]
     ```
@@ -154,7 +159,8 @@ Retrieves profile metadata for a specific player.
     {
       "id": "d13cb5fa-5f90-449e-b9ef-0a563abde12a",
       "username": "Anonymous",
-      "player_type": "human"
+      "player_type": "human",
+      "rating_classic": 1500
     }
     ```
 - **Error Response** (`404 Not Found`): If the player with the given UUID does not exist.
