@@ -61,9 +61,15 @@ machine can be set up quickly):
    docker.host=unix\:///Users/<you>/.rd/docker.sock
    ```
 
-2. `export TESTCONTAINERS_RYUK_DISABLED=true` in the shell profile — the ryuk cleanup
-   sidecar cannot start against the Rancher moby VM; cleanup falls back to JVM shutdown
-   hooks. (CI on ubuntu-latest keeps ryuk enabled.)
+2. `mise.local.toml` at the repo root (gitignored), so every `mise run backend:*` task gets
+   the variable regardless of the shell session — the ryuk cleanup sidecar cannot start
+   against the Rancher moby VM; cleanup falls back to JVM shutdown hooks. CI on
+   ubuntu-latest keeps ryuk enabled.
+
+   ```toml
+   [env]
+   TESTCONTAINERS_RYUK_DISABLED = "true"
+   ```
 
 The Docker API version is pinned to 1.43 via `Test / javaOptions` in `build.sbt`: docker-java
 does not negotiate and its default (1.32) is rejected by Docker 29+ daemons.
