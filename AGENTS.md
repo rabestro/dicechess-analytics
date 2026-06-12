@@ -25,6 +25,8 @@ Example: `bug/6-fix-mermaid-syntax`
 - **Task Naming Convention**: bare verbs for repo-wide lifecycle tasks (`setup`, `format`,
   `check`, `dev`); `domain:action` with a colon for namespaced tasks (`db:up`,
   `backend:test`, `docs:build`). Same convention as dicechess-engine-scala.
+- **Git Hooks**: `mise run setup` (or `mise run hook:install`) registers lefthook Git hooks.
+  Run `mise run hook:run` to execute all pre-commit checks against every file.
 - **Code Formatting**: `mise run format` runs Ruff checks (with autofixes) and formatter;
   `mise run backend:format` runs scalafmt for the Scala backend.
 - **Local CI validation**: `mise run check` is the repo-wide gate — Ruff checks for the

@@ -1,0 +1,27 @@
+# Lefthook — Git hooks configuration
+# Docs: https://github.com/evilmartians/lefthook
+# All pre-commit jobs run in parallel unless they share stdout.
+
+pre-commit:
+  parallel: true
+  jobs:
+    # Secret scanning: abort if any staged diff leaks a credential
+    - name: gitleaks
+      run: gitleaks protect --staged --no-banner
+
+    # Python linting + formatting (only when .py files are staged)
+    - name: ruff-check
+      glob: "**/*.py"
+      run: uv run ruff check --fix {staged_files}
+
+    - name: ruff-format
+      glob: "**/*.py"
+      run: uv run ruff format {staged_files}
+
+# Scala formatting is too slow for per-commit checks.
+# Run the full backend validation only when backend/ files are pushed.
+pre-push:
+  jobs:
+    - name: backend-check
+      glob: "backend/**/*"
+      run: mise run backend:check

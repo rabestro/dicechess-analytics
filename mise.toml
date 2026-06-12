@@ -11,14 +11,23 @@ yq = "latest"                    # YAML processor
 ripgrep = "latest"               # High-performance code search
 
 # --- Security & Quality ---
-"pipx:pre-commit" = "latest"     # Git hooks manager
+lefthook = "latest"              # Git hooks manager (language-agnostic, parallel)
+gitleaks = "latest"              # Secret scanning for staged/pushed commits
 
 # ==============================================================================
 # Setup & Quality Tasks
 # ==============================================================================
 [tasks.setup]
 description = "📦 Install all project dependencies and register Git hooks locally"
-run = "uv sync && pre-commit install"
+run = "uv sync && lefthook install"
+
+[tasks."hook:install"]
+description = "🪝 Register Git hooks via lefthook"
+run = "lefthook install"
+
+[tasks."hook:run"]
+description = "🪝 Run all pre-commit hooks against every file (CI / manual trigger)"
+run = "lefthook run pre-commit --all-files"
 
 [tasks.format]
 description = "🧹 Format code using Ruff (linter autofixes and formatter)"
