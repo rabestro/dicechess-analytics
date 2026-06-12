@@ -47,6 +47,11 @@ jobs:
           tags: |
             type=raw,value=latest
             type=sha,format=short
+          # metadata-action covers title/description/source/licenses/version/revision
+          # automatically; these two are the only OCI labels it cannot derive
+          labels: |
+            org.opencontainers.image.authors=Jegors Čemisovs
+            org.opencontainers.image.documentation=https://rabestro.github.io/dicechess-analytics
 
       - name: Build and push image
         uses: docker/build-push-action@v5
