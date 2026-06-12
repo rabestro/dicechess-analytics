@@ -23,8 +23,3 @@ dev = [
     "pre-commit>=4.6.0",
     "ruff>=0.15.16",
 ]
-docs = [
-    "mkdocs-material>=9.7.6",
-    "mkdocstrings>=1.0.4",
-    "mkdocstrings-python>=2.0.4",
-]

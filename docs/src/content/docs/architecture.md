@@ -1,4 +1,7 @@
-# System Architecture & Database Design
+---
+title: Architecture & Schema
+description: Database schema, data models, and position deduplication strategy for dicechess-analytics.
+---
 
 This document details the database schema, data models, and the position deduplication strategy used in `dicechess-analytics`.
 
@@ -91,38 +94,44 @@ erDiagram
 ## Data Models Specification
 
 ### 1. Players (`players`)
+
 Stores player profiles. The player can be either a human user or an AI bot.
 
-*   `player_type`: Can be `"human"` or `"bot"`.
-*   Ratings are dynamic and calculated at runtime, so they are excluded from this table schema.
+- `player_type`: Can be `"human"` or `"bot"`.
+- Ratings are dynamic and calculated at runtime, so they are excluded from this table schema.
 
 ### 2. Positions (`positions`)
+
 Represents unique chess board layouts.
 
-*   **FEN Hashing**: Positions are deduplicated using a normalized FEN string (see details below).
-*   `piece_placement`: The first part of the FEN string, representing piece layouts on the board (e.g. `rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR`).
+- **FEN Hashing**: Positions are deduplicated using a normalized FEN string (see details below).
+- `piece_placement`: The first part of the FEN string, representing piece layouts on the board (e.g. `rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR`).
 
 ### 3. Games (`games`)
+
 Aggregates metadata for a single chess match.
 
-*   `result`: Can be `1` (White wins), `-1` (Black wins), or `0` (Draw).
-*   `termination`: Reason the game concluded (e.g., `"mate"`, `"resign"`, `"draw"`, `"timeout"`).
-*   **Time Control**: Captured natively via `time_initial_sec` and `time_increment_sec`.
-*   **Stakes and Profit**: Financial aspect is tracked via `initial_stake_amount` and `final_stake_amount` (can change due to doubling). Actual profit/loss is stored individually in `white_money_delta` and `black_money_delta` to account for site rake.
+- `result`: Can be `1` (White wins), `-1` (Black wins), or `0` (Draw).
+- `termination`: Reason the game concluded (e.g., `"mate"`, `"resign"`, `"draw"`, `"timeout"`).
+- **Time Control**: Captured natively via `time_initial_sec` and `time_increment_sec`.
+- **Stakes and Profit**: Financial aspect is tracked via `initial_stake_amount` and `final_stake_amount` (can change due to doubling). Actual profit/loss is stored individually in `white_money_delta` and `black_money_delta` to account for site rake.
 
 ### 4. Turns (`turns`)
+
 Records every turn of the game. A single turn consists of a dice roll and up to 3 micro-moves.
 
-*   `dice_sorted`: The rolled dice values sorted alphabetically (e.g. `"125"` for Pawn, Knight, Queen).
-*   `played_moves`: An array of micro-moves made during the turn (e.g. `["e2e4", "g1f3"]`).
+- `dice_sorted`: The rolled dice values sorted alphabetically (e.g. `"125"` for Pawn, Knight, Queen).
+- `played_moves`: An array of micro-moves made during the turn (e.g. `["e2e4", "g1f3"]`).
 
 ### 5. Game Events (`game_events`)
+
 A granular ledger logging the raw stream of events for a game. It is used for full game state reconstruction and chat logs.
 
 **Event Types from Dice Chess:**
-*   `DOUBLE_OFFER`: Emitted when a player proposes to double the bet.
-*   `DOUBLE_ACCEPT`: Emitted when the opponent accepts the doubling offer. The `payload` contains the new bank value (e.g., `{"bank": 800}`).
-*   `DOUBLE_DECLINE`: Emitted when the opponent declines the offer, resulting in an immediate loss.
+
+- `DOUBLE_OFFER`: Emitted when a player proposes to double the bet.
+- `DOUBLE_ACCEPT`: Emitted when the opponent accepts the doubling offer. The `payload` contains the new bank value (e.g., `{"bank": 800}`).
+- `DOUBLE_DECLINE`: Emitted when the opponent declines the offer, resulting in an immediate loss.
 
 ---
 
@@ -131,10 +140,12 @@ A granular ledger logging the raw stream of events for a game. It is used for fu
 To prevent storing the same board layout multiple times (which would quickly bloat the database), `dicechess-analytics` normalizes and hashes FEN strings before inserting them.
 
 ### FEN Normalization
+
 A standard chess FEN string contains 6 fields:
 `[piece placement] [active color] [castling rights] [en passant target] [halfmove clock] [fullmove number]`
 
 For deduplication, the halfmove clock and fullmove number are stripped, since they do not change the tactical properties of the position. The normalized FEN only contains the first 4 fields:
+
 ```python
 def normalize_fen(fen_str: str) -> str:
     parts = fen_str.split()
@@ -144,6 +155,7 @@ def normalize_fen(fen_str: str) -> str:
 ```
 
 ### xxHash64 Signed Integer Digests
+
 We compute the hash of the normalized FEN using `xxhash64`, which is extremely fast and has very low collision rates. Since PostgreSQL's `bigint` is a signed 64-bit integer (`-2^63` to `2^63 - 1`), the unsigned 64-bit digest from xxhash must be converted into a signed range:
 
 ```python
@@ -157,9 +169,10 @@ def get_fen_hash(normalized_fen: str) -> int:
 ```
 
 ### Resolution Flow
+
 When saving a turn or game, the backend follows a "get-or-create" loop:
 
-1.  **Normalize FEN**: Strip move counts.
-2.  **Lookup by Normalized FEN**: Query the `positions` table using the unique `normalized_fen` field.
-3.  **Insert if Missing**: If the position is not in the database, calculate its signed `xxhash64` hash and insert the new `Position` record.
-4.  **Reference ID**: Use the resolved position ID as the foreign key in `turns` and `games`.
+1. **Normalize FEN**: Strip move counts.
+2. **Lookup by Normalized FEN**: Query the `positions` table using the unique `normalized_fen` field.
+3. **Insert if Missing**: If the position is not in the database, calculate its signed `xxhash64` hash and insert the new `Position` record.
+4. **Reference ID**: Use the resolved position ID as the foreign key in `turns` and `games`.

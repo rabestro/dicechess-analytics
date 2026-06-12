@@ -225,3 +225,10 @@ project/project/
 
 # mise machine-local overrides
 mise.local.toml
+
+# Node (docs site)
+node_modules/
+
+# Astro generated artifacts (docs site)
+docs/.astro/
+docs/dist/
