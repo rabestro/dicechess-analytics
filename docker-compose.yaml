@@ -20,11 +20,12 @@ services:
       retries: 5
 
   api:
-    build: .
+    image: ghcr.io/rabestro/dicechess-analytics-api:latest
     restart: always
     env_file:
       - .env
     environment:
+      # The Scala backend normalizes the asyncpg scheme to JDBC; kept for .env compatibility
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-dicechess_user}:${POSTGRES_PASSWORD:-dicechess_password}@db:5432/${POSTGRES_DB:-dicechess_analytics}
     ports:
       - "8020:8000"
