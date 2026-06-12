@@ -73,3 +73,17 @@ machine can be set up quickly):
 
 The Docker API version is pinned to 1.43 via `Test / javaOptions` in `build.sbt`: docker-java
 does not negotiate and its default (1.32) is rejected by Docker 29+ daemons.
+
+## Deployment
+
+Every push to `main` touching `backend/**` publishes the multi-arch image
+`ghcr.io/rabestro/dicechess-analytics-api` (CD: Publish API Image). The compose `api`
+service runs this image; on the server:
+
+```bash
+cd ~/dicechess-analytics && git pull && docker compose pull api && docker compose up -d api
+```
+
+The Dockerfile builds the sbt stage on the builder's native platform (JVM bytecode is
+architecture-independent) and ships a slim JRE runtime; the GitHub Packages token for the
+engine artifact is passed as a BuildKit secret and never lands in image layers.
