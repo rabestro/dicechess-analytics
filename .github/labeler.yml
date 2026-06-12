@@ -1,0 +1,32 @@
+database:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'alembic/**'
+          - 'backend/src/main/resources/db/**'
+          - 'src/models.py'
+testing:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'backend/src/test/**'
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**'
+          - 'mkdocs.yml'
+ci-cd:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+          - 'mise.toml'
+          - 'Dockerfile'
+          - 'docker-compose*.yaml'
+          - '.pre-commit-config.yaml'
+
+# Type labels from the branch naming convention
+enhancement:
+  - head-branch: ['^feat/']
+bug:
+  - head-branch: ['^bug/']
+refactoring:
+  - head-branch: ['^refactor/']
