@@ -1,10 +1,11 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 
 # =============================================================================
-# CodeRabbit Configuration — Dice Chess Analytics (Python / FastAPI)
+# CodeRabbit Configuration — Dice Chess Analytics (Scala 3)
 # =============================================================================
-# This is a Python 3.12+ analytics and ETL project using FastAPI, SQLAlchemy 2.0,
-# and asyncpg. Performance, typing, and data integrity are key.
+# Scala 3 analytics backend: http4s + Tapir + Doobie + Flyway over PostgreSQL,
+# with the dicechess engine as the source of truth for game rules.
+# Performance, typing, and data integrity are key.
 # =============================================================================
 
 language: en-US
@@ -16,8 +17,6 @@ reviews:
   profile: assertive
 
   # ── Disable Summaries & Decorations ───────────────────────────────────────
-  # Summaries and poems add noise to PR threads. Walkthroughs are collapsed
-  # to keep the PR page clean while still being accessible on demand.
   high_level_summary: false
   poem: false
   collapse_walkthrough: true
@@ -32,87 +31,64 @@ reviews:
   # ── Path Filters ──────────────────────────────────────────────────────────
   # Exclude machine-generated, vendored, and build artifact paths from review.
   path_filters:
-    - "!**/__pycache__/**"
-    - "!**/.venv/**"
-    - "!**/.mypy_cache/**"
-    - "!**/.pytest_cache/**"
-    - "!uv.lock"
-    - "!site/**"
+    - "!**/target/**"
+    - "!**/node_modules/**"
+    - "!docs/.astro/**"
+    - "!docs/dist/**"
+    - "!docs/package-lock.json"
 
   # ── Tool Configuration ───────────────────────────────────────────────────
   tools:
     actionlint:
       enabled: true        # Validate GitHub Actions workflow YAML syntax
     gitleaks:
-      enabled: true        # Detect leaked secrets (complements pre-commit hook)
+      enabled: true        # Detect leaked secrets (complements the lefthook hook)
     shellcheck:
       enabled: true        # Lint shell scripts in CI workflows and mise tasks
     markdownlint:
       enabled: true        # Validate documentation formatting
 
   # ── Domain-Specific Path Instructions ─────────────────────────────────────
-  # Provide targeted review context for application-critical code paths.
   path_instructions:
-    - path: "**/*.py"
+    - path: "backend/src/main/scala/**"
       instructions: |
-        This project strictly follows modern Python 3.12+ conventions.
-        When reviewing:
-        - Enforce complete type hints (`str | None`, `list[str]`) for all function signatures.
-        - Ensure Pydantic v2 conventions are used (e.g., `model_validate`).
-        - Suggest early returns and guard clauses to reduce cyclomatic complexity.
-        - Ensure Ruff formatting and linting rules are respected.
+        Scala 3 backend (http4s + Tapir + Doobie). The build is strict
+        (-Werror, -Wunused:all). When reviewing:
+        - The REST contract (snake_case JSON, FastAPI-style {"detail": ...} errors)
+          must stay stable: it is consumed by dicechess-analytics-ui.
+        - Doobie queries: watch for N+1 patterns and missing indexes on
+          frequently queried columns (fen_hash, player ids, started_at).
+        - Game rules must come from the dicechess engine library, never be
+          re-implemented locally.
+        - Effects: cats-effect IO; no blocking calls outside IO.blocking.
 
-    - path: "src/api/**"
+    - path: "backend/src/main/resources/db/migration/**"
       instructions: |
-        This directory contains FastAPI endpoints.
+        Flyway migrations over the production database (140k+ games).
         When reviewing:
-        - Verify that endpoints are asynchronous (`async def`) and do not block the event loop.
-        - Check for proper dependency injection (e.g., database sessions).
-        - Ensure proper HTTP status codes are returned (e.g., 404 for not found, 201 for created).
-        - Suggest grouping related routes efficiently.
+        - Migrations are append-only: never edit an applied version.
+        - Flag destructive changes (drop column/table) and ensure they are intentional.
+        - Large-table index creation should consider CONCURRENTLY.
 
-    - path: "src/database.py"
+    - path: "backend/src/test/**"
       instructions: |
-        Core database connection and session management setup.
-        When reviewing:
-        - Verify asyncpg engine configurations and connection pooling.
-        - Ensure that sessions are properly closed/yielded in dependencies.
-
-    - path: "src/models.py"
-      instructions: |
-        SQLAlchemy 2.0 declarative models and schemas.
-        When reviewing:
-        - Ensure SQLAlchemy 2.0 style mappings are used (`Mapped[int]`, `mapped_column()`).
-        - Check for missing indexes on frequently queried columns (like `fen_hash`).
-        - Validate relationships and ensure async-compatible loading strategies (no implicit lazy loads).
-
-    - path: "src/importer.py"
-      instructions: |
-        ETL processes and high-throughput data ingestion.
-        When reviewing:
-        - Prioritize performance: flag any N+1 query problems.
-        - Ensure bulk inserts (`insert().values()`) or `executemany` are used over row-by-row commits.
-        - Verify memory usage is optimized when parsing large JSON or processing massive datasets.
-
-    - path: "alembic/versions/**"
-      instructions: |
-        Alembic database migrations.
-        When reviewing:
-        - Verify both `upgrade()` and `downgrade()` methods are correctly implemented.
-        - Flag destructive changes (e.g., `drop_column`, `drop_table`) and ensure they are intentional.
-        - Check that index additions are non-blocking if possible (though SQLite/Postgres differences apply).
+        MUnit + testcontainers (real PostgreSQL). When reviewing:
+        - Tests must run the real Flyway migration from scratch, not hand-built schemas.
+        - Watch for stale-response races in async tests; controlled promise ordering
+          is the established pattern.
 
     - path: "docs/**"
       instructions: |
-        MkDocs Material documentation.
+        Astro/Starlight documentation site.
         When reviewing:
-        - Check for broken internal links.
-        - Ensure Markdown syntax, Admonitions, and Mermaid diagrams are correctly formatted.
+        - Check for broken internal links; prefer relative links over hardcoded base paths.
+        - Ensure Markdown and Mermaid diagrams are correctly formatted.
 
     - path: ".github/workflows/**"
       instructions: |
-        CI/CD workflows for the Python backend.
+        CI/CD workflows for the Scala backend and docs.
         When reviewing:
-        - Verify that `mise` tasks (`mise run ...`) are favored over raw bash scripts.
-        - Ensure secrets are handled securely.
-        - Check that `uv` is used for fast dependency resolution and environment setup.
+        - Verify that `mise` tasks (`mise run ...`) are favored over raw bash scripts
+          unless the job needs only the JVM toolchain.
+        - Ensure secrets are handled securely (GitHub Packages tokens via BuildKit
+          secrets, never in image layers).

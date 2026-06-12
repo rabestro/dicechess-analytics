@@ -3,7 +3,6 @@ database:
       - any-glob-to-any-file:
           - 'alembic/**'
           - 'backend/src/main/resources/db/**'
-          - 'src/models.py'
 testing:
   - changed-files:
       - any-glob-to-any-file:

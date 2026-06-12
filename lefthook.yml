@@ -11,12 +11,6 @@ pre-commit:
     - name: betterleaks
       run: betterleaks git --pre-commit --redact --staged
 
-    # Python linting + formatting (only when .py files are staged).
-    # check --fix and format both rewrite files: one sequential job avoids
-    # concurrent writes under parallel: true
-    - name: ruff
-      glob: "**/*.py"
-      run: uv run ruff check --fix {staged_files} && uv run ruff format {staged_files}
 
     # Native scalafmt CLI: ~44ms per commit. The pinned mise version must match
     # backend/.scalafmt.conf (the native binary does not auto-dispatch versions).

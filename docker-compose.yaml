@@ -1,3 +1,7 @@
+# Pinned project name: keeps the db_data volume binding stable regardless of
+# the directory the stack is deployed from.
+name: dicechess-analytics
+
 services:
   db:
     image: postgres:18-alpine
