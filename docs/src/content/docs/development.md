@@ -21,7 +21,7 @@ Ensure you have the following installed on your system:
 
 ### 1. Project Initialization
 
-Run the setup task to install dependencies via `uv` and register pre-commit code formatting hooks:
+Run the setup task to install dependencies via `uv` and register lefthook git hooks:
 
 ```bash
 mise run setup
@@ -70,7 +70,7 @@ Once started, the API documentation is available at:
 
 | Command | Description |
 | :--- | :--- |
-| `mise run setup` | Synchronizes Python packages and registers pre-commit linters. |
+| `mise run setup` | Synchronizes Python packages and registers lefthook git hooks. |
 | `mise run db:up` | Launches only the PostgreSQL container. |
 | `mise run db:down` | Stops and removes only the PostgreSQL container (data volume survives). |
 | `mise run stack:up` | Starts db + api + ui (amd64 hosts only until the ui image is multi-arch). |

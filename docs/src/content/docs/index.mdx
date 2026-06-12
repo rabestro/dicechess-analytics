@@ -6,7 +6,7 @@ hero:
   tagline: A high-performance analytical backend and data pipeline for Dice Chess — ingesting, normalizing, and querying millions of games and positions.
   actions:
     - text: View Roadmap
-      link: /dicechess-analytics/milestones
+      link: ./milestones
       icon: right-arrow
     - text: GitHub Repository
       link: https://github.com/rabestro/dicechess-analytics
@@ -21,22 +21,22 @@ import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 <CardGrid stagger>
 	<LinkCard
 		title="Fast API Ingestion"
-		href="/dicechess-analytics/api-specification"
+		href="./api-specification"
 		description="High-performance REST endpoints for saving completed games, turns, and player profiles."
 	/>
 	<LinkCard
 		title="Position Deduplication"
-		href="/dicechess-analytics/architecture"
+		href="./architecture"
 		description="A unique hashing schema utilizing xxhash64 and FEN normalization to map millions of turns to a minimal set of distinct chessboard positions."
 	/>
 	<LinkCard
 		title="ETL Pipeline"
-		href="/dicechess-analytics/development"
+		href="./development"
 		description="A built-in ETL importer to migrate massive datasets from local SQLite archives to production-ready PostgreSQL databases."
 	/>
 	<LinkCard
 		title="Relational Game History"
-		href="/dicechess-analytics/architecture"
+		href="./architecture"
 		description="Granular database models storing players, games, turns, rolled dice, and sequential game events."
 	/>
 </CardGrid>
