@@ -146,31 +146,32 @@ A standard chess FEN string contains 6 fields:
 
 For deduplication, the halfmove clock and fullmove number are stripped, since they do not change the tactical properties of the position. The normalized FEN only contains the first 4 fields:
 
-```python
-def normalize_fen(fen_str: str) -> str:
-    parts = fen_str.split()
-    while len(parts) < 4:
-        parts.append("-")
-    return " ".join(parts[0:4])
+```scala
+def normalizeFen(fen: String): String =
+  // filter: unlike Python's str.split(), Java's split keeps empty
+  // elements produced by leading or consecutive whitespace
+  val parts = fen.split("\s+").filter(_.nonEmpty).take(4)
+  (parts ++ Array.fill(4 - parts.length)("-")).mkString(" ")
 ```
+
+FEN parsing and validation themselves are the engine's job: `dicechess-engine-scala`
+is the single source of truth for game rules, and the backend consumes it as a JVM
+library rather than re-implementing any chess logic.
 
 ### xxHash64 Signed Integer Digests
 
-We compute the hash of the normalized FEN using `xxhash64`, which is extremely fast and has very low collision rates. Since PostgreSQL's `bigint` is a signed 64-bit integer (`-2^63` to `2^63 - 1`), the unsigned 64-bit digest from xxhash must be converted into a signed range:
+We compute the hash of the normalized FEN using `xxhash64`, which is extremely fast and has very low collision rates. PostgreSQL's `bigint` is a signed 64-bit integer — exactly the JVM's `Long` — so the digest's raw bits map onto the column directly, with no unsigned-to-signed conversion step:
 
-```python
-def get_fen_hash(normalized_fen: str) -> int:
-    import xxhash
-    digest = xxhash.xxh64(normalized_fen).intdigest()
-    # Convert unsigned 64-bit uint to signed 64-bit bigint
-    if digest >= 2**63:
-        digest -= 2**64
-    return digest
+```scala
+def fenHash(normalizedFen: String): Long =
+  XXHash64.hash(normalizedFen.getBytes(StandardCharsets.UTF_8))
 ```
 
 ### Resolution Flow
 
-When saving a turn or game, the backend follows a "get-or-create" loop:
+When saving a turn or game, the backend follows a "get-or-create" loop (the historical
+import already populated the `positions` table this way; the upcoming `POST /api/games`
+endpoint applies the same flow to live games):
 
 1. **Normalize FEN**: Strip move counts.
 2. **Lookup by Normalized FEN**: Query the `positions` table using the unique `normalized_fen` field.
