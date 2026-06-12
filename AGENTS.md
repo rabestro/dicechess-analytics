@@ -61,13 +61,13 @@ expensive than tokens.
 
 Assign tasks to these milestones logically. Each milestone must be fully tested before moving to the next.
 
-* **v0.1 - Foundation & Local Setup**: Project bootstrapping (FastAPI, Pydantic, SQLAlchemy, Alembic, Docker Compose with PostgreSQL), initial schemas, basic ETL SQLite importer, and documentation site setup.
-* **v0.2 - Ingestion API & ETL Optimization**: Transactional endpoints for saving new games, high-throughput ETL updates (async processing, bulk inserts), and unit/integration testing suite.
-* **v0.3 - Position Analytics & Deduplication**: FEN normalization, signed xxhash64 bigint mapping in PostgreSQL, database index tuning, and position analytics API endpoints (`/api/positions/{fen_hash}/analytics`).
-* **v0.4 - Aggregate Metrics & Materialized Views**: Complex analytical queries (player rating histories, opening stats), PostgreSQL Materialized Views for performance caching, and advanced game search filters.
-* **v0.5 - Real-Time Dashboard & WebSockets**: Real-time game event streaming and dashboard data endpoints using WebSockets.
-* **v0.6 - Cache Layer & Query Tuning**: Redis integration for caching position analytics, query optimization using EXPLAIN ANALYZE, and API load testing.
-* **v1.0 - Production Readiness & CI/CD**: Production Dockerfile, GitHub Actions CI pipelines, structured logging, and monitoring metrics (Prometheus/Grafana).
+* **v0.1 - Foundation & Local Setup**: done — PostgreSQL schema, initial bulk import (140k+ games), Docker Compose stack, documentation site.
+* **v0.2 - Ingestion API & Scala Rewrite**: read-parity Scala 3 backend (http4s + Tapir + Doobie + Flyway) in production; remaining: transactional `POST /api/games` with engine-side move validation.
+* **v0.3 - Position Analytics & Deduplication**: FEN normalization via the engine, signed xxhash64 bigint position mapping in PostgreSQL, index tuning, and position analytics endpoints (`/api/positions`).
+* **v0.4 - Aggregate Metrics & Materialized Views**: complex analytical queries (player rating histories, opening stats), PostgreSQL Materialized Views for performance caching, and advanced game search filters.
+* **v0.5 - Real-Time Dashboard & WebSockets**: real-time game event streaming and dashboard data endpoints (http4s WebSockets).
+* **v0.6 - Cache Layer & Query Tuning**: caching for position analytics, query optimization using EXPLAIN ANALYZE, and API load testing.
+* **v1.0 - Production Readiness & CI/CD**: multi-arch images, GitHub Actions pipelines, structured logging, and monitoring metrics.
 
 ## Approved GitHub Labels
 
