@@ -26,7 +26,8 @@ RUN --mount=type=secret,id=github_token \
 # Runtime stage
 FROM eclipse-temurin:25-jre
 
-RUN groupadd --system app && useradd --system --gid app app
+# Static UID/GID for predictable permission mapping under security policies
+RUN groupadd --system --gid 10001 app && useradd --system --uid 10001 --gid app app
 WORKDIR /app
 COPY --from=build /build/target/universal/stage /app
 USER app
