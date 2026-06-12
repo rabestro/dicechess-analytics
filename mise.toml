@@ -60,12 +60,14 @@ run = "uv run alembic revision --autogenerate --message"
 # Documentation Control
 # ==============================================================================
 [tasks."docs:dev"]
-description = "📖 Start the local MkDocs Material documentation dev server"
-run = "uv run mkdocs serve"
+description = "📖 Start the local Astro/Starlight documentation dev server"
+dir = "docs"
+run = "npm run dev"
 
 [tasks."docs:build"]
 description = "🏗️ Compile documentation to static HTML assets"
-run = "uv run mkdocs build"
+dir = "docs"
+run = "npm run build"
 
 [tasks.dev]
 description = "🚀 Start the FastAPI backend development server (legacy, until Scala parity)"

@@ -1,0 +1,56 @@
+---
+title: Dice Chess Analytics
+description: High-performance analytical backend and data pipeline for Dice Chess.
+template: splash
+hero:
+  tagline: A high-performance analytical backend and data pipeline for Dice Chess — ingesting, normalizing, and querying millions of games and positions.
+  actions:
+    - text: View Roadmap
+      link: /dicechess-analytics/milestones
+      icon: right-arrow
+    - text: GitHub Repository
+      link: https://github.com/rabestro/dicechess-analytics
+      icon: external
+      variant: minimal
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+## Key Features
+
+<CardGrid stagger>
+	<LinkCard
+		title="Fast API Ingestion"
+		href="/dicechess-analytics/api-specification"
+		description="High-performance REST endpoints for saving completed games, turns, and player profiles."
+	/>
+	<LinkCard
+		title="Position Deduplication"
+		href="/dicechess-analytics/architecture"
+		description="A unique hashing schema utilizing xxhash64 and FEN normalization to map millions of turns to a minimal set of distinct chessboard positions."
+	/>
+	<LinkCard
+		title="ETL Pipeline"
+		href="/dicechess-analytics/development"
+		description="A built-in ETL importer to migrate massive datasets from local SQLite archives to production-ready PostgreSQL databases."
+	/>
+	<LinkCard
+		title="Relational Game History"
+		href="/dicechess-analytics/architecture"
+		description="Granular database models storing players, games, turns, rolled dice, and sequential game events."
+	/>
+</CardGrid>
+
+## What is Dice Chess?
+
+**Dice Chess** is a chess variant where a turn consists of:
+
+1. **Dice Roll**: The active player rolls three standard six-sided dice. The numbers correspond to chess pieces:
+   - **1**: Pawn ♙
+   - **2**: Knight ♘
+   - **3**: Bishop ♗
+   - **4**: Rook ♖
+   - **5**: Queen ♕
+   - **6**: King ♔
+2. **Micro-moves**: The player can make up to three moves in a single turn using the pieces shown on the rolled dice. For example, if a player rolls `1, 2, 4`, they can make a pawn move, a knight move, and a rook move in any order.
+3. **End Turn**: The turn ends after 3 moves, or if the player has no further legal moves, or if they capture the opponent's King (declaring checkmate).
