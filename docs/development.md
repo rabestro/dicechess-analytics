@@ -25,7 +25,7 @@ mise run setup
 ### 2. Start PostgreSQL Container
 Spin up the local PostgreSQL database instance in the background using Docker Compose:
 ```bash
-mise run db_up
+mise run db:up
 ```
 This runs a PostgreSQL instance listening on port `5432` with:
 
@@ -36,7 +36,7 @@ This runs a PostgreSQL instance listening on port `5432` with:
 ### 3. Run Database Migrations
 Apply the initial schema migrations using Alembic:
 ```bash
-mise run migrate
+mise run db:migrate
 ```
 
 ### 4. Run the API Server
@@ -58,13 +58,13 @@ Once started, the API documentation is available at:
 | Command | Task | Description |
 | :--- | :--- | :--- |
 | `mise run setup` | Setup Environment | Synchronizes Python packages and registers pre-commit linters. |
-| `mise run db_up` | Docker DB Up | Launches the PostgreSQL container. |
-| `mise run db_down`| Docker DB Down | Stops and removes the PostgreSQL container. |
-| `mise run migrate`| DB Migrations | Applies all pending Alembic migrations. |
+| `mise run db:up` | Docker DB Up | Launches the PostgreSQL container. |
+| `mise run db:down`| Docker DB Down | Stops and removes the PostgreSQL container. |
+| `mise run db:migrate`| DB Migrations | Applies all pending Alembic migrations. |
 | `mise run check` | Lint & Format Check | Runs `ruff` checks and code formatting dry-runs. |
 | `mise run format` | Code Auto-Formatter | Runs `ruff` to automatically fix formatting and lint errors. |
-| `mise run docs` | Run Docs Server | Starts the MkDocs dev server at [http://localhost:8000](http://localhost:8000). |
-| `mise run docs_build`| Compile Static Docs | Compiles the documentation site into static HTML inside `site/`. |
+| `mise run docs:dev` | Run Docs Server | Starts the MkDocs dev server at [http://localhost:8000](http://localhost:8000). |
+| `mise run docs:build`| Compile Static Docs | Compiles the documentation site into static HTML inside `site/`. |
 
 ---
 
