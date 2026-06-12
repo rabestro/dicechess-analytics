@@ -1,7 +1,6 @@
 database:
   - changed-files:
       - any-glob-to-any-file:
-          - 'alembic/**'
           - 'backend/src/main/resources/db/**'
 testing:
   - changed-files:
