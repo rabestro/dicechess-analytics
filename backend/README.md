@@ -19,14 +19,12 @@ unchanged; the Python app keeps serving until this backend reaches parity.
 
 ## Requirements
 
-- JDK 25, sbt (`mise install` at the repo root provides both)
+- JDK 25 (provided by `mise install` at the repo root) and sbt (install separately, e.g. `brew install sbt`)
 - Docker (for testcontainers and local PostgreSQL)
-- GitHub Packages credentials to resolve the engine artifact:
-
-```bash
-export GITHUB_ACTOR=<your github login>
-export GITHUB_TOKEN=$(gh auth token)   # or a PAT with read:packages
-```
+- An authenticated GitHub CLI (`gh auth login`) to resolve the engine artifact from
+  GitHub Packages. `build.sbt` derives the token from `gh` automatically — no manual
+  export is needed. (In CI the workflow provides `GITHUB_TOKEN`; see
+  [the development guide](../docs/src/content/docs/development.md) for details.)
 
 ## Commands
 
