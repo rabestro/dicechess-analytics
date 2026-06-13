@@ -36,6 +36,9 @@ Example: `bug/6-fix-mermaid-syntax`
   - `mise run stack:up` / `mise run stack:down`: Full stack (db + api + ui) from published images.
 - **Database Migrations**: applied by the Scala backend itself via Flyway on startup;
   migration scripts live in `backend/src/main/resources/db/migration/`.
+- **Engine Credentials**: the engine artifact resolves from GitHub Packages, which needs
+  auth even for public packages. `backend/build.sbt` derives it (env vars in CI, the `gh`
+  CLI locally), so the `backend:*` tasks stay plain `sbt`. Keep `gh auth login` current.
 - **Documentation**:
   - `mise run docs:dev`: Runs local hot-reloaded development server.
   - `mise run docs:build`: Compiles all pages to static HTML assets.

@@ -65,20 +65,23 @@ description = "🏗️ Compile documentation to static HTML assets"
 dir = "docs"
 run = "npm run build"
 
+# Resolving the engine artifact from GitHub Packages needs credentials; build.sbt
+# derives them (env vars in CI, the gh CLI locally), so these tasks stay plain `sbt`.
+# See backend/build.sbt for the why.
 [tasks."backend:compile"]
 description = "🔨 Compile the Scala backend"
 dir = "backend"
-run = 'GITHUB_ACTOR="${GITHUB_ACTOR:-$(gh api user --jq .login)}" GITHUB_TOKEN="${GITHUB_TOKEN:-$(gh auth token)}" sbt compile'
+run = "sbt compile"
 
 [tasks."backend:test"]
 description = "🧪 Run Scala backend tests (real PostgreSQL via testcontainers)"
 dir = "backend"
-run = 'GITHUB_ACTOR="${GITHUB_ACTOR:-$(gh api user --jq .login)}" GITHUB_TOKEN="${GITHUB_TOKEN:-$(gh auth token)}" sbt test'
+run = "sbt test"
 
 [tasks."backend:check"]
 description = "✅ Full Scala backend validation (format check, coverage-gated tests)"
 dir = "backend"
-run = 'GITHUB_ACTOR="${GITHUB_ACTOR:-$(gh api user --jq .login)}" GITHUB_TOKEN="${GITHUB_TOKEN:-$(gh auth token)}" sbt scalafmtCheckAll clean coverage test coverageReport'
+run = "sbt scalafmtCheckAll clean coverage test coverageReport"
 
 [tasks."backend:format"]
 description = "✨ Reformat the Scala backend sources"
@@ -88,4 +91,4 @@ run = "sbt scalafmtAll"
 [tasks."backend:run"]
 description = "🚀 Start the Scala backend API server (port 8000)"
 dir = "backend"
-run = 'GITHUB_ACTOR="${GITHUB_ACTOR:-$(gh api user --jq .login)}" GITHUB_TOKEN="${GITHUB_TOKEN:-$(gh auth token)}" sbt run'
+run = "sbt run"

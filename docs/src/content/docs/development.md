@@ -55,13 +55,36 @@ Database migrations are applied automatically: the backend runs
 [Flyway](https://flywaydb.org/) on startup, so there is no separate migration step.
 Migration scripts live in `backend/src/main/resources/db/migration/`.
 
-GitHub Packages credentials (`GITHUB_ACTOR` / `GITHUB_TOKEN`) are derived automatically
-from the `gh` CLI when not already present in the environment.
-
 Once started, the interactive API documentation (Swagger UI, generated from the Tapir
 endpoint definitions) is available at:
 
 - **Swagger UI**: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+---
+
+## GitHub Packages Authentication
+
+The backend depends on the game engine, `lv.id.jc:dicechess-engine-scala`, published to
+**GitHub Packages Maven**. Unlike Maven Central, GitHub Packages requires authentication
+**even for public packages** (a token with the `read:packages` scope) — so any `sbt`
+command that resolves dependencies needs a username and token.
+
+Rather than repeat that credential dance in every task, the build resolves it once, in
+[`backend/build.sbt`](https://github.com/rabestro/dicechess-analytics/blob/main/backend/build.sbt):
+
+GitHub Packages validates only the **token** — any non-empty username is accepted — so the
+build never needs a network call to discover the account name. (`credentials` is an sbt
+*setting*, evaluated on every load, so a network lookup here would slow down every command
+and break offline work.) The token is resolved as follows:
+
+1. **In CI**, the workflow exports `GITHUB_TOKEN`; the build uses it directly.
+2. **Locally**, when that variable is absent, the build reads it from the
+   [GitHub CLI](https://cli.github.com/) via `gh auth token`, which returns the token from
+   the OS keychain **without touching the network** — so it works offline and the token is
+   never written to a file or a shell profile.
+
+This is why the `mise run backend:*` tasks are plain `sbt ...` with no credential prefix,
+and why a bare `sbt` invocation works too: just keep `gh auth login` current.
 
 ---
 
