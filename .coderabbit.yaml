@@ -50,7 +50,7 @@ reviews:
 
   # ── Domain-Specific Path Instructions ─────────────────────────────────────
   path_instructions:
-    - path: "backend/src/main/scala/**"
+    - path: "src/main/scala/**"
       instructions: |
         Scala 3 backend (http4s + Tapir + Doobie). The build is strict
         (-Werror, -Wunused:all). When reviewing:
@@ -62,7 +62,7 @@ reviews:
           re-implemented locally.
         - Effects: cats-effect IO; no blocking calls outside IO.blocking.
 
-    - path: "backend/src/main/resources/db/migration/**"
+    - path: "src/main/resources/db/migration/**"
       instructions: |
         Flyway migrations over the production database (140k+ games).
         When reviewing:
@@ -70,7 +70,7 @@ reviews:
         - Flag destructive changes (drop column/table) and ensure they are intentional.
         - Large-table index creation should consider CONCURRENTLY.
 
-    - path: "backend/src/test/**"
+    - path: "src/test/**"
       instructions: |
         MUnit + testcontainers (real PostgreSQL). When reviewing:
         - Tests must run the real Flyway migration from scratch, not hand-built schemas.

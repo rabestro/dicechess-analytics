@@ -22,23 +22,24 @@ Example: `bug/6-fix-mermaid-syntax`
 
 ## Developer Workflows
 - **Core Runner**: Use `mise run <task>` from the root of the repository for all development tasks.
-- **Task Naming Convention**: bare verbs for repo-wide lifecycle tasks (`setup`, `format`,
-  `check`); `domain:action` with a colon for namespaced tasks (`db:up`,
-  `backend:test`, `docs:build`). Same convention as dicechess-engine-scala.
+- **Task Naming Convention**: bare verbs for lifecycle tasks (`setup`, `compile`, `test`,
+  `check`, `format`, `run`); `domain:action` with a colon for namespaced tasks (`db:up`,
+  `docs:build`). Same convention as dicechess-engine-scala. The Scala project lives at the
+  repository root (no `backend/` subdirectory).
 - **Git Hooks**: `mise run setup` (or `mise run hook:install`) registers lefthook Git hooks.
   Run `mise run hook:run` to execute all pre-commit checks against every file.
-- **Code Formatting**: `mise run format` runs scalafmt across the Scala backend.
-- **Local CI validation**: `mise run check` is the repo-wide gate — the full Scala
-  backend validation (`backend:check`: scalafmt, coverage-gated tests on real PostgreSQL).
+- **Code Formatting**: `mise run format` runs scalafmt across the Scala sources.
+- **Local CI validation**: `mise run check` is the repo-wide gate — scalafmt check plus
+  coverage-gated tests on real PostgreSQL.
 - **Service Control**:
   - `mise run db:up`: Starts only the PostgreSQL container in background.
   - `mise run db:down`: Stops and removes only the PostgreSQL container.
   - `mise run stack:up` / `mise run stack:down`: Full stack (db + api + ui) from published images.
-- **Database Migrations**: applied by the Scala backend itself via Flyway on startup;
-  migration scripts live in `backend/src/main/resources/db/migration/`.
+- **Database Migrations**: applied by the backend itself via Flyway on startup;
+  migration scripts live in `src/main/resources/db/migration/`.
 - **Engine Credentials**: the engine artifact resolves from GitHub Packages, which needs
-  auth even for public packages. `backend/build.sbt` derives it (env vars in CI, the `gh`
-  CLI locally), so the `backend:*` tasks stay plain `sbt`. Keep `gh auth login` current.
+  auth even for public packages. `build.sbt` derives it (env vars in CI, the `gh` CLI
+  locally), so the build tasks stay plain `sbt`. Keep `gh auth login` current.
 - **Documentation**:
   - `mise run docs:dev`: Runs local hot-reloaded development server.
   - `mise run docs:build`: Compiles all pages to static HTML assets.

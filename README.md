@@ -23,8 +23,8 @@ position, the metric that matters most in a dice-driven chess variant.
 - **Tooling**: [mise](https://mise.jdx.dev/) (toolchain + tasks), lefthook (git hooks),
   Docker Compose
 
-See [backend/README.md](backend/README.md) for backend development details
-(requirements, configuration, Rancher Desktop notes).
+See the [development guide](docs/src/content/docs/development.md) for setup details
+(requirements, configuration, Rancher Desktop / testcontainers notes).
 
 ## Developer Workflows
 
@@ -34,9 +34,9 @@ the repository.
 ### Core Commands
 
 - `mise run setup` - Installs tooling and registers lefthook git hooks.
-- `mise run check` - Repo-wide gate: full Scala backend validation (format, coverage-gated tests).
-- `mise run format` - Reformats the Scala backend sources.
-- `mise run backend:*` - Scala backend tasks (`compile`, `test`, `check`, `format`, `run`).
+- `mise run compile` / `test` / `run` - Scala build tasks (run directly from the root).
+- `mise run check` - Repo-wide gate: full validation (format check, coverage-gated tests).
+- `mise run format` - Reformats the Scala sources.
 
 ### Database & Services
 
@@ -53,7 +53,7 @@ Database schema migrations are applied by the backend itself via Flyway on start
 
 ## Deployment
 
-Every push to `main` touching `backend/**` publishes the multi-arch image
+Every push to `main` touching the Scala sources publishes the multi-arch image
 `ghcr.io/rabestro/dicechess-analytics-api`. The production server needs only two files:
 `docker-compose.yaml` and `.env` (the compose project name is pinned, so the deploy
 directory can live anywhere without losing the data volume). Rollout:

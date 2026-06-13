@@ -13,10 +13,10 @@ pre-commit:
 
 
     # Native scalafmt CLI: ~44ms per commit. The pinned mise version must match
-    # backend/.scalafmt.conf (the native binary does not auto-dispatch versions).
+    # .scalafmt.conf (the native binary does not auto-dispatch versions).
     - name: scalafmt
-      glob: "backend/**.{scala,sbt}"
-      run: scalafmt --config backend/.scalafmt.conf --test {staged_files}
+      glob: "**.{scala,sbt}"
+      run: scalafmt --test {staged_files}
 
 # Pre-push is a hermetic one-second safety net, not a test gate: a full-project
 # format check via the native CLI (no Docker, no network). It catches what the
@@ -27,5 +27,5 @@ pre-commit:
 pre-push:
   jobs:
     - name: scalafmt-all
-      glob: "backend/**.{scala,sbt}"
-      run: scalafmt --config backend/.scalafmt.conf --test backend
+      glob: "**.{scala,sbt}"
+      run: scalafmt --test .

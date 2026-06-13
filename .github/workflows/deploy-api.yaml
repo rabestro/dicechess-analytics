@@ -3,8 +3,13 @@ name: "CD: Publish API Image"
 on:
   push:
     branches: [main]
+    # Source/build inputs only — doc-only changes should not rebuild the image.
     paths:
-      - "backend/**"
+      - "src/**"
+      - "build.sbt"
+      - "project/**"
+      - "Dockerfile"
+      - ".dockerignore"
       - ".github/workflows/deploy-api.yaml"
   workflow_dispatch:
 
@@ -61,7 +66,7 @@ jobs:
       - name: Build and push image
         uses: docker/build-push-action@v5
         with:
-          context: backend
+          context: .
           platforms: linux/amd64,linux/arm64
           push: true
           build-args: |

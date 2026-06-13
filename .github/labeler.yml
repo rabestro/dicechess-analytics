@@ -1,11 +1,11 @@
 database:
   - changed-files:
       - any-glob-to-any-file:
-          - 'backend/src/main/resources/db/**'
+          - 'src/main/resources/db/**'
 testing:
   - changed-files:
       - any-glob-to-any-file:
-          - 'backend/src/test/**'
+          - 'src/test/**'
 documentation:
   - changed-files:
       - any-glob-to-any-file:
@@ -19,9 +19,10 @@ ci-cd:
           - 'mise.toml'
           - 'Dockerfile'
           - 'docker-compose*.yaml'
-          - '.pre-commit-config.yaml'
-          - 'backend/build.sbt'
-          - 'backend/project/**'
+          - 'build.sbt'
+          - 'project/**'
+          - '.scalafmt.conf'
+          - '.dockerignore'
 
 # Type labels from the branch naming convention
 enhancement:

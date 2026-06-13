@@ -3,12 +3,19 @@ name: "CI: Scala Backend"
 on:
   push:
     branches: [main]
+    # Source only — doc-only changes (README, etc.) should not trigger the test suite.
     paths:
-      - "backend/**"
+      - "src/**"
+      - "build.sbt"
+      - "project/**"
+      - ".scalafmt.conf"
       - ".github/workflows/backend-ci.yaml"
   pull_request:
     paths:
-      - "backend/**"
+      - "src/**"
+      - "build.sbt"
+      - "project/**"
+      - ".scalafmt.conf"
       - ".github/workflows/backend-ci.yaml"
 
 permissions:
@@ -18,9 +25,6 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
