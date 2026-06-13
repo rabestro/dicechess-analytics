@@ -48,12 +48,12 @@ This runs a PostgreSQL instance listening on port `5432` with:
 ### 3. Run the API Server
 
 ```bash
-mise run backend:run
+mise run run
 ```
 
 Database migrations are applied automatically: the backend runs
 [Flyway](https://flywaydb.org/) on startup, so there is no separate migration step.
-Migration scripts live in `backend/src/main/resources/db/migration/`.
+Migration scripts live in `src/main/resources/db/migration/`.
 
 Once started, the interactive API documentation (Swagger UI, generated from the Tapir
 endpoint definitions) is available at:
@@ -70,7 +70,7 @@ The backend depends on the game engine, `lv.id.jc:dicechess-engine-scala`, publi
 command that resolves dependencies needs a username and token.
 
 Rather than repeat that credential dance in every task, the build resolves it once, in
-[`backend/build.sbt`](https://github.com/rabestro/dicechess-analytics/blob/main/backend/build.sbt):
+[`build.sbt`](https://github.com/rabestro/dicechess-analytics/blob/main/build.sbt):
 
 GitHub Packages validates only the **token** — any non-empty username is accepted — so the
 build never needs a network call to discover the account name. (`credentials` is an sbt
@@ -83,7 +83,7 @@ and break offline work.) The token is resolved as follows:
    the OS keychain **without touching the network** — so it works offline and the token is
    never written to a file or a shell profile.
 
-This is why the `mise run backend:*` tasks are plain `sbt ...` with no credential prefix,
+This is why the Scala build tasks are plain `sbt ...` with no credential prefix,
 and why a bare `sbt` invocation works too: just keep `gh auth login` current.
 
 ---
@@ -99,13 +99,52 @@ and why a bare `sbt` invocation works too: just keep `gh auth login` current.
 | `mise run db:down` | Stops and removes only the PostgreSQL container (data volume survives). |
 | `mise run stack:up` | Starts db + api + ui from published images. |
 | `mise run stack:down` | Stops and removes all compose services. |
-| `mise run check` | Repo-wide gate: full Scala backend validation (scalafmt, coverage-gated tests on real PostgreSQL). |
-| `mise run format` | Runs scalafmt across the Scala backend. |
-| `mise run backend:compile` | Compiles the backend. |
-| `mise run backend:test` | Runs the backend test suite without the coverage/clean overhead. |
-| `mise run backend:run` | Starts the API server on port `8000`. |
+| `mise run check` | Repo-wide gate: scalafmt check plus coverage-gated tests on real PostgreSQL. |
+| `mise run format` | Runs scalafmt across the Scala sources. |
+| `mise run compile` | Compiles the backend. |
+| `mise run test` | Runs the test suite without the coverage/clean overhead. |
+| `mise run run` | Starts the API server on port `8000`. |
 | `mise run docs:dev` | Starts the Astro/Starlight dev server at [http://localhost:4321](http://localhost:4321). |
 | `mise run docs:build` | Compiles the documentation site into static HTML inside `docs/dist/`. |
+
+---
+
+## Configuration
+
+Environment variables (compatible with docker-compose):
+
+| Variable | Default | Notes |
+| :--- | :--- | :--- |
+| `DATABASE_URL` | — | `postgres://`, `postgresql://`, or `postgresql+asyncpg://` forms accepted |
+| `POSTGRES_HOST/PORT/DB/USER/PASSWORD` | docker-compose defaults | used when `DATABASE_URL` is absent |
+| `HTTP_HOST` / `HTTP_PORT` | `0.0.0.0` / `8000` | |
+| `CORS_ORIGINS` | `http://localhost:5173,http://localhost:3000` | comma-separated |
+
+---
+
+## Rancher Desktop / testcontainers notes
+
+The test suite uses testcontainers against a real PostgreSQL. On Rancher Desktop two
+machine-local accommodations are needed:
+
+1. `~/.testcontainers.properties`:
+
+   ```properties
+   docker.host=unix\:///Users/<you>/.rd/docker.sock
+   ```
+
+2. `mise.local.toml` at the repo root (gitignored), so every task gets the variable
+   regardless of the shell session — the ryuk cleanup sidecar cannot start against the
+   Rancher moby VM, so cleanup falls back to JVM shutdown hooks. CI on ubuntu-latest
+   keeps ryuk enabled.
+
+   ```toml
+   [env]
+   TESTCONTAINERS_RYUK_DISABLED = "true"
+   ```
+
+The Docker API version is pinned to 1.43 via `Test / javaOptions` in `build.sbt`:
+docker-java does not negotiate and its default (1.32) is rejected by Docker 29+ daemons.
 
 ---
 

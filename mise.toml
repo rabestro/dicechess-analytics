@@ -9,7 +9,7 @@ jq = "latest"                    # JSON processor
 # --- Security & Quality ---
 lefthook = "latest"              # Git hooks manager (language-agnostic, parallel)
 betterleaks = "latest"              # Secret scanning for staged/pushed commits
-scalafmt = "3.11.1"           # native CLI; MUST match version in backend/.scalafmt.conf
+scalafmt = "3.11.1"           # native CLI; MUST match version in .scalafmt.conf
 
 # ==============================================================================
 # Setup & Quality Tasks
@@ -26,13 +26,28 @@ run = "lefthook install"
 description = "🪝 Run all pre-commit hooks against every file (CI / manual trigger)"
 run = "lefthook run pre-commit --all-files"
 
-[tasks.format]
-description = "✨ Reformat the Scala backend sources"
-depends = ["backend:format"]
+# Scala build tasks. Resolving the engine artifact from GitHub Packages needs
+# credentials; build.sbt derives them (env vars in CI, the gh CLI locally), so
+# these stay plain `sbt`. See build.sbt for the why.
+[tasks.compile]
+description = "🔨 Compile the Scala backend"
+run = "sbt compile"
+
+[tasks.test]
+description = "🧪 Run the backend tests (real PostgreSQL via testcontainers)"
+run = "sbt test"
 
 [tasks.check]
-description = "✅ Repo-wide gate: full Scala backend validation"
-depends = ["backend:check"]
+description = "✅ Repo-wide gate: full validation (format check, coverage-gated tests)"
+run = "sbt scalafmtCheckAll clean coverage test coverageReport"
+
+[tasks.format]
+description = "✨ Reformat the Scala sources"
+run = "sbt scalafmtAll"
+
+[tasks.run]
+description = "🚀 Start the API server (port 8000)"
+run = "sbt run"
 
 # ==============================================================================
 # Database & Stack Services
@@ -63,30 +78,3 @@ description = "🏗️ Compile documentation to static HTML assets"
 dir = "docs"
 run = "npm run build"
 
-# Resolving the engine artifact from GitHub Packages needs credentials; build.sbt
-# derives them (env vars in CI, the gh CLI locally), so these tasks stay plain `sbt`.
-# See backend/build.sbt for the why.
-[tasks."backend:compile"]
-description = "🔨 Compile the Scala backend"
-dir = "backend"
-run = "sbt compile"
-
-[tasks."backend:test"]
-description = "🧪 Run Scala backend tests (real PostgreSQL via testcontainers)"
-dir = "backend"
-run = "sbt test"
-
-[tasks."backend:check"]
-description = "✅ Full Scala backend validation (format check, coverage-gated tests)"
-dir = "backend"
-run = "sbt scalafmtCheckAll clean coverage test coverageReport"
-
-[tasks."backend:format"]
-description = "✨ Reformat the Scala backend sources"
-dir = "backend"
-run = "sbt scalafmtAll"
-
-[tasks."backend:run"]
-description = "🚀 Start the Scala backend API server (port 8000)"
-dir = "backend"
-run = "sbt run"

@@ -1,0 +1,23 @@
+# Keep the Docker build context lean now that the build runs from the repo root.
+# The image only needs build.sbt, project/, and src/main/ (see Dockerfile); the rest
+# is noise that would otherwise be sent to the daemon.
+.git
+.github
+.idea
+docs
+target
+**/target
+project/project
+.venv
+.ruff_cache
+node_modules
+**/node_modules
+*.md
+mise.toml
+mise.local.toml
+docker-compose.yaml
+.env
+.env.example
+.coderabbit.yaml
+lefthook.yml
+src/test

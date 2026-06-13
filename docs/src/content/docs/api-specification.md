@@ -10,7 +10,7 @@ This document details the REST API endpoints provided by the `dicechess-analytic
 ## Interactive Documentation
 
 The OpenAPI specification is generated from the [Tapir](https://tapir.softwaremill.com/)
-endpoint definitions (`backend/src/main/scala/dicechess/analytics/api/Endpoints.scala`),
+endpoint definitions (`src/main/scala/dicechess/analytics/api/Endpoints.scala`),
 so it can never drift from the implementation. Browse it locally at:
 
 - **Swagger UI**: [http://localhost:8000/docs](http://localhost:8000/docs)
