@@ -9,11 +9,13 @@ ThisBuild / description := "Dice Chess Analytics backend: REST API over the game
 ThisBuild / resolvers += "GitHub Packages (dicechess-engine)" at
   "https://maven.pkg.github.com/rabestro/dicechess-engine-scala"
 
-// Credentials for that resolver. CI exports GITHUB_ACTOR / GITHUB_TOKEN; locally we
-// fall back to the gh CLI so the token stays in the OS keychain — never in a file or a
-// shell profile. This is why `sbt` (and the mise backend tasks) "just work" with no
-// manual export: a missing env var is filled in from `gh` on demand, only when the
-// resolver actually needs to authenticate.
+// Credentials for that resolver. `credentials` is an sbt *setting*, so it is evaluated
+// on every load — even for offline tasks like `compile` or `clean` with everything
+// cached. We therefore keep it free of network calls: GitHub Packages validates only the
+// token (the password) and accepts any non-empty username, so there is no need to look
+// up the account name. CI exports GITHUB_TOKEN; locally we read it from the gh CLI, which
+// returns the token from the OS keychain without touching the network (works offline, and
+// the token never lands in a file or a shell profile).
 def ghValue(envVar: String, ghArgs: String*): Option[String] =
   sys.env
     .get(envVar)
@@ -22,8 +24,8 @@ def ghValue(envVar: String, ghArgs: String*): Option[String] =
     .filter(_.nonEmpty)
 
 ThisBuild / credentials ++= (for {
-  user  <- ghValue("GITHUB_ACTOR", "api", "user", "--jq", ".login")
   token <- ghValue("GITHUB_TOKEN", "auth", "token")
+  user = sys.env.get("GITHUB_ACTOR").filter(_.nonEmpty).getOrElse("git")
 } yield Credentials("GitHub Package Registry", "maven.pkg.github.com", user, token)).toSeq
 
 val DiceChessEngineVersion    = "1.2.4"

@@ -72,15 +72,19 @@ command that resolves dependencies needs a username and token.
 Rather than repeat that credential dance in every task, the build resolves it once, in
 [`backend/build.sbt`](https://github.com/rabestro/dicechess-analytics/blob/main/backend/build.sbt):
 
-1. **In CI**, the workflow exports `GITHUB_ACTOR` and `GITHUB_TOKEN`; the build uses them directly.
-2. **Locally**, when those variables are absent, the build falls back to the
-   [GitHub CLI](https://cli.github.com/) — `gh api user` for the username and `gh auth token`
-   for the token. The token stays in the OS keychain and is never written to a file or a
-   shell profile.
+GitHub Packages validates only the **token** — any non-empty username is accepted — so the
+build never needs a network call to discover the account name. (`credentials` is an sbt
+*setting*, evaluated on every load, so a network lookup here would slow down every command
+and break offline work.) The token is resolved as follows:
+
+1. **In CI**, the workflow exports `GITHUB_TOKEN`; the build uses it directly.
+2. **Locally**, when that variable is absent, the build reads it from the
+   [GitHub CLI](https://cli.github.com/) via `gh auth token`, which returns the token from
+   the OS keychain **without touching the network** — so it works offline and the token is
+   never written to a file or a shell profile.
 
 This is why the `mise run backend:*` tasks are plain `sbt ...` with no credential prefix,
-and why a bare `sbt` invocation works too: just keep `gh auth login` current. The lookup
-only runs when the resolver actually needs to authenticate (i.e. a dependency isn't cached).
+and why a bare `sbt` invocation works too: just keep `gh auth login` current.
 
 ---
 
