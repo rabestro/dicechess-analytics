@@ -9,9 +9,21 @@ ThisBuild / description := "Dice Chess Analytics backend: REST API over the game
 ThisBuild / resolvers += "GitHub Packages (dicechess-engine)" at
   "https://maven.pkg.github.com/rabestro/dicechess-engine-scala"
 
+// Credentials for that resolver. CI exports GITHUB_ACTOR / GITHUB_TOKEN; locally we
+// fall back to the gh CLI so the token stays in the OS keychain — never in a file or a
+// shell profile. This is why `sbt` (and the mise backend tasks) "just work" with no
+// manual export: a missing env var is filled in from `gh` on demand, only when the
+// resolver actually needs to authenticate.
+def ghValue(envVar: String, ghArgs: String*): Option[String] =
+  sys.env
+    .get(envVar)
+    .filter(_.nonEmpty)
+    .orElse(scala.util.Try(scala.sys.process.Process("gh" +: ghArgs).!!.trim).toOption)
+    .filter(_.nonEmpty)
+
 ThisBuild / credentials ++= (for {
-  user  <- sys.env.get("GITHUB_ACTOR")
-  token <- sys.env.get("GITHUB_TOKEN")
+  user  <- ghValue("GITHUB_ACTOR", "api", "user", "--jq", ".login")
+  token <- ghValue("GITHUB_TOKEN", "auth", "token")
 } yield Credentials("GitHub Package Registry", "maven.pkg.github.com", user, token)).toSeq
 
 val DiceChessEngineVersion    = "1.2.4"

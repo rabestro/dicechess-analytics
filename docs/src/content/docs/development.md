@@ -55,13 +55,32 @@ Database migrations are applied automatically: the backend runs
 [Flyway](https://flywaydb.org/) on startup, so there is no separate migration step.
 Migration scripts live in `backend/src/main/resources/db/migration/`.
 
-GitHub Packages credentials (`GITHUB_ACTOR` / `GITHUB_TOKEN`) are derived automatically
-from the `gh` CLI when not already present in the environment.
-
 Once started, the interactive API documentation (Swagger UI, generated from the Tapir
 endpoint definitions) is available at:
 
 - **Swagger UI**: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+---
+
+## GitHub Packages Authentication
+
+The backend depends on the game engine, `lv.id.jc:dicechess-engine-scala`, published to
+**GitHub Packages Maven**. Unlike Maven Central, GitHub Packages requires authentication
+**even for public packages** (a token with the `read:packages` scope) — so any `sbt`
+command that resolves dependencies needs a username and token.
+
+Rather than repeat that credential dance in every task, the build resolves it once, in
+[`backend/build.sbt`](https://github.com/rabestro/dicechess-analytics/blob/main/backend/build.sbt):
+
+1. **In CI**, the workflow exports `GITHUB_ACTOR` and `GITHUB_TOKEN`; the build uses them directly.
+2. **Locally**, when those variables are absent, the build falls back to the
+   [GitHub CLI](https://cli.github.com/) — `gh api user` for the username and `gh auth token`
+   for the token. The token stays in the OS keychain and is never written to a file or a
+   shell profile.
+
+This is why the `mise run backend:*` tasks are plain `sbt ...` with no credential prefix,
+and why a bare `sbt` invocation works too: just keep `gh auth login` current. The lookup
+only runs when the resolver actually needs to authenticate (i.e. a dependency isn't cached).
 
 ---
 
