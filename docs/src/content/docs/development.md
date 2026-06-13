@@ -48,7 +48,7 @@ This runs a PostgreSQL instance listening on port `5432` with:
 ### 3. Run the API Server
 
 ```bash
-mise run backend:run
+mise run run
 ```
 
 Database migrations are applied automatically: the backend runs
