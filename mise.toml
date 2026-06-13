@@ -5,8 +5,6 @@ java = "temurin-25"              # Scala backend runtime (aligned with the engin
 # --- CLI Utilities ---
 gh = "latest"                    # GitHub CLI for PRs and issues
 jq = "latest"                    # JSON processor
-yq = "latest"                    # YAML processor
-ripgrep = "latest"               # High-performance code search
 
 # --- Security & Quality ---
 lefthook = "latest"              # Git hooks manager (language-agnostic, parallel)
