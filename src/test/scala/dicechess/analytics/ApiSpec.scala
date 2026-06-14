@@ -60,12 +60,13 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
                   VALUES ($fenAfter, 22, 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR', 'b')
                   RETURNING id""".query[Long].unique
       _ <- sql"""INSERT INTO games (id, source, white_player_id, black_player_id,
-                                    white_rating, black_rating, mode, result, total_turns,
-                                    time_initial_sec, time_increment_sec,
+                                    white_rating, black_rating, mode, result, termination,
+                                    total_turns, time_initial_sec, time_increment_sec,
                                     initial_stake_amount, final_stake_amount,
                                     white_money_delta, black_money_delta, stake_currency,
                                     started_at, metadata_json)
-                 VALUES ($game1, 'dicechess.com', $alice, $bob, 1500, 1480, 'x2', 1, 4,
+                 VALUES ($game1, 'dicechess.com', $alice, $bob, 1500, 1480, 'x2', 1,
+                         'king_captured'::game_termination_enum, 4,
                          180, 2, 10, 20, ${BigDecimal("12.5")}, ${BigDecimal("-12.5")}, 'USD',
                          $t1, '{"tournament": "summer"}'::jsonb)""".update.run
       _ <- sql"""INSERT INTO games (id, source, black_player_id, black_rating, mode,
@@ -117,11 +118,14 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
           val first = games.head.hcursor
           assertEquals(first.get[String]("id"), Right(game1.toString))
           assertEquals(first.get[String]("mode"), Right("x2"))
+          assertEquals(first.get[String]("termination"), Right("king_captured"))
           assertEquals(first.get[Int]("white_rating"), Right(1500))
           assertEquals(first.get[BigDecimal]("white_money_delta"), Right(BigDecimal("12.5")))
           assertEquals(first.downField("white_player").get[String]("username"), Right("alice"))
           assertEquals(first.downField("black_player").get[String]("player_type"), Right("bot"))
           assertEquals(games(1).hcursor.get[String]("id"), Right(game2.toString))
+          // game2 seeded without a termination → NOT NULL DEFAULT 'unknown'
+          assertEquals(games(1).hcursor.get[String]("termination"), Right("unknown"))
         }
       }
     }
@@ -147,6 +151,7 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
       withClient(pg) { client =>
         getJson(client, s"/api/games/$game1").map { json =>
           val c = json.hcursor
+          assertEquals(c.get[String]("termination"), Right("king_captured"))
           assertEquals(c.get[Int]("total_turns"), Right(4))
           assertEquals(
             c.downField("metadata_json").get[String]("tournament"),

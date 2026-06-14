@@ -27,6 +27,7 @@ object GamesRepository:
       source: String,
       mode: String,
       result: Option[Int],
+      termination: String,
       totalTurns: Option[Int],
       startedAt: Option[OffsetDateTime],
       whiteRating: Option[Int],
@@ -61,6 +62,7 @@ object GamesRepository:
         source = source,
         mode = mode,
         result = result,
+        termination = termination,
         totalTurns = totalTurns,
         startedAt = startedAt,
         whiteRating = whiteRating,
@@ -78,7 +80,7 @@ object GamesRepository:
 
   private val gameColumns =
     fr"""
-      SELECT g.id, g.source, g.mode::text, g.result, g.total_turns, g.started_at,
+      SELECT g.id, g.source, g.mode::text, g.result, g.termination::text, g.total_turns, g.started_at,
              g.white_rating, g.black_rating, g.time_initial_sec, g.time_increment_sec,
              g.initial_stake_amount, g.final_stake_amount,
              g.white_money_delta, g.black_money_delta, g.stake_currency,
@@ -123,6 +125,7 @@ object GamesRepository:
         source = s.source,
         mode = s.mode,
         result = s.result,
+        termination = s.termination,
         totalTurns = s.totalTurns,
         startedAt = s.startedAt,
         whiteRating = s.whiteRating,
