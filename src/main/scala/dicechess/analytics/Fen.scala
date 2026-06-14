@@ -38,7 +38,9 @@ object Fen:
   def hash(normalizedFen: String): Long =
     LongHashFunction.xx().hashBytes(normalizedFen.getBytes(UTF_8))
 
-  /** Split a normalized FEN (always four fields, see [[normalize]]) into its stored columns. */
+  /** Split a normalized FEN into its stored columns, padding with `-` to four fields so it stays
+    * safe even if handed a non-normalized string.
+    */
   def fields(normalizedFen: String): Fields =
-    val p = normalizedFen.split(" ")
+    val p = normalizedFen.split(" ").padTo(4, "-")
     Fields(p(0), p(1), p(2), p(3))

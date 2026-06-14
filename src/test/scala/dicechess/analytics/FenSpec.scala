@@ -21,6 +21,11 @@ class FenSpec extends munit.FunSuite:
     assertEquals(f.castling, "KQkq")
     assertEquals(f.enPassant, "e3")
 
+  test("fields defensively pads a short input to four parts"):
+    val f = Fen.fields("8/8/8/8/8/8/8/8 w")
+    assertEquals(f.castling, "-")
+    assertEquals(f.enPassant, "-")
+
   // Regression guard: the hash MUST stay bit-compatible with the 141k positions originally
   // hashed by Python's `xxhash.xxh64(...).intdigest()`. These pairs were taken from production.
   test("fenHash is bit-compatible with the existing data"):
