@@ -166,5 +166,6 @@ The historical archive (140k+ games from the frozen `dicechess-lab` SQLite datab
 already been imported into the production PostgreSQL instance — the one-time Python ETL
 that performed it was retired together with the rest of the Python codebase.
 
-Ongoing ingestion is the scope of milestone **v0.2**: a transactional `POST /api/games`
-endpoint that validates every game against `dicechess-engine-scala` before persisting it.
+Ongoing ingestion uses the transactional `POST /api/games` endpoint, which validates every
+game against `dicechess-engine-scala` before persisting it. See the
+[Game Ingestion](/dicechess-analytics/ingestion) page for the contract.

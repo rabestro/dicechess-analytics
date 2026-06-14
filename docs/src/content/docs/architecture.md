@@ -275,7 +275,7 @@ sample rows — so old and new positions share one consistent `fen_hash` space.
 ### Resolution Flow
 
 When saving a turn or game, the backend follows a "get-or-create" loop (the historical
-import already populated the `positions` table this way; the upcoming `POST /api/games`
+import already populated the `positions` table this way; the `POST /api/games`
 endpoint applies the same flow to live games):
 
 1. **Normalize FEN**: Strip move counts.
