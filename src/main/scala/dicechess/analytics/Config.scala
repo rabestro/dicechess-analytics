@@ -18,7 +18,10 @@ final case class AppConfig(
     host: Host,
     port: Port,
     corsOrigins: List[String],
-    dbPoolSize: Int
+    dbPoolSize: Int,
+    // Bearer secret required to write via POST /api/games. None ⇒ writes are rejected
+    // (closed by default); reads are unaffected.
+    ingestToken: Option[String]
 )
 
 object AppConfig:
@@ -37,7 +40,8 @@ object AppConfig:
         .get("CORS_ORIGINS")
         .map(_.split(',').map(_.trim).filter(_.nonEmpty).toList)
         .getOrElse(List("http://localhost:5173", "http://localhost:3000")),
-      dbPoolSize = pool
+      dbPoolSize = pool,
+      ingestToken = env.get("INGEST_TOKEN").filter(_.nonEmpty)
     )
 
   private def parseHost(value: String): Either[String, Host] =

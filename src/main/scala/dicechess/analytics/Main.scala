@@ -14,7 +14,7 @@ object Main extends IOApp.Simple:
       _      <- Database
         .transactor(config.db, config.dbPoolSize)
         .use { xa =>
-          val app = Routes(xa, config.corsOrigins).httpApp
+          val app = Routes(xa, config.corsOrigins, config.ingestToken).httpApp
           EmberServerBuilder
             .default[IO]
             .withHost(config.host)

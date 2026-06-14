@@ -1,19 +1,25 @@
 package dicechess.analytics.api
 
+import java.nio.charset.StandardCharsets.UTF_8
+import java.security.MessageDigest
+
 import cats.effect.IO
 import cats.syntax.all.*
 import doobie.Transactor
 import doobie.implicits.*
 import org.http4s.HttpApp
 import org.http4s.server.middleware.CORS
+import sttp.model.StatusCode
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 
-import dicechess.analytics.repository.{GamesRepository, PlayersRepository}
+import dicechess.analytics.ingest.{GameReplay, ReplayError, TurnInput}
+import dicechess.analytics.repository.{GamesRepository, IngestRepository, PlayersRepository}
+import IngestProtocol.*
 import Protocol.*
 
 /** Wires endpoint definitions to repository logic and assembles the HTTP application. */
-final class Routes(xa: Transactor[IO], corsOrigins: List[String]):
+final class Routes(xa: Transactor[IO], corsOrigins: List[String], ingestToken: Option[String]):
 
   private val defaultLimit = 50
 
@@ -47,12 +53,51 @@ final class Routes(xa: Transactor[IO], corsOrigins: List[String]):
       .map(_.toRight(ApiError("Player not found")))
   }
 
+  // Bearer auth for the write path. No token configured ⇒ reject (closed by default).
+  // Constant-time compare to avoid leaking the secret via timing.
+  private def tokenAccepted(provided: String): Boolean =
+    ingestToken.exists(expected =>
+      MessageDigest.isEqual(expected.getBytes(UTF_8), provided.getBytes(UTF_8))
+    )
+
+  private def describe(error: ReplayError): String = error match
+    case ReplayError.InvalidInitialFen(_, reason) => s"Invalid initial FEN: $reason"
+    case ReplayError.UnknownDie(turn, value)      => s"Turn $turn: unknown die value $value"
+    case ReplayError.IllegalTurn(turn, played, _) =>
+      s"Turn $turn: illegal move sequence [${played.mkString(", ")}]"
+
+  private val ingestGameLogic =
+    Endpoints.ingestGame
+      .serverSecurityLogic[Unit, IO] { token =>
+        IO.pure(
+          if tokenAccepted(token) then Right(())
+          else Left((StatusCode.Unauthorized, ApiError("Invalid or missing ingest token")))
+        )
+      }
+      .serverLogic { _ => game =>
+        GameReplay.replay(game.initialFen, game.turns.map(t => TurnInput(t.dice, t.moves))) match
+          case Left(error) =>
+            IO.pure(Left((StatusCode.UnprocessableEntity, ApiError(describe(error)))))
+          case Right(replayed) =>
+            IngestRepository.persist(game, replayed).transact(xa).map { created =>
+              val status = if created then StatusCode.Created else StatusCode.Ok
+              Right((status, IngestResult(game.id, created)))
+            }
+      }
+
   private val swagger = SwaggerInterpreter()
     .fromEndpoints[IO](Endpoints.all, "Dice Chess Analytics API", "1.0.0")
 
   def httpApp: HttpApp[IO] =
     val routes = Http4sServerInterpreter[IO]().toRoutes(
-      swagger ++ List(listGamesLogic, getGameLogic, listPlayersLogic, getPlayerLogic, rootLogic)
+      swagger ++ List(
+        listGamesLogic,
+        getGameLogic,
+        listPlayersLogic,
+        getPlayerLogic,
+        rootLogic,
+        ingestGameLogic
+      )
     )
     val cors = CORS.policy
       .withAllowOriginHost(corsOrigins.flatMap(originHost).toSet)

@@ -83,7 +83,7 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
     yield ()
 
   private def withClient[A](pg: PostgreSQLContainer)(run: Client[IO] => IO[A]): IO[A] =
-    val app = Routes(transactor(pg), List("http://localhost:5173")).httpApp
+    val app = Routes(transactor(pg), List("http://localhost:5173"), None).httpApp
     run(Client.fromHttpApp(app))
 
   private def getJson(client: Client[IO], uri: String): IO[Json] =

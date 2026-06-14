@@ -69,3 +69,8 @@ object IngestProtocol:
       events: List[GameEventInput]
   ) derives ConfiguredCodec,
         Schema
+
+  /** Response: the game id and whether this request created it (`201`) or it already existed
+    * (`200`).
+    */
+  final case class IngestResult(id: UUID, created: Boolean) derives ConfiguredCodec, Schema
