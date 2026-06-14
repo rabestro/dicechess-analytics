@@ -2,7 +2,9 @@
 
 # Build stage — runs on the builder's native platform: JVM bytecode is
 # architecture-independent, so only the runtime stage needs multi-arch.
-FROM --platform=$BUILDPLATFORM eclipse-temurin:25-jdk AS build
+# Pin the OS variant (-noble = Ubuntu 24.04): the unsuffixed tag drifted to
+# Ubuntu 26.04, whose uutils multicall coreutils breaks the app launcher.
+FROM --platform=$BUILDPLATFORM eclipse-temurin:25-jdk-noble AS build
 
 ARG SBT_VERSION=1.12.11
 ADD https://github.com/sbt/sbt/releases/download/v${SBT_VERSION}/sbt-${SBT_VERSION}.tgz /tmp/sbt.tgz
@@ -23,13 +25,19 @@ COPY src/main/ src/main/
 RUN --mount=type=secret,id=github_token \
     GITHUB_TOKEN=$(cat /run/secrets/github_token) sbt stage
 
-# Runtime stage
-FROM eclipse-temurin:25-jre
+# Runtime stage — pinned to -noble (Ubuntu 24.04, GNU coreutils). The unsuffixed
+# eclipse-temurin:25-jre drifted to Ubuntu 26.04, which ships uutils as a single
+# multicall coreutils binary and breaks the sbt-native-packager launcher
+# (`coreutils: unknown program 'dicechess-analytics-backend'`).
+FROM eclipse-temurin:25-jre-noble
 
 # Static UID/GID for predictable permission mapping under security policies
 RUN groupadd --system --gid 10001 app && useradd --system --uid 10001 --gid app app
 WORKDIR /app
-COPY --from=build /build/target/universal/stage /app
+# --chown so the runtime user owns (and can execute) the app regardless of the
+# build environment's umask — a restrictive umask would otherwise stage the
+# launcher as 0700 root and the `app` user could not execute it.
+COPY --from=build --chown=app:app /build/target/universal/stage /app
 USER app
 
 EXPOSE 8000
