@@ -29,6 +29,7 @@ ThisBuild / credentials ++= (for {
 } yield Credentials("GitHub Package Registry", "maven.pkg.github.com", user, token)).toSeq
 
 val DiceChessEngineVersion    = "1.2.4"
+val ZeroAllocHashingVersion   = "0.16"
 val Http4sVersion             = "0.23.30"
 val TapirVersion              = "1.11.25"
 val DoobieVersion             = "1.0.0-RC9"
@@ -48,6 +49,9 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       // Game rules: the engine is the single source of truth
       "lv.id.jc" %% "dicechess-engine-scala" % DiceChessEngineVersion,
+
+      // Position hashing: xxHash64, bit-compatible with the historical fen_hash values
+      "net.openhft" % "zero-allocation-hashing" % ZeroAllocHashingVersion,
 
       // HTTP server & typed endpoints (Swagger UI served at /docs)
       "org.http4s"                  %% "http4s-ember-server"     % Http4sVersion,
