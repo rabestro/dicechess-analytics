@@ -78,7 +78,7 @@ object GamesRepository:
 
   private val gameColumns =
     fr"""
-      SELECT g.id, g.source, g.mode, g.result, g.total_turns, g.started_at,
+      SELECT g.id, g.source, g.mode::text, g.result, g.total_turns, g.started_at,
              g.white_rating, g.black_rating, g.time_initial_sec, g.time_increment_sec,
              g.initial_stake_amount, g.final_stake_amount,
              g.white_money_delta, g.black_money_delta, g.stake_currency,

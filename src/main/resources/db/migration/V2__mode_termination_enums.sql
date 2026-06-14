@@ -26,6 +26,10 @@ ALTER TABLE games ALTER COLUMN mode DROP DEFAULT;
 ALTER TABLE games ALTER COLUMN mode TYPE game_mode_enum USING mode::game_mode_enum;
 ALTER TABLE games ALTER COLUMN mode SET DEFAULT 'classic';
 
-ALTER TABLE games ALTER COLUMN termination TYPE game_termination_enum USING termination::game_termination_enum;
+-- COALESCE guards against any NULL termination (the V1 column was nullable),
+-- so the subsequent SET NOT NULL cannot fail. Current production data is already
+-- uniformly 'unknown', so this is defensive.
+ALTER TABLE games ALTER COLUMN termination TYPE game_termination_enum
+    USING COALESCE(termination, 'unknown')::game_termination_enum;
 ALTER TABLE games ALTER COLUMN termination SET DEFAULT 'unknown';
 ALTER TABLE games ALTER COLUMN termination SET NOT NULL;
