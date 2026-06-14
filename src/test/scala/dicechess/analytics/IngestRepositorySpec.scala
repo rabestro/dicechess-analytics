@@ -13,7 +13,7 @@ import munit.CatsEffectSuite
 import org.testcontainers.utility.DockerImageName
 
 import dicechess.analytics.api.IngestProtocol.*
-import dicechess.analytics.ingest.{GameReplay, TurnInput}
+import dicechess.analytics.ingest.{GameReplay, ReplayedGame, TurnInput}
 import dicechess.analytics.repository.{GamesRepository, IngestRepository}
 
 /** `IngestRepository.persist` against a fresh PostgreSQL (testcontainers). */
@@ -102,6 +102,15 @@ class IngestRepositorySpec extends CatsEffectSuite with TestContainerForAll:
             d.events.head.payload.flatMap(_.hcursor.get[Int]("bank").toOption),
             Some(100)
           )
+    }
+
+  test("rejects a turns / replayed-turns size mismatch"):
+    val id = UUID.fromString("00000000-0000-0000-0000-0000000000a3")
+    withContainers { pg =>
+      val mismatched = ReplayedGame(start, Nil) // 0 replayed turns vs 1 request turn
+      IngestRepository.persist(request(id), mismatched).transact(xa(pg)).attempt.map { outcome =>
+        assert(outcome.isLeft, s"expected a failure on size mismatch, got $outcome")
+      }
     }
 
   test("is idempotent on the game id"):

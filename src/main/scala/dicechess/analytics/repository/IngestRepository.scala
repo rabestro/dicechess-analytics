@@ -26,15 +26,27 @@ object IngestRepository:
     }
 
   private def insertAll(request: GameIngest, replayed: ReplayedGame): ConnectionIO[Unit] =
-    for
-      whiteId    <- request.whitePlayer.traverse(upsertPlayer)
-      blackId    <- request.blackPlayer.traverse(upsertPlayer)
-      initialPos <- PositionsRepository.getOrCreate(replayed.initialFen)
-      finalPos   <- PositionsRepository.getOrCreate(replayed.finalFen)
-      _          <- insertGame(request, whiteId, blackId, initialPos, finalPos, replayed.turns.size)
-      _ <- request.turns.zip(replayed.turns).traverse_((dto, rt) => insertTurn(request.id, dto, rt))
-      _ <- request.events.traverse_(event => insertEvent(request.id, event))
-    yield ()
+    if request.turns.sizeIs != replayed.turns.size then
+      new IllegalArgumentException(
+        s"turns/replayed mismatch: ${request.turns.size} request turns vs ${replayed.turns.size} replayed"
+      ).raiseError[ConnectionIO, Unit]
+    else
+      for
+        whiteId    <- request.whitePlayer.traverse(upsertPlayer)
+        blackId    <- request.blackPlayer.traverse(upsertPlayer)
+        initialPos <- PositionsRepository.getOrCreate(replayed.initialFen)
+        finalPos   <- PositionsRepository.getOrCreate(replayed.finalFen)
+        // ON CONFLICT DO NOTHING returns 0 if a concurrent request already inserted this game;
+        // in that case its turns/events are (being) written by that request — skip ours.
+        inserted <- insertGame(request, whiteId, blackId, initialPos, finalPos, replayed.turns.size)
+        _        <-
+          if inserted == 0 then ().pure[ConnectionIO]
+          else
+            request.turns
+              .zip(replayed.turns)
+              .traverse_((dto, rt) => insertTurn(request.id, dto, rt)) *>
+              request.events.traverse_(event => insertEvent(request.id, event))
+      yield ()
 
   private def upsertPlayer(player: PlayerInput): ConnectionIO[UUID] =
     sql"""INSERT INTO players (id, external_id, username, player_type)
@@ -66,7 +78,8 @@ object IngestRepository:
              ${request.timeInitialSec}, ${request.timeIncrementSec},
              ${request.initialStakeAmount}, ${request.finalStakeAmount},
              ${request.whiteMoneyDelta}, ${request.blackMoneyDelta}, ${request.stakeCurrency},
-             ${request.startedAt})""".update.run
+             ${request.startedAt})
+          ON CONFLICT (id) DO NOTHING""".update.run
 
   private def insertTurn(
       gameId: UUID,
