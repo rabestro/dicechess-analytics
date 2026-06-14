@@ -42,9 +42,9 @@ object GameReplay:
           .foldLeft(start) {
             case (Left(err), _)                       => Left(err)
             case (Right((state, acc)), (turn, index)) =>
-              replayTurn(state, turn, index).map((next, replayed) => (next, acc :+ replayed))
+              replayTurn(state, turn, index).map((next, replayed) => (next, replayed :: acc))
           }
-          .map((_, replayed) => ReplayedGame(FenParser.serialize(initial), replayed))
+          .map((_, acc) => ReplayedGame(FenParser.serialize(initial), acc.reverse))
 
   private def replayTurn(
       state: GameState,
