@@ -43,7 +43,10 @@ run = "sbt scalafmtCheckAll clean coverage test coverageReport"
 
 [tasks.format]
 description = "✨ Reformat the Scala sources"
-run = "sbt scalafmtAll"
+# Native scalafmt CLI (same binary/version as the lefthook hooks), so `format`
+# output is exactly what the pre-commit hook expects — no reflow surprises on
+# commit. `project.git = true` in .scalafmt.conf keeps it to tracked sources.
+run = "scalafmt --config .scalafmt.conf ."
 
 [tasks.run]
 description = "🚀 Start the API server (port 8000)"
