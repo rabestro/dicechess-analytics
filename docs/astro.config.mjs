@@ -33,6 +33,10 @@ export default defineConfig({
 					label: 'API Specification',
 					link: '/api-specification',
 				},
+				{
+					label: 'Game Ingestion',
+					link: '/ingestion',
+				},
 			],
 		}),
 	],

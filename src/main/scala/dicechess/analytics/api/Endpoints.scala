@@ -7,6 +7,7 @@ import sttp.tapir.*
 import sttp.tapir.json.circe.jsonBody
 
 import Protocol.*
+import IngestProtocol.*
 
 /** Typed endpoint definitions (the REST contract, kept identical to the FastAPI app). */
 object Endpoints:
@@ -69,4 +70,20 @@ object Endpoints:
       .errorOut(notFound)
       .description("Get a specific player by UUID")
 
-  val all = List(root, listGames, getGame, listPlayers, getPlayer)
+  /** Ingest a completed, engine-validated game. Bearer-authenticated (the write path).
+    *
+    * The status code is set at runtime on both channels: `201`/`200` on success (created vs
+    * already-existing), `401`/`422` on error (bad token / invalid game).
+    */
+  val ingestGame
+      : Endpoint[String, GameIngest, (StatusCode, ApiError), (StatusCode, IngestResult), Any] =
+    endpoint.post
+      .securityIn(auth.bearer[String]())
+      .in("api" / "games")
+      .in(jsonBody[GameIngest])
+      .out(statusCode.and(jsonBody[IngestResult]))
+      .errorOut(statusCode.and(jsonBody[ApiError]))
+      .description("Ingest a completed, engine-validated game (bearer auth required)")
+
+  val all: List[AnyEndpoint] =
+    List(root, listGames, getGame, listPlayers, getPlayer, ingestGame)

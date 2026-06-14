@@ -19,17 +19,18 @@ import dicechess.analytics.ingest.{ReplayedGame, ReplayedTurn}
   */
 object IngestRepository:
 
-  def persist(request: GameIngest, replayed: ReplayedGame): ConnectionIO[Unit] =
+  /** Persists the game; returns whether it was newly created (`false` if it already existed). */
+  def persist(request: GameIngest, replayed: ReplayedGame): ConnectionIO[Boolean] =
     sql"SELECT 1 FROM games WHERE id = ${request.id}".query[Int].option.flatMap {
-      case Some(_) => ().pure[ConnectionIO]
+      case Some(_) => false.pure[ConnectionIO]
       case None    => insertAll(request, replayed)
     }
 
-  private def insertAll(request: GameIngest, replayed: ReplayedGame): ConnectionIO[Unit] =
+  private def insertAll(request: GameIngest, replayed: ReplayedGame): ConnectionIO[Boolean] =
     if request.turns.sizeIs != replayed.turns.size then
       new IllegalArgumentException(
         s"turns/replayed mismatch: ${request.turns.size} request turns vs ${replayed.turns.size} replayed"
-      ).raiseError[ConnectionIO, Unit]
+      ).raiseError[ConnectionIO, Boolean]
     else
       for
         whiteId    <- request.whitePlayer.traverse(upsertPlayer)
@@ -46,7 +47,7 @@ object IngestRepository:
               .zip(replayed.turns)
               .traverse_((dto, rt) => insertTurn(request.id, dto, rt)) *>
               request.events.traverse_(event => insertEvent(request.id, event))
-      yield ()
+      yield inserted > 0
 
   private def upsertPlayer(player: PlayerInput): ConnectionIO[UUID] =
     sql"""INSERT INTO players (id, external_id, username, player_type)
