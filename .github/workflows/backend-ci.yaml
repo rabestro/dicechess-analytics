@@ -29,6 +29,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
+          # Full history so SonarCloud computes new-code / blame accurately
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Setup Java
@@ -49,3 +51,11 @@ jobs:
           # Resolves lv.id.jc:dicechess-engine-scala_3 from GitHub Packages
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Imports the scoverage report (see sonar-project.properties) into SonarCloud.
+      # Requires Automatic Analysis to be OFF for this project (CI-based analysis instead).
+      - name: SonarQube Scan
+        if: github.actor != 'dependabot[bot]'
+        uses: SonarSource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e # v8.2.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
