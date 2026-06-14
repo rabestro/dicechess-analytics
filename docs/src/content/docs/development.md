@@ -115,7 +115,7 @@ Environment variables (compatible with docker-compose):
 
 | Variable | Default | Notes |
 | :--- | :--- | :--- |
-| `DATABASE_URL` | — | `postgres://`, `postgresql://`, or `postgresql+asyncpg://` forms accepted |
+| `DATABASE_URL` | — | `postgres://`, `postgresql://`, or `postgresql+asyncpg://` accepted (the `+asyncpg` form is kept only for legacy `.env` compatibility — it is rewritten to a JDBC URL) |
 | `POSTGRES_HOST/PORT/DB/USER/PASSWORD` | docker-compose defaults | used when `DATABASE_URL` is absent |
 | `HTTP_HOST` / `HTTP_PORT` | `0.0.0.0` / `8000` | |
 | `CORS_ORIGINS` | `http://localhost:5173,http://localhost:3000` | comma-separated |
