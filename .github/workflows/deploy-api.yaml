@@ -81,43 +81,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # Same task devs run locally (`mise run smoke-test`); invoked directly here
+      # so the runner needs no mise (it already has docker + curl).
       - name: Smoke test (container boots and serves)
-        run: |
-          set -euo pipefail
-          docker network create smoke
-          docker run -d --name smoke-db --network smoke \
-            -e POSTGRES_USER=dicechess_user \
-            -e POSTGRES_PASSWORD=dicechess_password \
-            -e POSTGRES_DB=dicechess_analytics \
-            postgres:18-alpine
-          for _ in $(seq 1 30); do
-            docker exec smoke-db pg_isready -U dicechess_user -d dicechess_analytics && break
-            sleep 2
-          done
-          docker run -d --name smoke-api --network smoke -p 8000:8000 \
-            -e DATABASE_URL=postgresql://dicechess_user:dicechess_password@smoke-db:5432/dicechess_analytics \
-            dicechess-analytics-api:smoke
-          ok=
-          for _ in $(seq 1 30); do
-            if curl -fsS http://localhost:8000/ | grep -q 'Welcome to Dice Chess Analytics API'; then
-              ok=1; echo "smoke: GET / welcome OK"; break
-            fi
-            sleep 2
-          done
-          if [ -z "$ok" ]; then
-            echo "smoke: API never served GET / — logs:"; docker logs smoke-api | tail -60; exit 1
-          fi
-          # Write path is wired and closed by default (no token => 401).
-          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:8000/api/games \
-            -H 'Content-Type: application/json' -d '{}')
-          echo "smoke: POST /api/games (no token) -> $code"
-          [ "$code" = "401" ] || { echo "smoke: expected 401"; docker logs smoke-api | tail -60; exit 1; }
-
-      - name: Tear down smoke test
-        if: always()
-        run: |
-          docker rm -f smoke-api smoke-db 2>/dev/null || true
-          docker network rm smoke 2>/dev/null || true
+        run: IMAGE=dicechess-analytics-api:smoke bash .mise/tasks/smoke-test
 
       - name: Build and push image
         uses: docker/build-push-action@v5

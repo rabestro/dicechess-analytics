@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+#MISE description="🔥 Boot a built API image against a throwaway Postgres and check it serves"
+#
+# Used by CI (.github/workflows/deploy-api.yaml) before publishing :latest, and
+# runnable locally against any locally-built image:
+#   docker build -t dc-api:smoke . && IMAGE=dc-api:smoke mise run smoke-test
+set -euo pipefail
+
+IMAGE="${IMAGE:-dicechess-analytics-api:smoke}"
+PORT="${PORT:-8000}"
+NET="smoke-net-$$"
+DB="smoke-db-$$"
+API="smoke-api-$$"
+
+cleanup() {
+  docker rm -f "$API" "$DB" >/dev/null 2>&1 || true
+  docker network rm "$NET" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
+
+docker network create "$NET" >/dev/null
+docker run -d --name "$DB" --network "$NET" \
+  -e POSTGRES_USER=dicechess_user \
+  -e POSTGRES_PASSWORD=dicechess_password \
+  -e POSTGRES_DB=dicechess_analytics \
+  postgres:18-alpine >/dev/null
+
+for _ in $(seq 1 30); do
+  docker exec "$DB" pg_isready -U dicechess_user -d dicechess_analytics >/dev/null 2>&1 && break
+  sleep 2
+done
+# Fail fast (and loudly) if the database never came up, rather than starting the
+# API against an unavailable DB and timing out on an opaque error.
+docker exec "$DB" pg_isready -U dicechess_user -d dicechess_analytics >/dev/null 2>&1 || {
+  echo "smoke: Postgres never became ready"; docker logs "$DB" | tail -60; exit 1
+}
+
+docker run -d --name "$API" --network "$NET" -p "$PORT:8000" \
+  -e DATABASE_URL="postgresql://dicechess_user:dicechess_password@$DB:5432/dicechess_analytics" \
+  "$IMAGE" >/dev/null
+
+ok=
+for _ in $(seq 1 30); do
+  if curl -fsS "http://localhost:$PORT/" | grep -q 'Welcome to Dice Chess Analytics API'; then
+    ok=1; echo "smoke: GET / welcome OK"; break
+  fi
+  sleep 2
+done
+[ -n "$ok" ] || { echo "smoke: API never served GET /"; docker logs "$API" | tail -60; exit 1; }
+
+# Write path is wired and closed by default (no token => 401).
+code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "http://localhost:$PORT/api/games" \
+  -H 'Content-Type: application/json' -d '{}')
+echo "smoke: POST /api/games (no token) -> $code"
+[ "$code" = "401" ] || { echo "smoke: expected 401"; docker logs "$API" | tail -60; exit 1; }
+
+echo "smoke: PASS"
