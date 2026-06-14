@@ -63,6 +63,29 @@ jobs:
             org.opencontainers.image.authors=Jegors Čemisovs
             org.opencontainers.image.documentation=https://rabestro.github.io/dicechess-analytics
 
+      # Build the amd64 image into the runner's Docker first and prove it actually
+      # boots and serves before publishing :latest. This guards against
+      # "builds fine, won't start" regressions like the temurin/Ubuntu-26.04
+      # uutils launcher break (#116), which CI happily pushed as :latest.
+      - name: Build amd64 image for the smoke test
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: dicechess-analytics-api:smoke
+          build-args: |
+            GITHUB_ACTOR=${{ github.actor }}
+          secrets: |
+            github_token=${{ secrets.GITHUB_TOKEN }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Same task devs run locally (`mise run smoke-test`); invoked directly here
+      # so the runner needs no mise (it already has docker + curl).
+      - name: Smoke test (container boots and serves)
+        run: IMAGE=dicechess-analytics-api:smoke bash .mise/tasks/smoke-test
+
       - name: Build and push image
         uses: docker/build-push-action@v5
         with:
