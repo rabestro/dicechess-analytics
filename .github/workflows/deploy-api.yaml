@@ -63,6 +63,62 @@ jobs:
             org.opencontainers.image.authors=Jegors Čemisovs
             org.opencontainers.image.documentation=https://rabestro.github.io/dicechess-analytics
 
+      # Build the amd64 image into the runner's Docker first and prove it actually
+      # boots and serves before publishing :latest. This guards against
+      # "builds fine, won't start" regressions like the temurin/Ubuntu-26.04
+      # uutils launcher break (#116), which CI happily pushed as :latest.
+      - name: Build amd64 image for the smoke test
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: dicechess-analytics-api:smoke
+          build-args: |
+            GITHUB_ACTOR=${{ github.actor }}
+          secrets: |
+            github_token=${{ secrets.GITHUB_TOKEN }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test (container boots and serves)
+        run: |
+          set -euo pipefail
+          docker network create smoke
+          docker run -d --name smoke-db --network smoke \
+            -e POSTGRES_USER=dicechess_user \
+            -e POSTGRES_PASSWORD=dicechess_password \
+            -e POSTGRES_DB=dicechess_analytics \
+            postgres:18-alpine
+          for _ in $(seq 1 30); do
+            docker exec smoke-db pg_isready -U dicechess_user -d dicechess_analytics && break
+            sleep 2
+          done
+          docker run -d --name smoke-api --network smoke -p 8000:8000 \
+            -e DATABASE_URL=postgresql://dicechess_user:dicechess_password@smoke-db:5432/dicechess_analytics \
+            dicechess-analytics-api:smoke
+          ok=
+          for _ in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/ | grep -q 'Welcome to Dice Chess Analytics API'; then
+              ok=1; echo "smoke: GET / welcome OK"; break
+            fi
+            sleep 2
+          done
+          if [ -z "$ok" ]; then
+            echo "smoke: API never served GET / — logs:"; docker logs smoke-api | tail -60; exit 1
+          fi
+          # Write path is wired and closed by default (no token => 401).
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:8000/api/games \
+            -H 'Content-Type: application/json' -d '{}')
+          echo "smoke: POST /api/games (no token) -> $code"
+          [ "$code" = "401" ] || { echo "smoke: expected 401"; docker logs smoke-api | tail -60; exit 1; }
+
+      - name: Tear down smoke test
+        if: always()
+        run: |
+          docker rm -f smoke-api smoke-db 2>/dev/null || true
+          docker network rm smoke 2>/dev/null || true
+
       - name: Build and push image
         uses: docker/build-push-action@v5
         with:
