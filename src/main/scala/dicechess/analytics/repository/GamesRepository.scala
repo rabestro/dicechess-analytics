@@ -103,7 +103,7 @@ object GamesRepository:
       query.mode.map(m => fr"g.mode::text = $m"),
       query.result.map(r => fr"g.result = $r"),
       query.dateFrom.map(d => fr"g.started_at >= $d"),
-      query.dateTo.map(d => fr"g.started_at < ($d + INTERVAL '1 day')")
+      query.dateTo.map(d => fr"g.started_at < ${d.plusDays(1)}")
     )
     val limit  = query.limit.getOrElse(defaultLimit)
     val offset = query.offset.getOrElse(0)
