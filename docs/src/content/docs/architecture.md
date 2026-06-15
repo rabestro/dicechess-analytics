@@ -137,10 +137,10 @@ One completed match.
 | `termination` | `game_termination_enum`, `NOT NULL DEFAULT 'unknown'` — *how* the game ended. |
 | `initial_position_id` / `final_position_id` | FK → `positions` — the board at the start and at the end. |
 | `total_turns` | Number of turns. |
-| `time_initial_sec` / `time_increment_sec` | Time control. |
+| `time_initial_sec` / `time_increment_sec` | Time control. **`time_initial_sec` is in _minutes_** (despite the name), `time_increment_sec` in seconds — see [Domain Conventions](/dicechess-analytics/domain-conventions). |
 | `initial_stake_amount` / `final_stake_amount` | The pot; the final amount can differ from the initial because of **doubling**. |
 | `white_money_delta` / `black_money_delta` | `NUMERIC` actual profit/loss per player. Stored independently (not just `±x`) because the site takes a rake, so the two deltas are **not symmetric**. |
-| `stake_currency` | Currency of the stakes. |
+| `stake_currency` | In-game currency (`GOLD`), not an ISO code; an amount of `0` means a tournament game — see [Domain Conventions](/dicechess-analytics/domain-conventions). |
 | `started_at` | Indexed (`ix_games_started_at`). |
 | `metadata_json` | Raw source-specific extras. |
 
@@ -154,7 +154,7 @@ One turn = a dice roll plus up to three micro-moves. `UNIQUE (game_id, turn_numb
 | `turn_number` | 1-based, ordered within the game. |
 | `active_color` | `w` or `b` — who is to move. |
 | `position_id` | FK → `positions`: the board **before** the turn. |
-| `dice_sorted` | The three rolled dice as sorted digits `1`–`6` (`1`=pawn … `6`=king), e.g. `"125"`. |
+| `dice_sorted` | The three rolled dice (piece types), stored as sorted piece **letters cased by the side to move** — white `BPQ`, black `bpq`. A small legacy slice instead uses digits `1`–`6` (`1`=pawn … `6`=king, e.g. `"125"`) — see [Domain Conventions](/dicechess-analytics/domain-conventions). |
 | `played_moves` | `VARCHAR(5)[]` of UCI micro-moves, e.g. `["e2e4","g1f3"]`. Up to three; **empty** when the player had no legal move. |
 | `position_after_id` | FK → `positions`: the board **after** the turn. Positions are recorded at turn boundaries, not per micro-move. |
 | `thinking_time_ms` | Time spent on the turn. |
