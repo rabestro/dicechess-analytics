@@ -96,6 +96,27 @@ object Endpoints:
       .errorOut(notFound)
       .description("Get a specific player by UUID")
 
+  val continuations: PublicEndpoint[ContinuationsQuery, Unit, PositionContinuations, Any] =
+    endpoint.get
+      .in("api" / "positions" / "continuations")
+      .in(query[String]("fen").description("Starting position FEN (normalized server-side)"))
+      .in(query[String]("dice").description("Dice roll as sorted piece letters, e.g. BPQ"))
+      .in(
+        query[Option[String]]("mode")
+          .description("Game mode: classic or x2 (omit for all)")
+          .validateOption(Validator.enumeration(List("classic", "x2")))
+      )
+      .in(
+        query[Option[Int]]("limit")
+          .description("Max continuations to return, default 50")
+          .validateOption(Validator.inRange(1, 200))
+      )
+      .mapInTo[ContinuationsQuery]
+      .out(jsonBody[PositionContinuations])
+      .description(
+        "Continuations from a position+dice, grouped by resulting position, ranked by frequency"
+      )
+
   /** Ingest a completed, engine-validated game. Bearer-authenticated (the write path).
     *
     * The status code is set at runtime on both channels: `201`/`200` on success (created vs
@@ -112,4 +133,4 @@ object Endpoints:
       .description("Ingest a completed, engine-validated game (bearer auth required)")
 
   val all: List[AnyEndpoint] =
-    List(root, version, listGames, getGame, listPlayers, getPlayer, ingestGame)
+    List(root, version, listGames, getGame, listPlayers, getPlayer, continuations, ingestGame)

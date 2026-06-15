@@ -3,10 +3,12 @@ package dicechess.analytics.repository
 import cats.syntax.all.*
 import doobie.*
 import doobie.implicits.*
+import doobie.util.fragments.whereAndOpt
 
 import dicechess.analytics.Fen
+import dicechess.analytics.api.Protocol.{Continuation, PositionContinuations}
 
-/** Write access to the deduplicated `positions` table. */
+/** Access to the deduplicated `positions` table. */
 object PositionsRepository:
 
   /** Returns the id of the position for `fen`, inserting it if new.
@@ -27,4 +29,51 @@ object PositionsRepository:
                       ${f.activeColor}, ${f.castling}, ${f.enPassant})
               ON CONFLICT (normalized_fen) DO UPDATE SET normalized_fen = EXCLUDED.normalized_fen
               RETURNING id""".query[Long].unique
+    }
+
+  /** Continuations played from `fen` after rolling `dice`, grouped by the resulting position so
+    * that permutations of the micro-moves collapse, ranked by frequency. Win/draw/loss counts are
+    * from the moving side's perspective. The dice key is upper-cased and sorted to the stored form.
+    */
+  def continuations(
+      fen: String,
+      dice: String,
+      mode: Option[String],
+      limit: Int
+  ): ConnectionIO[PositionContinuations] =
+    val nf      = Fen.normalize(fen)
+    val diceKey = dice.trim.toUpperCase.sorted
+    val where   = whereAndOpt(
+      Some(fr"p.normalized_fen = $nf"),
+      Some(fr"t.dice_sorted = $diceKey"),
+      mode.map(m => fr"g.mode::text = $m")
+    )
+    // `sum(count(*)) OVER ()` is the total games across ALL groups, evaluated before LIMIT, so the
+    // reported total stays correct even when more continuations exist than `limit`. `played_moves`
+    // is nullable, so the representative ordering is read as Option and missing moves yield [].
+    val select =
+      fr"""SELECT pa.normalized_fen,
+                  (array_agg(array_to_string(t.played_moves, ' ')
+                             ORDER BY array_to_string(t.played_moves, ' ')))[1],
+                  count(*),
+                  count(*) FILTER (WHERE (t.active_color = 'w' AND g.result = 1)
+                                      OR (t.active_color = 'b' AND g.result = -1)),
+                  count(*) FILTER (WHERE g.result = 0),
+                  count(*) FILTER (WHERE (t.active_color = 'w' AND g.result = -1)
+                                      OR (t.active_color = 'b' AND g.result = 1)),
+                  (sum(count(*)) OVER ())::int
+           FROM turns t
+           JOIN positions p  ON p.id = t.position_id
+           JOIN positions pa ON pa.id = t.position_after_id
+           JOIN games g      ON g.id = t.game_id"""
+    val query =
+      select ++ where ++ fr"GROUP BY pa.normalized_fen ORDER BY count(*) DESC LIMIT $limit"
+    query.query[(String, Option[String], Int, Int, Int, Int, Int)].to[List].map { rows =>
+      val items = rows.map { case (rfen, movesText, games, wins, draws, losses, _) =>
+        val decided = wins + draws + losses
+        val winRate = if decided > 0 then (wins + 0.5 * draws) / decided else 0.0
+        val moves   = movesText.fold(List.empty[String])(_.split(' ').toList.filter(_.nonEmpty))
+        Continuation(rfen, moves, games, wins, draws, losses, winRate)
+      }
+      PositionContinuations(nf, diceKey, rows.headOption.map(_._7).getOrElse(0), items)
     }
