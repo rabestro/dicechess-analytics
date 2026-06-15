@@ -11,6 +11,10 @@ on:
       - "Dockerfile"
       - ".dockerignore"
       - ".github/workflows/deploy-api.yaml"
+  # Rebuild after a release so the new vX.Y.Z tag is published as an image tag.
+  workflow_run:
+    workflows: ["Ops: Release"]
+    types: [completed]
   workflow_dispatch:
 
 # Newest commit wins: cancelling a superseded build prevents an older image
@@ -26,6 +30,8 @@ env:
 jobs:
   build-and-push:
     name: Build & Push
+    # On a release (workflow_run) only proceed if the release itself succeeded.
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read # checkout
@@ -34,7 +40,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
+          # Full history + tags so a release version can be resolved from the tag.
+          fetch-depth: 0
           persist-credentials: false
+
+      - name: Resolve app version
+        id: version
+        run: |
+          git fetch --force --tags
+          # The tag pointing at HEAD is the release version; otherwise a dev build.
+          app_version=$(git tag --points-at HEAD | head -n 1)
+          if [ -z "$app_version" ]; then
+            app_version="dev-$(git rev-parse --short HEAD)"
+          fi
+          echo "app_version=$app_version" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $app_version"
 
       - name: Set up QEMU (arm64 emulation for the runtime stage)
         uses: docker/setup-qemu-action@v3
@@ -55,7 +75,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_run' }}
+            type=raw,value=${{ steps.version.outputs.app_version }}
             type=sha,format=short
           # metadata-action covers title/description/source/licenses/version/revision
           # automatically; these two are the only OCI labels it cannot derive
