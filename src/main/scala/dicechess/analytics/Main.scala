@@ -4,8 +4,17 @@ import cats.effect.{IO, IOApp}
 import org.http4s.ember.server.EmberServerBuilder
 
 import dicechess.analytics.api.Routes
+import dicechess.analytics.api.Protocol.VersionInfo
 
 object Main extends IOApp.Simple:
+
+  // Effective version: the release tag injected at deploy time (APP_VERSION env), else the
+  // build.sbt version baked by BuildInfo (e.g. 0.1.0-SNAPSHOT for local/dev).
+  private val versionInfo = VersionInfo(
+    name = BuildInfo.name,
+    version = sys.env.get("APP_VERSION").filter(_.nonEmpty).getOrElse(BuildInfo.version),
+    scalaVersion = BuildInfo.scalaVersion
+  )
 
   def run: IO[Unit] =
     for
@@ -14,7 +23,7 @@ object Main extends IOApp.Simple:
       _      <- Database
         .transactor(config.db, config.dbPoolSize)
         .use { xa =>
-          val app = Routes(xa, config.corsOrigins, config.ingestToken).httpApp
+          val app = Routes(xa, config.corsOrigins, config.ingestToken, versionInfo).httpApp
           EmberServerBuilder
             .default[IO]
             .withHost(config.host)

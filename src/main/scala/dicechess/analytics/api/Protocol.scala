@@ -135,3 +135,8 @@ object Protocol:
   final case class ApiError(detail: String) derives ConfiguredCodec, Schema
 
   final case class Welcome(message: String, docs: String) derives ConfiguredCodec, Schema
+
+  /** Build/version information of the running API, served at `/version` for ops visibility. */
+  final case class VersionInfo(name: String, version: String, scalaVersion: String)
+      derives ConfiguredCodec,
+        Schema
