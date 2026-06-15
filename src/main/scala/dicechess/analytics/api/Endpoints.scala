@@ -1,5 +1,6 @@
 package dicechess.analytics.api
 
+import java.time.LocalDate
 import java.util.UUID
 
 import sttp.model.StatusCode
@@ -21,16 +22,34 @@ object Endpoints:
       .out(jsonBody[Welcome])
       .description("Welcome endpoint providing basic API information")
 
-  val listGames: PublicEndpoint[
-    (Option[UUID], Option[Int], Option[Int], Option[Int]),
-    Unit,
-    List[GameSummary],
-    Any
-  ] =
+  val listGames: PublicEndpoint[GamesQuery, Unit, Page[GameSummary], Any] =
     endpoint.get
       .in("api" / "games")
       .in(query[Option[UUID]]("player_id").description("Filter by player UUID (white or black)"))
       .in(query[Option[Int]]("min_turns").description("Minimum number of turns in the game"))
+      .in(query[Option[Int]]("max_turns").description("Maximum number of turns in the game"))
+      .in(
+        query[Option[String]]("mode")
+          .description("Game mode: classic or x2")
+          .validateOption(Validator.enumeration(List("classic", "x2")))
+      )
+      .in(
+        query[Option[Int]]("result")
+          .description("Result from White's perspective: 1 win, 0 draw, -1 loss")
+          .validateOption(Validator.inRange(-1, 1))
+      )
+      .in(query[Option[LocalDate]]("date_from").description("Earliest start date, inclusive"))
+      .in(query[Option[LocalDate]]("date_to").description("Latest start date, inclusive"))
+      .in(
+        query[Option[String]]("sort")
+          .description("Sort field: started_at (default) or total_turns")
+          .validateOption(Validator.enumeration(List("started_at", "total_turns")))
+      )
+      .in(
+        query[Option[String]]("order")
+          .description("Sort direction: desc (default) or asc")
+          .validateOption(Validator.enumeration(List("asc", "desc")))
+      )
       .in(
         query[Option[Int]]("limit")
           .description("Page size, default 50")
@@ -41,8 +60,9 @@ object Endpoints:
           .description("Number of games to skip")
           .validateOption(Validator.min(0))
       )
-      .out(jsonBody[List[GameSummary]])
-      .description("List and filter games")
+      .mapInTo[GamesQuery]
+      .out(jsonBody[Page[GameSummary]])
+      .description("List, filter, sort and paginate games")
 
   val getGame: PublicEndpoint[UUID, ApiError, GameDetail, Any] =
     endpoint.get

@@ -96,6 +96,16 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
       }
       .map(body => parse(body).fold(throw _, identity))
 
+  /** Items of a Page envelope `{ items, total, limit, offset }`. */
+  private def itemsOf(json: Json): Vector[Json] =
+    json.hcursor.downField("items").focus.flatMap(_.asArray).getOrElse(fail("expected items array"))
+
+  private def totalOf(json: Json): Long =
+    json.hcursor.get[Long]("total").fold(e => fail(s"missing total: $e"), identity)
+
+  private def idsOf(json: Json): Vector[Either[io.circe.DecodingFailure, String]] =
+    itemsOf(json).map(_.hcursor.get[String]("id"))
+
   test("GET / returns the welcome message"):
     withContainers { pg =>
       withClient(pg) { client =>
@@ -113,7 +123,8 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
     withContainers { pg =>
       withClient(pg) { client =>
         getJson(client, "/api/games").map { json =>
-          val games = json.asArray.getOrElse(fail("expected a JSON array"))
+          assertEquals(totalOf(json), 2L)
+          val games = itemsOf(json)
           assertEquals(games.size, 2)
           val first = games.head.hcursor
           assertEquals(first.get[String]("id"), Right(game1.toString))
@@ -137,12 +148,10 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
           byBob <- getJson(client, s"/api/games?player_id=$bob")
           byMin <- getJson(client, "/api/games?min_turns=3")
         yield
-          assertEquals(byBob.asArray.map(_.size), Some(1))
-          assertEquals(byMin.asArray.map(_.size), Some(1))
-          assertEquals(
-            byMin.asArray.flatMap(_.headOption).map(_.hcursor.get[String]("id")),
-            Some(Right(game1.toString))
-          )
+          assertEquals(itemsOf(byBob).size, 1)
+          assertEquals(totalOf(byBob), 1L)
+          assertEquals(itemsOf(byMin).size, 1)
+          assertEquals(itemsOf(byMin).head.hcursor.get[String]("id"), Right(game1.toString))
       }
     }
 
@@ -179,10 +188,55 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
     withContainers { pg =>
       withClient(pg) { client =>
         getJson(client, "/api/games?limit=1&offset=1").map { json =>
-          val games = json.asArray.getOrElse(fail("expected a JSON array"))
+          val games = itemsOf(json)
           assertEquals(games.size, 1)
           assertEquals(games.head.hcursor.get[String]("id"), Right(game2.toString))
+          // total reflects the full match count, independent of limit/offset
+          assertEquals(totalOf(json), 2L)
         }
+      }
+    }
+
+  test("GET /api/games filters by mode and result"):
+    withContainers { pg =>
+      withClient(pg) { client =>
+        for
+          x2       <- getJson(client, "/api/games?mode=x2")
+          classic  <- getJson(client, "/api/games?mode=classic")
+          whiteWin <- getJson(client, "/api/games?result=1")
+          blackWin <- getJson(client, "/api/games?result=-1")
+        yield
+          assertEquals(totalOf(x2), 1L)
+          assertEquals(idsOf(x2), Vector(Right(game1.toString)))
+          assertEquals(idsOf(classic), Vector(Right(game2.toString)))
+          assertEquals(idsOf(whiteWin), Vector(Right(game1.toString)))
+          assertEquals(idsOf(blackWin), Vector(Right(game2.toString)))
+      }
+    }
+
+  test("GET /api/games filters by started_at date range"):
+    withContainers { pg =>
+      withClient(pg) { client =>
+        // game1 started 2026-06-10, game2 started 2026-06-01
+        for
+          from <- getJson(client, "/api/games?date_from=2026-06-05")
+          to   <- getJson(client, "/api/games?date_to=2026-06-05")
+        yield
+          assertEquals(idsOf(from), Vector(Right(game1.toString)))
+          assertEquals(idsOf(to), Vector(Right(game2.toString)))
+      }
+    }
+
+  test("GET /api/games filters by max_turns and sorts by total_turns"):
+    withContainers { pg =>
+      withClient(pg) { client =>
+        // game1 has 4 turns, game2 has 2
+        for
+          maxThree <- getJson(client, "/api/games?max_turns=3")
+          asc      <- getJson(client, "/api/games?sort=total_turns&order=asc")
+        yield
+          assertEquals(idsOf(maxThree), Vector(Right(game2.toString)))
+          assertEquals(idsOf(asc), Vector(Right(game2.toString), Right(game1.toString)))
       }
     }
 

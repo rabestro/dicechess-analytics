@@ -27,11 +27,8 @@ final class Routes(xa: Transactor[IO], corsOrigins: List[String], ingestToken: O
     IO.pure(Welcome(message = "Welcome to Dice Chess Analytics API", docs = "/docs"))
   )
 
-  private val listGamesLogic = Endpoints.listGames.serverLogicSuccess[IO] {
-    case (playerId, minTurns, limit, offset) =>
-      GamesRepository
-        .list(playerId, minTurns, limit.getOrElse(defaultLimit), offset.getOrElse(0))
-        .transact(xa)
+  private val listGamesLogic = Endpoints.listGames.serverLogicSuccess[IO] { query =>
+    GamesRepository.list(query, defaultLimit).transact(xa)
   }
 
   private val getGameLogic = Endpoints.getGame.serverLogic[IO] { gameId =>
