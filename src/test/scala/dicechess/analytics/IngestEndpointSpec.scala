@@ -14,6 +14,7 @@ import org.http4s.{AuthScheme, Credentials, MediaType, Method, Request, Status, 
 import org.testcontainers.utility.DockerImageName
 
 import dicechess.analytics.api.IngestProtocol.*
+import dicechess.analytics.api.Protocol.VersionInfo
 import dicechess.analytics.api.Routes
 
 /** End-to-end tests for `POST /api/games` (auth + replay + persist) via the full http4s app. */
@@ -25,7 +26,8 @@ class IngestEndpointSpec extends CatsEffectSuite with TestContainerForAll:
   override def afterContainersStart(pg: PostgreSQLContainer): Unit =
     Database.migrate(DbConfig(pg.jdbcUrl, pg.username, pg.password)).unsafeRunSync()
 
-  private val token = "test-ingest-token"
+  private val token       = "test-ingest-token"
+  private val testVersion = VersionInfo("test", "test", "test")
 
   private def transactor(pg: PostgreSQLContainer): Transactor[IO] =
     Transactor.fromDriverManager[IO](
@@ -37,7 +39,8 @@ class IngestEndpointSpec extends CatsEffectSuite with TestContainerForAll:
     )
 
   private def withClient[A](pg: PostgreSQLContainer)(run: Client[IO] => IO[A]): IO[A] =
-    val app = Routes(transactor(pg), List("http://localhost:5173"), Some(token)).httpApp
+    val app =
+      Routes(transactor(pg), List("http://localhost:5173"), Some(token), testVersion).httpApp
     run(Client.fromHttpApp(app))
 
   private val start = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"

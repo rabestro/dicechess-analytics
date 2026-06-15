@@ -17,6 +17,7 @@ import org.http4s.{Method, Request, Status, Uri}
 import org.testcontainers.utility.DockerImageName
 
 import dicechess.analytics.api.Routes
+import dicechess.analytics.api.Protocol.VersionInfo
 
 /** End-to-end API tests: Flyway migrates a fresh PostgreSQL (testcontainers), data is seeded with
   * plain SQL, endpoints are exercised through the full http4s application.
@@ -83,8 +84,10 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
                          '{"bank": 100}'::jsonb)""".update.run
     yield ()
 
+  private val testVersion = VersionInfo("dicechess-analytics-backend", "test-9.9.9", "3.8.3")
+
   private def withClient[A](pg: PostgreSQLContainer)(run: Client[IO] => IO[A]): IO[A] =
-    val app = Routes(transactor(pg), List("http://localhost:5173"), None).httpApp
+    val app = Routes(transactor(pg), List("http://localhost:5173"), None, testVersion).httpApp
     run(Client.fromHttpApp(app))
 
   private def getJson(client: Client[IO], uri: String): IO[Json] =
@@ -115,6 +118,17 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
             Right("Welcome to Dice Chess Analytics API")
           )
           assertEquals(json.hcursor.get[String]("docs"), Right("/docs"))
+        }
+      }
+    }
+
+  test("GET /version reports the injected build/version info"):
+    withContainers { pg =>
+      withClient(pg) { client =>
+        getJson(client, "/version").map { json =>
+          assertEquals(json.hcursor.get[String]("name"), Right("dicechess-analytics-backend"))
+          assertEquals(json.hcursor.get[String]("version"), Right("test-9.9.9"))
+          assertEquals(json.hcursor.get[String]("scala_version"), Right("3.8.3"))
         }
       }
     }

@@ -19,13 +19,20 @@ import IngestProtocol.*
 import Protocol.*
 
 /** Wires endpoint definitions to repository logic and assembles the HTTP application. */
-final class Routes(xa: Transactor[IO], corsOrigins: List[String], ingestToken: Option[String]):
+final class Routes(
+    xa: Transactor[IO],
+    corsOrigins: List[String],
+    ingestToken: Option[String],
+    version: VersionInfo
+):
 
   private val defaultLimit = 50
 
   private val rootLogic = Endpoints.root.serverLogicSuccess[IO](_ =>
     IO.pure(Welcome(message = "Welcome to Dice Chess Analytics API", docs = "/docs"))
   )
+
+  private val versionLogic = Endpoints.version.serverLogicSuccess[IO](_ => IO.pure(version))
 
   private val listGamesLogic = Endpoints.listGames.serverLogicSuccess[IO] { query =>
     GamesRepository.list(query, defaultLimit).transact(xa)
@@ -83,7 +90,7 @@ final class Routes(xa: Transactor[IO], corsOrigins: List[String], ingestToken: O
       }
 
   private val swagger = SwaggerInterpreter()
-    .fromEndpoints[IO](Endpoints.all, "Dice Chess Analytics API", "1.0.0")
+    .fromEndpoints[IO](Endpoints.all, "Dice Chess Analytics API", version.version)
 
   def httpApp: HttpApp[IO] =
     val routes = Http4sServerInterpreter[IO]().toRoutes(
@@ -93,6 +100,7 @@ final class Routes(xa: Transactor[IO], corsOrigins: List[String], ingestToken: O
         listPlayersLogic,
         getPlayerLogic,
         rootLogic,
+        versionLogic,
         ingestGameLogic
       )
     )

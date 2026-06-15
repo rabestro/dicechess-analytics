@@ -22,6 +22,12 @@ object Endpoints:
       .out(jsonBody[Welcome])
       .description("Welcome endpoint providing basic API information")
 
+  val version: PublicEndpoint[Unit, Unit, VersionInfo, Any] =
+    endpoint.get
+      .in("version")
+      .out(jsonBody[VersionInfo])
+      .description("Build and version information of the running API")
+
   val listGames: PublicEndpoint[GamesQuery, Unit, Page[GameSummary], Any] =
     endpoint.get
       .in("api" / "games")
@@ -106,4 +112,4 @@ object Endpoints:
       .description("Ingest a completed, engine-validated game (bearer auth required)")
 
   val all: List[AnyEndpoint] =
-    List(root, listGames, getGame, listPlayers, getPlayer, ingestGame)
+    List(root, version, listGames, getGame, listPlayers, getPlayer, ingestGame)

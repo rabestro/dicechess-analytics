@@ -97,6 +97,7 @@ jobs:
           tags: dicechess-analytics-api:smoke
           build-args: |
             GITHUB_ACTOR=${{ github.actor }}
+            APP_VERSION=${{ steps.version.outputs.app_version }}
           secrets: |
             github_token=${{ secrets.GITHUB_TOKEN }}
           cache-from: type=gha
@@ -115,6 +116,7 @@ jobs:
           push: true
           build-args: |
             GITHUB_ACTOR=${{ github.actor }}
+            APP_VERSION=${{ steps.version.outputs.app_version }}
           secrets: |
             github_token=${{ secrets.GITHUB_TOKEN }}
           tags: ${{ steps.meta.outputs.tags }}

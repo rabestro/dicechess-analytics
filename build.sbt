@@ -43,9 +43,13 @@ val TestcontainersJavaVersion = "1.21.3"
 val DockerJavaVersion         = "3.7.1"
 
 lazy val root = (project in file("."))
-  .enablePlugins(JavaAppPackaging)
+  .enablePlugins(JavaAppPackaging, BuildInfoPlugin)
   .settings(
     name := "dicechess-analytics-backend",
+    // BuildInfo bakes name/version/scalaVersion at compile time; the running API
+    // reports the effective version (APP_VERSION env override) at GET /version.
+    buildInfoKeys    := Seq[BuildInfoKey](name, version, scalaVersion),
+    buildInfoPackage := "dicechess.analytics",
     libraryDependencies ++= Seq(
       // Game rules: the engine is the single source of truth
       "lv.id.jc" %% "dicechess-engine-scala" % DiceChessEngineVersion,
@@ -92,7 +96,7 @@ lazy val root = (project in file("."))
       "-feature",
       "-explain"
     ),
-    coverageExcludedFiles    := ".*Main\\.scala",
+    coverageExcludedFiles    := ".*Main\\.scala;.*BuildInfo\\.scala",
     coverageMinimumStmtTotal := 80,
     coverageFailOnMinimum    := true,
     Test / fork              := true,
