@@ -1,6 +1,6 @@
 package dicechess.analytics.api
 
-import java.time.OffsetDateTime
+import java.time.{LocalDate, OffsetDateTime}
 import java.util.UUID
 
 import io.circe.Json
@@ -18,6 +18,33 @@ object Protocol:
   given CirceConfiguration = CirceConfiguration.default.withSnakeCaseMemberNames
   given TapirConfiguration = TapirConfiguration.default.withSnakeCaseMemberNames
   given Schema[Json]       = Schema.any[Json]
+
+  /** Generic pagination envelope returned by list endpoints. `total` is the count of rows matching
+    * the current filters (independent of `limit`/`offset`), so the client can render "found N ·
+    * page X of Y". Reused across all list endpoints.
+    */
+  final case class Page[T](
+      items: List[T],
+      total: Long,
+      limit: Int,
+      offset: Int
+  ) derives ConfiguredCodec,
+        Schema
+
+  /** Query parameters of the games list endpoint (mapped from the Tapir inputs). */
+  final case class GamesQuery(
+      playerId: Option[UUID],
+      minTurns: Option[Int],
+      maxTurns: Option[Int],
+      mode: Option[String],
+      result: Option[Int],
+      dateFrom: Option[LocalDate],
+      dateTo: Option[LocalDate],
+      sort: Option[String],
+      order: Option[String],
+      limit: Option[Int],
+      offset: Option[Int]
+  )
 
   /** Mirror of Pydantic `PlayerBase`. `rating_classic` is the rating snapshot taken from the
     * player's most recent game (fixes the Python bug where the field never existed on the model).

@@ -95,21 +95,32 @@ object GamesRepository:
       LEFT JOIN players bp ON bp.id = g.black_player_id
     """
 
-  def list(
-      playerId: Option[UUID],
-      minTurns: Option[Int],
-      limit: Int,
-      offset: Int
-  ): ConnectionIO[List[GameSummary]] =
+  def list(query: GamesQuery, defaultLimit: Int): ConnectionIO[Page[GameSummary]] =
     val where = Fragments.whereAndOpt(
-      playerId.map(p => fr"(g.white_player_id = $p OR g.black_player_id = $p)"),
-      minTurns.map(t => fr"g.total_turns >= $t")
+      query.playerId.map(p => fr"(g.white_player_id = $p OR g.black_player_id = $p)"),
+      query.minTurns.map(t => fr"g.total_turns >= $t"),
+      query.maxTurns.map(t => fr"g.total_turns <= $t"),
+      query.mode.map(m => fr"g.mode::text = $m"),
+      query.result.map(r => fr"g.result = $r"),
+      query.dateFrom.map(d => fr"g.started_at >= $d"),
+      query.dateTo.map(d => fr"g.started_at < ${d.plusDays(1)}")
     )
-    (gameColumns ++ gameTables ++ where ++
-      fr"ORDER BY g.started_at DESC NULLS LAST LIMIT $limit OFFSET $offset")
-      .query[GameRow]
-      .to[List]
-      .map(_.map(_.toSummary))
+    val limit  = query.limit.getOrElse(defaultLimit)
+    val offset = query.offset.getOrElse(0)
+    // ORDER BY column and direction come from a fixed whitelist, never interpolated raw input.
+    val sortColumn = query.sort match
+      case Some("total_turns") => "g.total_turns"
+      case _                   => "g.started_at"
+    val direction = query.order match
+      case Some("asc") => "ASC"
+      case _           => "DESC"
+    val orderBy = Fragment.const(s"ORDER BY $sortColumn $direction NULLS LAST")
+    for
+      total <- (fr"SELECT count(*) FROM games g" ++ where).query[Long].unique
+      rows  <- (gameColumns ++ gameTables ++ where ++ orderBy ++ fr"LIMIT $limit OFFSET $offset")
+        .query[GameRow]
+        .to[List]
+    yield Page(rows.map(_.toSummary), total, limit, offset)
 
   def detail(gameId: UUID): ConnectionIO[Option[GameDetail]] =
     for
