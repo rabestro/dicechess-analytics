@@ -210,6 +210,49 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
         }.guarantee(cleanup.transact(xa))
     }
 
+  test("GET /api/positions/continuations cases the dice by the side to move (black → lower-case)"):
+    withContainers { pg =>
+      val xa       = transactor(pg)
+      val blackFen = "rnbqkbnr/pppppppp/8/8/2B1P3/5Q2/PPPP1PPP/RNB1K1NR b KQkq e3"
+      val afterFen = "rnbqkb1r/pppppppp/5n2/8/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq -"
+      val gBlk     = UUID.fromString("00000000-0000-0000-0000-0000000000d1")
+      val ts       = OffsetDateTime.parse("2026-06-01T00:00:00Z")
+
+      // Black to move, so the stored dice_sorted is LOWER-case ('bpq'). The client sends
+      // colour-agnostic piece letters ('BPQ'); the endpoint must lower-case them here.
+      val seedC =
+        for
+          ps <- PositionsRepository.getOrCreate(blackFen)
+          pa <- PositionsRepository.getOrCreate(afterFen)
+          _  <- sql"""INSERT INTO games (id, source, mode, result, started_at)
+                     VALUES ($gBlk, 'test', 'classic', -1, $ts)""".update.run
+          _ <- sql"""INSERT INTO turns (game_id, turn_number, active_color, position_id,
+                                        dice_sorted, played_moves, position_after_id)
+                     VALUES ($gBlk, 2, 'b', $ps, 'bpq', ARRAY['g8f6','d8e7','c8d7'], $pa)""".update.run
+        yield ()
+      val cleanup =
+        for
+          _ <- sql"DELETE FROM turns WHERE game_id = $gBlk".update.run
+          _ <- sql"DELETE FROM games WHERE id = $gBlk".update.run
+        yield ()
+      val base = s"/api/positions/continuations?fen=${URLEncoder.encode(blackFen, "UTF-8")}"
+
+      seedC.transact(xa) >>
+        withClient(pg) { client =>
+          for
+            upper <- getJson(client, s"$base&dice=BPQ")
+            lower <- getJson(client, s"$base&dice=bpq")
+          yield
+            // an upper-case query is lower-cased for a black-to-move position and matches
+            assertEquals(upper.hcursor.get[Int]("total_games"), Right(1))
+            assertEquals(itemsOf(upper).head.hcursor.get[Int]("games"), Right(1))
+            // black won (result -1), and the mover is black → win rate 1.0
+            assertEquals(itemsOf(upper).head.hcursor.get[Double]("win_rate"), Right(1.0))
+            // a lower-case query resolves to the same data
+            assertEquals(lower.hcursor.get[Int]("total_games"), Right(1))
+        }.guarantee(cleanup.transact(xa))
+    }
+
   test("GET /api/games lists games ordered by started_at desc with nested players"):
     withContainers { pg =>
       withClient(pg) { client =>

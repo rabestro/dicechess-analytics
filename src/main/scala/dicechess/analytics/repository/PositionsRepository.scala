@@ -33,7 +33,8 @@ object PositionsRepository:
 
   /** Continuations played from `fen` after rolling `dice`, grouped by the resulting position so
     * that permutations of the micro-moves collapse, ranked by frequency. Win/draw/loss counts are
-    * from the moving side's perspective. The dice key is upper-cased and sorted to the stored form.
+    * from the moving side's perspective. The dice key is cased to the position's side to move
+    * (white upper-case, black lower-case) and sorted to the stored form.
     */
   def continuations(
       fen: String,
@@ -41,9 +42,13 @@ object PositionsRepository:
       mode: Option[String],
       limit: Int
   ): ConnectionIO[PositionContinuations] =
-    val nf      = Fen.normalize(fen)
-    val diceKey = dice.trim.toUpperCase.sorted
-    val where   = whereAndOpt(
+    val nf = Fen.normalize(fen)
+    // dice_sorted encodes the side to move by letter case — white pieces upper-case (e.g. BPQ),
+    // black lower-case (bpq) — so key the dice to the queried position's active colour.
+    val diceKey =
+      (if Fen.fields(nf).activeColor == "b" then dice.trim.toLowerCase
+       else dice.trim.toUpperCase).sorted
+    val where = whereAndOpt(
       Some(fr"p.normalized_fen = $nf"),
       Some(fr"t.dice_sorted = $diceKey"),
       mode.map(m => fr"g.mode::text = $m")
