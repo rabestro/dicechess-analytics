@@ -14,7 +14,12 @@ import sttp.tapir.server.http4s.Http4sServerInterpreter
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 
 import dicechess.analytics.ingest.{GameReplay, ReplayError, TurnInput}
-import dicechess.analytics.repository.{GamesRepository, IngestRepository, PlayersRepository}
+import dicechess.analytics.repository.{
+  GamesRepository,
+  IngestRepository,
+  PlayersRepository,
+  PositionsRepository
+}
 import IngestProtocol.*
 import Protocol.*
 
@@ -55,6 +60,12 @@ final class Routes(
       .get(playerId)
       .transact(xa)
       .map(_.toRight(ApiError("Player not found")))
+  }
+
+  private val continuationsLogic = Endpoints.continuations.serverLogicSuccess[IO] { query =>
+    PositionsRepository
+      .continuations(query.fen, query.dice, query.mode, query.limit.getOrElse(defaultLimit))
+      .transact(xa)
   }
 
   // Bearer auth for the write path. No token configured ⇒ reject (closed by default).
@@ -99,6 +110,7 @@ final class Routes(
         getGameLogic,
         listPlayersLogic,
         getPlayerLogic,
+        continuationsLogic,
         rootLogic,
         versionLogic,
         ingestGameLogic

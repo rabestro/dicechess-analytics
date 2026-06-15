@@ -140,3 +140,35 @@ object Protocol:
   final case class VersionInfo(name: String, version: String, scalaVersion: String)
       derives ConfiguredCodec,
         Schema
+
+  /** Query parameters of the position-continuations endpoint (mapped from Tapir inputs). */
+  final case class ContinuationsQuery(
+      fen: String,
+      dice: String,
+      mode: Option[String],
+      limit: Option[Int]
+  )
+
+  /** One way a (position, dice) was continued, identified by the resulting position. Move order is
+    * irrelevant — permutations of the micro-moves collapse to the same resulting position.
+    * Win/draw/loss are from the moving side's perspective; `winRate = (wins + 0.5*draws)/decided`.
+    */
+  final case class Continuation(
+      fen: String,
+      moves: List[String],
+      games: Int,
+      wins: Int,
+      draws: Int,
+      losses: Int,
+      winRate: Double
+  ) derives ConfiguredCodec,
+        Schema
+
+  /** Continuations for a (position, dice) pair, ranked by frequency (most played first). */
+  final case class PositionContinuations(
+      fen: String,
+      dice: String,
+      totalGames: Int,
+      items: List[Continuation]
+  ) derives ConfiguredCodec,
+        Schema
