@@ -143,34 +143,40 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
       val startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -"
       val afterA   = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -"
       val afterB   = "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq -"
+      val afterC   = "rnbqkbnr/pppppppp/8/8/8/4P3/PPPP1PPP/RNBQKBNR b KQkq -"
       val gA1      = UUID.fromString("00000000-0000-0000-0000-0000000000c1")
       val gA2      = UUID.fromString("00000000-0000-0000-0000-0000000000c2")
       val gB       = UUID.fromString("00000000-0000-0000-0000-0000000000c3")
       val gX       = UUID.fromString("00000000-0000-0000-0000-0000000000c4")
+      val gN       = UUID.fromString("00000000-0000-0000-0000-0000000000c5")
       val ts       = OffsetDateTime.parse("2026-06-01T00:00:00Z")
 
       // Two classic games reach afterA via different move orderings (must collapse to one
-      // continuation), one classic game loses to afterB, one x2 game also reaches afterA.
+      // continuation), one classic game loses to afterB, one x2 game also reaches afterA, and one
+      // classic game reaches afterC with NULL played_moves (must not crash → empty moves).
       val seedC =
         for
           ps <- PositionsRepository.getOrCreate(startFen)
           pa <- PositionsRepository.getOrCreate(afterA)
           pb <- PositionsRepository.getOrCreate(afterB)
+          pc <- PositionsRepository.getOrCreate(afterC)
           _  <- sql"""INSERT INTO games (id, source, mode, result, started_at) VALUES
                       ($gA1, 'test', 'classic', 1, $ts), ($gA2, 'test', 'classic', 1, $ts),
-                      ($gB, 'test', 'classic', -1, $ts), ($gX, 'test', 'x2', 1, $ts)""".update.run
+                      ($gB, 'test', 'classic', -1, $ts), ($gX, 'test', 'x2', 1, $ts),
+                      ($gN, 'test', 'classic', 1, $ts)""".update.run
           _ <- sql"""INSERT INTO turns (game_id, turn_number, active_color, position_id,
                                          dice_sorted, played_moves, position_after_id) VALUES
                       ($gA1, 1, 'w', $ps, 'BPQ', ARRAY['e2e4','d1f3','f1c4'], $pa),
                       ($gA2, 1, 'w', $ps, 'BPQ', ARRAY['e2e4','f1c4','d1f3'], $pa),
                       ($gB,  1, 'w', $ps, 'BPQ', ARRAY['d2d4','c1f4','d1d3'], $pb),
-                      ($gX,  1, 'w', $ps, 'BPQ', ARRAY['e2e4','d1f3','f1c4'], $pa)""".update.run
+                      ($gX,  1, 'w', $ps, 'BPQ', ARRAY['e2e4','d1f3','f1c4'], $pa),
+                      ($gN,  1, 'w', $ps, 'BPQ', NULL, $pc)""".update.run
         yield ()
 
       val cleanup =
         for
-          _ <- sql"DELETE FROM turns WHERE game_id IN ($gA1, $gA2, $gB, $gX)".update.run
-          _ <- sql"DELETE FROM games WHERE id IN ($gA1, $gA2, $gB, $gX)".update.run
+          _ <- sql"DELETE FROM turns WHERE game_id IN ($gA1, $gA2, $gB, $gX, $gN)".update.run
+          _ <- sql"DELETE FROM games WHERE id IN ($gA1, $gA2, $gB, $gX, $gN)".update.run
         yield ()
 
       val base =
@@ -181,18 +187,26 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
           for
             classic <- getJson(client, s"$base&mode=classic")
             all     <- getJson(client, base)
+            limited <- getJson(client, s"$base&mode=classic&limit=1")
           yield
-            // x2 game excluded; afterA collapses the two orderings, afterB is a single loss
-            assertEquals(classic.hcursor.get[Int]("total_games"), Right(3))
+            // x2 excluded; afterA collapses two orderings, afterB and afterC are single games
+            assertEquals(classic.hcursor.get[Int]("total_games"), Right(4))
             val items = itemsOf(classic)
-            assertEquals(items.size, 2)
+            assertEquals(items.size, 3)
             val top = items.head.hcursor
             assertEquals(top.get[Int]("games"), Right(2))
             assertEquals(top.get[Double]("win_rate"), Right(1.0))
             assertEquals(top.get[List[String]]("moves"), Right(List("e2e4", "d1f3", "f1c4")))
+            // the NULL-played_moves turn yields a continuation with empty moves (no crash)
+            val nullMoves = items.map(_.hcursor).find(_.get[List[String]]("moves") == Right(Nil))
+            assert(nullMoves.isDefined, "expected a continuation with no recorded moves")
+            assertEquals(nullMoves.get.get[Int]("games"), Right(1))
             // all modes: afterA now also counts the x2 game
-            assertEquals(all.hcursor.get[Int]("total_games"), Right(4))
+            assertEquals(all.hcursor.get[Int]("total_games"), Right(5))
             assertEquals(itemsOf(all).head.hcursor.get[Int]("games"), Right(3))
+            // limit truncates the returned rows but total_games stays the pre-limit total
+            assertEquals(itemsOf(limited).size, 1)
+            assertEquals(limited.hcursor.get[Int]("total_games"), Right(4))
         }.guarantee(cleanup.transact(xa))
     }
 
