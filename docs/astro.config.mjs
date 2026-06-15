@@ -26,6 +26,10 @@ export default defineConfig({
 					link: '/architecture',
 				},
 				{
+					label: 'Domain Conventions',
+					link: '/domain-conventions',
+				},
+				{
 					label: 'Development & Setup',
 					link: '/development',
 				},
