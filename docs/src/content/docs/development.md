@@ -168,4 +168,4 @@ that performed it was retired together with the rest of the Python codebase.
 
 Ongoing ingestion uses the transactional `POST /api/games` endpoint, which validates every
 game against `dicechess-engine-scala` before persisting it. See the
-[Game Ingestion](/dicechess-analytics/ingestion) page for the contract.
+[Game Ingestion](../ingestion) page for the contract.

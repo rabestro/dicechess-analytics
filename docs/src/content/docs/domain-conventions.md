@@ -3,7 +3,7 @@ title: Domain Conventions
 description: Non-obvious field semantics and data-encoding gotchas that the schema alone doesn't reveal.
 ---
 
-The [Architecture & Schema](/dicechess-analytics/architecture) page shows the _shape_ of the data.
+The [Architecture & Schema](../architecture) page shows the _shape_ of the data.
 This page captures the conventions you **cannot** infer from a column's type or name. Each item
 below has already caused a real bug — keep them in mind when querying or building on the data.
 
@@ -26,11 +26,8 @@ separate inconsistency tracked in [#128](https://github.com/rabestro/dicechess-a
 
 ## Time control — `games.time_initial_sec`
 
-:::caution[`time_initial_sec` is in minutes]
-Despite the `_sec` suffix, `time_initial_sec` holds the initial time in **minutes**, while
-`time_increment_sec` is the increment in **seconds**. So `(3, 0)` is a `3+0` game and `(1, 1)` is
-`1+1`. Tracked in [#126](https://github.com/rabestro/dicechess-analytics/issues/126).
-:::
+Both `time_initial_sec` and `time_increment_sec` strictly contain values in **seconds**.
+So a `3+0` game will be stored as `(180, 0)` and a `1+1` game as `(60, 1)`.
 
 ## Result and win rate
 
