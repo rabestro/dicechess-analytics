@@ -137,7 +137,7 @@ One completed match.
 | `termination` | `game_termination_enum`, `NOT NULL DEFAULT 'unknown'` — *how* the game ended. |
 | `initial_position_id` / `final_position_id` | FK → `positions` — the board at the start and at the end. |
 | `total_turns` | Number of turns. |
-| `time_initial_sec` / `time_increment_sec` | Time control. **`time_initial_sec` is in _minutes_** (despite the name), `time_increment_sec` in seconds — see [Domain Conventions](/dicechess-analytics/domain-conventions). |
+| `time_initial_sec` / `time_increment_sec` | Time control. Both are strictly in seconds — see [Domain Conventions](/dicechess-analytics/domain-conventions). |
 | `initial_stake_amount` / `final_stake_amount` | The pot; the final amount can differ from the initial because of **doubling**. |
 | `white_money_delta` / `black_money_delta` | `NUMERIC` actual profit/loss per player. Stored independently (not just `±x`) because the site takes a rake, so the two deltas are **not symmetric**. |
 | `stake_currency` | In-game currency (`GOLD`), not an ISO code; an amount of `0` means a tournament game — see [Domain Conventions](/dicechess-analytics/domain-conventions). |
