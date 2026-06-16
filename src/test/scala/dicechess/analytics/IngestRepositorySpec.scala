@@ -70,7 +70,10 @@ class IngestRepositorySpec extends CatsEffectSuite with TestContainerForAll:
     )
 
   private def replayedFor(req: GameIngest) =
-    GameReplay.replay(req.initialFen, req.turns.map(t => TurnInput(t.dice, t.moves))).toOption.get
+    GameReplay
+      .replay(req.initialFen, req.turns.map(t => TurnInput(t.dice, t.moves)), req.termination)
+      .toOption
+      .get
 
   test("persists a validated game and reads it back through the detail query"):
     val id = UUID.fromString("00000000-0000-0000-0000-0000000000a1")

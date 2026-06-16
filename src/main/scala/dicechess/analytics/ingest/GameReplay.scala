@@ -31,25 +31,36 @@ enum ReplayError:
   */
 object GameReplay:
 
-  def replay(initialFen: String, turns: List[TurnInput]): Either[ReplayError, ReplayedGame] =
+  def replay(
+      initialFen: String,
+      turns: List[TurnInput],
+      termination: Option[String] = None
+  ): Either[ReplayError, ReplayedGame] =
     FenParser.parse(initialFen) match
       case Left(reason)   => Left(ReplayError.InvalidInitialFen(initialFen, reason))
       case Right(initial) =>
         val start: Either[ReplayError, (GameState, List[ReplayedTurn])] = Right(
           (initial, List.empty)
         )
+        val turnsSize = turns.size
         turns.zipWithIndex
           .foldLeft(start) {
             case (Left(err), _)                       => Left(err)
             case (Right((state, acc)), (turn, index)) =>
-              replayTurn(state, turn, index).map((next, replayed) => (next, replayed :: acc))
+              val isLast           = index == turnsSize - 1
+              val isPartialAllowed =
+                isLast && termination
+                  .exists(t => t == "timeout" || t == "draw_agreement" || t == "resign")
+              replayTurn(state, turn, index, isPartialAllowed)
+                .map((next, replayed) => (next, replayed :: acc))
           }
           .map((_, acc) => ReplayedGame(FenParser.serialize(initial), acc.reverse))
 
   private def replayTurn(
       state: GameState,
       turn: TurnInput,
-      index: Int
+      index: Int,
+      isPartialAllowed: Boolean
   ): Either[ReplayError, (GameState, ReplayedTurn)] =
     turn.dice.find(die => PieceType.fromDice(die).isEmpty) match
       case Some(bad) => Left(ReplayError.UnknownDie(index, bad))
@@ -63,8 +74,20 @@ object GameReplay:
             // No legal move with these dice: the turn is a pass.
             Option.when(turn.moves.isEmpty)(withDice)
           else
-            legalPaths
-              .find(path => path.map(uci) == turn.moves)
+            val pathsWithUci = legalPaths.map(path => (path, path.map(uci)))
+            val exactMatch   =
+              pathsWithUci.find { case (_, uciPath) => uciPath == turn.moves }.map(_._1)
+
+            exactMatch
+              .orElse {
+                Option
+                  .when(isPartialAllowed && turn.moves.nonEmpty)(
+                    pathsWithUci
+                      .find { case (_, uciPath) => uciPath.startsWith(turn.moves) }
+                      .map { case (path, _) => path.take(turn.moves.size) }
+                  )
+                  .flatten
+              }
               .map(path => path.foldLeft(withDice)((current, move) => current.makeMove(move)))
 
         applied match
