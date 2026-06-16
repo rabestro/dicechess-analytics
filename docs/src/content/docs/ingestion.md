@@ -44,6 +44,9 @@ before anything is written. For each turn the backend:
 If any turn fails to validate, the whole request is rejected with `422` and **nothing
 is persisted**. The engine — not the writer — is the source of truth for legality.
 
+**Partial Terminal Turns:**
+If a game ends mid-turn (e.g., due to a timeout or a draw agreement), the final turn may contain fewer micro-moves than the rolled dice allow. The backend gracefully handles this: for the **last turn only**, if the played sequence is a strict prefix of a valid legal path, it is accepted and the partial turn is persisted. If such a partial sequence appears in any non-terminal turn, the game is rejected.
+
 ---
 
 ## Request body
