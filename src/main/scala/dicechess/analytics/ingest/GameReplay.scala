@@ -49,7 +49,8 @@ object GameReplay:
             case (Right((state, acc)), (turn, index)) =>
               val isLast           = index == turnsSize - 1
               val isPartialAllowed =
-                isLast && termination.exists(t => t == "timeout" || t == "draw_agreement")
+                isLast && termination
+                  .exists(t => t == "timeout" || t == "draw_agreement" || t == "resign")
               replayTurn(state, turn, index, isPartialAllowed)
                 .map((next, replayed) => (next, replayed :: acc))
           }

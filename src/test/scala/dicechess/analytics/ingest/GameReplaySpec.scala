@@ -45,6 +45,24 @@ class GameReplaySpec extends munit.FunSuite:
         assertEquals(color(after), "b")
       case Left(err) => fail(s"expected a valid replay, got $err")
 
+  test("accepts a partial legal sequence as the last turn (resign)"):
+    val turns = List(TurnInput(dice = List(1, 5, 5), moves = List("d2d4", "d1d3")))
+    GameReplay.replay(start, turns, Some("resign")) match
+      case Right(game) =>
+        assertEquals(game.turns.size, 1)
+        val after = game.turns.head.afterFen
+        assertEquals(board(after), "rnbqkbnr/pppppppp/8/8/3P4/3Q4/PPP1PPPP/RNB1KBNR")
+        assertEquals(color(after), "b")
+      case Left(err) => fail(s"expected a valid replay, got $err")
+
+  test("accepts a complete final turn with a mid-turn termination"):
+    // Even if termination is mid-turn, if the turn is complete, exact match should still succeed.
+    val turns = List(TurnInput(dice = List(1, 2, 5), moves = List("b1c3", "e2e4", "d1f3")))
+    GameReplay.replay(start, turns, Some("resign")) match
+      case Right(game) =>
+        assertEquals(game.turns.size, 1)
+      case Left(err) => fail(s"expected a valid replay, got $err")
+
   test("rejects a partial legal sequence if it is not the last turn"):
     val turns = List(
       TurnInput(dice = List(1, 5, 5), moves = List("d2d4", "d1d3")),
