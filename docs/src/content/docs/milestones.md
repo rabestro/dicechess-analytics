@@ -17,8 +17,8 @@ gantt
     dateFormat  YYYY-MM-DD
     section Backend & Schema
     v0.1 - Foundation & Local Setup         :done,    des1, 2026-06-01, 2026-06-07
-    v0.2 - Ingestion API & Scala Rewrite      :active,  des2, 2026-06-08, 2026-06-21
-    v0.3 - Position Analytics & Deduplication :         des3, 2026-06-22, 2026-07-05
+    v0.2 - Ingestion API & Scala Rewrite      :done,    des2, 2026-06-08, 2026-06-21
+    v0.3 - Position Analytics & Deduplication :active,  des3, 2026-06-22, 2026-07-05
     section Analytics & Features
     v0.4 - Aggregate Metrics & Views         :         des4, 2026-07-06, 2026-07-19
     v0.5 - Real-Time Dashboard & WebSockets  :         des5, 2026-07-20, 2026-08-02
@@ -41,7 +41,7 @@ gantt
   - Documentation site using Astro/Starlight.
   - Command tasks configured in `mise.toml`.
 
-### v0.2 - Ingestion API & Scala Rewrite
+### v0.2 - Ingestion API & Scala Rewrite ✅
 
 - **Objective**: Rewrite the backend in Scala 3 and implement the transactional game saving API.
 - **Deliverables**:
