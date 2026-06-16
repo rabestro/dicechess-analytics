@@ -17,6 +17,14 @@ so it can never drift from the implementation. Browse it locally at:
 
 ---
 
+## Write Endpoints
+
+`dicechess-analytics` restricts game insertion to trusted sources. The ingestion API is not public and uses a different authentication model.
+
+See the [Game Ingestion](/dicechess-analytics/ingestion) page for the `POST /api/games` endpoint specification.
+
+---
+
 ## Games Endpoint (`/api/games`)
 
 ### 1. List and Filter Games

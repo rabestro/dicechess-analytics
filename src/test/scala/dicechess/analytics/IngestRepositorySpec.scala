@@ -93,7 +93,7 @@ class IngestRepositorySpec extends CatsEffectSuite with TestContainerForAll:
           assertEquals(d.blackPlayer.flatMap(_.username), Some("bob"))
           assertEquals(d.turns.size, 1)
           val turn = d.turns.head
-          assertEquals(turn.diceSorted, "125") // dice [2,1,5] stored sorted
+          assertEquals(turn.diceSorted, "NPQ") // dice [2,1,5] mapped to letters and sorted
           assertEquals(turn.playedMoves, Some(List("b1c3", "e2e4", "d1f3")))
           assertEquals(
             turn.positionFen.map(_.split(" ")(0)),

@@ -65,8 +65,7 @@ docker compose pull && docker compose up -d
 ## Roadmap & Milestones
 
 1. **v0.1 - Foundation & Local Setup** — done: schema, initial data import (140k+ games).
-2. **v0.2 - Ingestion API & Scala rewrite** — read-parity Scala backend in production;
-   next: transactional `POST /api/games` with engine-side validation.
-3. **v0.3 - Position Analytics & Deduplication** — position statistics API.
+2. **v0.2 - Ingestion API & Scala rewrite** — done: read-parity Scala backend in production and transactional `POST /api/games` with engine-side validation.
+3. **v0.3 - Position Analytics & Deduplication** — active: position statistics API.
 4. **v0.4 - Aggregate Metrics & Materialized Views** — rating histories, opening stats.
 5. **v1.0 - Production Readiness & CI/CD** — observability, hardening.
