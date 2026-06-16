@@ -87,6 +87,11 @@ object IngestRepository:
       dto: TurnInputDto,
       replayed: ReplayedTurn
   ): ConnectionIO[Long] =
+    val pieces     = Array('p', 'n', 'b', 'r', 'q', 'k')
+    val letters    = dto.dice.map(d => pieces(d - 1)).sorted.mkString
+    val diceSorted =
+      if dto.activeColor == "w" then letters.toUpperCase else letters
+
     for
       before <- PositionsRepository.getOrCreate(replayed.beforeFen)
       after  <- PositionsRepository.getOrCreate(replayed.afterFen)
@@ -95,7 +100,7 @@ object IngestRepository:
                          played_moves, position_after_id, thinking_time_ms)
                       VALUES
                         ($gameId, ${dto.turnNumber}, ${dto.activeColor}, $before,
-                         ${dto.dice.sorted.mkString}, ${dto.moves}, $after, ${dto.thinkingTimeMs})
+                         $diceSorted, ${dto.moves}, $after, ${dto.thinkingTimeMs})
                       RETURNING id""".query[Long].unique
     yield id
 
