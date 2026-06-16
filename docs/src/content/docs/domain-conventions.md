@@ -3,7 +3,7 @@ title: Domain Conventions
 description: Non-obvious field semantics and data-encoding gotchas that the schema alone doesn't reveal.
 ---
 
-The [Architecture & Schema](/dicechess-analytics/architecture) page shows the _shape_ of the data.
+The [Architecture & Schema](../architecture) page shows the _shape_ of the data.
 This page captures the conventions you **cannot** infer from a column's type or name. Each item
 below has already caused a real bug — keep them in mind when querying or building on the data.
 

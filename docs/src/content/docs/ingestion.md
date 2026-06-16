@@ -9,7 +9,7 @@ Dice Chess engine and persists it. The endpoint is **idempotent** on the game `i
 so re-submitting the same game is safe.
 
 The read API (browsing games and players) is public; ingestion is not. See the
-[API Specification](/dicechess-analytics/api-specification) for the read endpoints.
+[API Specification](../api-specification) for the read endpoints.
 
 ---
 
