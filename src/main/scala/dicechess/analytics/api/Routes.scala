@@ -90,7 +90,11 @@ final class Routes(
         )
       }
       .serverLogic { _ => game =>
-        GameReplay.replay(game.initialFen, game.turns.map(t => TurnInput(t.dice, t.moves))) match
+        GameReplay.replay(
+          game.initialFen,
+          game.turns.map(t => TurnInput(t.dice, t.moves)),
+          game.termination
+        ) match
           case Left(error) =>
             IO.pure(Left((StatusCode.UnprocessableEntity, ApiError(describe(error)))))
           case Right(replayed) =>

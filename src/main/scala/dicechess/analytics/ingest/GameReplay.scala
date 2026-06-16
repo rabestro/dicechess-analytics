@@ -31,7 +31,11 @@ enum ReplayError:
   */
 object GameReplay:
 
-  def replay(initialFen: String, turns: List[TurnInput]): Either[ReplayError, ReplayedGame] =
+  def replay(
+      initialFen: String,
+      turns: List[TurnInput],
+      termination: Option[String] = None
+  ): Either[ReplayError, ReplayedGame] =
     FenParser.parse(initialFen) match
       case Left(reason)   => Left(ReplayError.InvalidInitialFen(initialFen, reason))
       case Right(initial) =>
@@ -42,8 +46,10 @@ object GameReplay:
           .foldLeft(start) {
             case (Left(err), _)                       => Left(err)
             case (Right((state, acc)), (turn, index)) =>
-              val isLast = index == turns.size - 1
-              replayTurn(state, turn, index, isLast)
+              val isLast           = index == turns.size - 1
+              val isPartialAllowed =
+                isLast && termination.exists(t => t == "timeout" || t == "draw_agreement")
+              replayTurn(state, turn, index, isPartialAllowed)
                 .map((next, replayed) => (next, replayed :: acc))
           }
           .map((_, acc) => ReplayedGame(FenParser.serialize(initial), acc.reverse))
@@ -52,7 +58,7 @@ object GameReplay:
       state: GameState,
       turn: TurnInput,
       index: Int,
-      isLast: Boolean
+      isPartialAllowed: Boolean
   ): Either[ReplayError, (GameState, ReplayedTurn)] =
     turn.dice.find(die => PieceType.fromDice(die).isEmpty) match
       case Some(bad) => Left(ReplayError.UnknownDie(index, bad))
@@ -68,7 +74,7 @@ object GameReplay:
           else
             val exactMatch  = legalPaths.find(path => path.map(uci) == turn.moves)
             val prefixMatch = Option
-              .when(isLast && turn.moves.nonEmpty)(
+              .when(isPartialAllowed && turn.moves.nonEmpty)(
                 legalPaths
                   .find(p => p.map(uci).startsWith(turn.moves))
                   .map(p => p.take(turn.moves.size))

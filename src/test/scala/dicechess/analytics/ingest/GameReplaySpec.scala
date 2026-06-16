@@ -25,9 +25,9 @@ class GameReplaySpec extends munit.FunSuite:
       case Left(ReplayError.IllegalTurn(0, played, _)) => assertEquals(played, List("a1a4"))
       case other                                       => fail(s"expected IllegalTurn, got $other")
 
-  test("accepts a partial legal sequence as the last turn"):
+  test("accepts a partial legal sequence as the last turn (timeout)"):
     val turns = List(TurnInput(dice = List(1, 5, 5), moves = List("d2d4", "d1d3")))
-    GameReplay.replay(start, turns) match
+    GameReplay.replay(start, turns, Some("timeout")) match
       case Right(game) =>
         assertEquals(game.turns.size, 1)
         val after = game.turns.head.afterFen
@@ -40,7 +40,13 @@ class GameReplaySpec extends munit.FunSuite:
       TurnInput(dice = List(1, 5, 5), moves = List("d2d4", "d1d3")),
       TurnInput(dice = List(1, 2, 3), moves = List("b8c6"))
     )
-    GameReplay.replay(start, turns) match
+    GameReplay.replay(start, turns, Some("timeout")) match
+      case Left(ReplayError.IllegalTurn(0, played, _)) => assertEquals(played, List("d2d4", "d1d3"))
+      case other                                       => fail(s"expected IllegalTurn, got $other")
+
+  test("rejects a partial legal sequence as the last turn if termination is not timeout/draw"):
+    val turns = List(TurnInput(dice = List(1, 5, 5), moves = List("d2d4", "d1d3")))
+    GameReplay.replay(start, turns, Some("king_captured")) match
       case Left(ReplayError.IllegalTurn(0, played, _)) => assertEquals(played, List("d2d4", "d1d3"))
       case other                                       => fail(s"expected IllegalTurn, got $other")
 
