@@ -253,6 +253,58 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
         }.guarantee(cleanup.transact(xa))
     }
 
+  test("GET /api/positions/continuations excludes no-op self-loop turns (rolled but not played)"):
+    withContainers { pg =>
+      val xa       = transactor(pg)
+      val startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -"
+      val afterFen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -"
+      val gReal    = UUID.fromString("00000000-0000-0000-0000-0000000000e1")
+      val gNoop    = UUID.fromString("00000000-0000-0000-0000-0000000000e2")
+      val ts       = OffsetDateTime.parse("2026-06-01T00:00:00Z")
+
+      // One real continuation (start -> afterFen) and one no-op turn where the player rolled but
+      // never moved (a draw agreed / abandoned before the move), recorded as a self-loop:
+      // position_after == position. The no-op must be excluded entirely — not counted, not shown.
+      val seedC =
+        for
+          ps <- PositionsRepository.getOrCreate(startFen)
+          pa <- PositionsRepository.getOrCreate(afterFen)
+          _  <- sql"""INSERT INTO games (id, source, mode, result, started_at) VALUES
+                      ($gReal, 'test', 'classic', 1, $ts),
+                      ($gNoop, 'test', 'classic', 0, $ts)""".update.run
+          _ <- sql"""INSERT INTO turns (game_id, turn_number, active_color, position_id,
+                                         dice_sorted, played_moves, position_after_id) VALUES
+                      ($gReal, 1, 'w', $ps, 'BPQ', ARRAY['e2e4','d1f3','f1c4'], $pa),
+                      ($gNoop, 1, 'w', $ps, 'BPQ', NULL, $ps)""".update.run
+        yield ()
+      val cleanup =
+        for
+          _ <- sql"DELETE FROM turns WHERE game_id IN ($gReal, $gNoop)".update.run
+          _ <- sql"DELETE FROM games WHERE id IN ($gReal, $gNoop)".update.run
+        yield ()
+      val uri =
+        s"/api/positions/continuations?fen=${URLEncoder.encode(startFen, "UTF-8")}&dice=BPQ&mode=classic"
+
+      seedC.transact(xa) >>
+        withClient(pg) { client =>
+          getJson(client, uri).map { json =>
+            // only the real continuation counts; the no-op self-loop is excluded from total and items
+            assertEquals(json.hcursor.get[Int]("total_games"), Right(1))
+            val items = itemsOf(json)
+            assertEquals(items.size, 1)
+            assertEquals(
+              items.head.hcursor.get[List[String]]("moves"),
+              Right(List("e2e4", "d1f3", "f1c4"))
+            )
+            // no continuation resolves back to the start position
+            assert(
+              !items.map(_.hcursor).exists(_.get[String]("fen") == Right(startFen)),
+              "a no-op self-loop must not appear as a continuation"
+            )
+          }
+        }.guarantee(cleanup.transact(xa))
+    }
+
   test("GET /api/games lists games ordered by started_at desc with nested players"):
     withContainers { pg =>
       withClient(pg) { client =>

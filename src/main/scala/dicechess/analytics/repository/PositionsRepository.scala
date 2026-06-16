@@ -51,6 +51,11 @@ object PositionsRepository:
     val where = whereAndOpt(
       Some(fr"p.normalized_fen = $nf"),
       Some(fr"t.dice_sorted = $diceKey"),
+      // Exclude no-op turns: the player rolled but never moved (a draw agreed / game abandoned before
+      // the move), recorded as a self-loop on the same position. A pure no-op is not a legal move, so
+      // it is not a continuation. Legitimate passes flip the side to move (position_after <> position)
+      // and are kept.
+      Some(fr"t.position_after_id <> t.position_id"),
       mode.map(m => fr"g.mode::text = $m")
     )
     // `sum(count(*)) OVER ()` is the total games across ALL groups, evaluated before LIMIT, so the

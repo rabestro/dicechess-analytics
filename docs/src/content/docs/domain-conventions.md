@@ -53,3 +53,18 @@ human players**, not the engine and not the bots (which are weak as well).
 Positions are de-duplicated by `normalized_fen` (board + side to move + castling + en passant).
 Analytics group continuations by the **resulting position** (`turns.position_after_id`), so different
 micro-move orderings that reach the same position collapse into a single line.
+
+## Turns — passes vs. no-op turns
+
+A turn with empty/`NULL` `played_moves` has two very different meanings, told apart by whether the
+position changed:
+
+- **Legitimate pass** — `position_after_id <> position_id` (the side to move flips). The player rolled
+  only piece-types that cannot move, so the turn auto-passes. A real game event (~188k turns in the
+  current dump). Kept by analytics; it is a valid continuation (its resulting position is the opponent
+  to move).
+- **No-op self-loop** — `position_after_id = position_id` (identical position, side does **not** flip
+  because the game ended). The player rolled but never moved — typically a **draw agreed or game
+  abandoned/timed-out before the first move** (common in tournaments). Always the last turn of the
+  game. This is **not a legal move** and is **excluded** from continuations analytics
+  (`AND t.position_after_id <> t.position_id`).
