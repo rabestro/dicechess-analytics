@@ -42,14 +42,17 @@ object GameReplay:
           .foldLeft(start) {
             case (Left(err), _)                       => Left(err)
             case (Right((state, acc)), (turn, index)) =>
-              replayTurn(state, turn, index).map((next, replayed) => (next, replayed :: acc))
+              val isLast = index == turns.size - 1
+              replayTurn(state, turn, index, isLast)
+                .map((next, replayed) => (next, replayed :: acc))
           }
           .map((_, acc) => ReplayedGame(FenParser.serialize(initial), acc.reverse))
 
   private def replayTurn(
       state: GameState,
       turn: TurnInput,
-      index: Int
+      index: Int,
+      isLast: Boolean
   ): Either[ReplayError, (GameState, ReplayedTurn)] =
     turn.dice.find(die => PieceType.fromDice(die).isEmpty) match
       case Some(bad) => Left(ReplayError.UnknownDie(index, bad))
@@ -63,8 +66,17 @@ object GameReplay:
             // No legal move with these dice: the turn is a pass.
             Option.when(turn.moves.isEmpty)(withDice)
           else
-            legalPaths
-              .find(path => path.map(uci) == turn.moves)
+            val exactMatch  = legalPaths.find(path => path.map(uci) == turn.moves)
+            val prefixMatch = Option
+              .when(isLast && turn.moves.nonEmpty)(
+                legalPaths
+                  .find(p => p.map(uci).startsWith(turn.moves))
+                  .map(p => p.take(turn.moves.size))
+              )
+              .flatten
+
+            exactMatch
+              .orElse(prefixMatch)
               .map(path => path.foldLeft(withDice)((current, move) => current.makeMove(move)))
 
         applied match
