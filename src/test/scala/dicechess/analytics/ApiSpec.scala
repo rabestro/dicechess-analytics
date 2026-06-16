@@ -77,9 +77,9 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
                  VALUES ($game2, 'dicechess.com', $alice, 1450, 'classic', -1, 2, $t2)""".update.run
       _ <- sql"""INSERT INTO turns (game_id, turn_number, active_color, position_id,
                                     dice_sorted, played_moves, position_after_id, thinking_time_ms)
-                 VALUES ($game1, 1, 'w', $p1, '125', ARRAY['e2e4','g1f3'], $p2, 1500)""".update.run
+                 VALUES ($game1, 1, 'w', $p1, 'NPQ', ARRAY['e2e4','g1f3'], $p2, 1500)""".update.run
       _ <- sql"""INSERT INTO turns (game_id, turn_number, active_color, position_id, dice_sorted)
-                 VALUES ($game1, 2, 'b', $p2, '336')""".update.run
+                 VALUES ($game1, 2, 'b', $p2, 'bbk')""".update.run
       _ <- sql"""INSERT INTO game_events (game_id, sequence_number, turn_number, event_type,
                                           actor_color, clock_white_ms, clock_black_ms, payload)
                  VALUES ($game1, 1, 1, 'DOUBLE_OFFER', 'w', 170000, 165000,
