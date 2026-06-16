@@ -18,18 +18,31 @@ DECLARE
 BEGIN
   FOR rec IN
     SELECT p.id,
-           CASE p.external_id
-             WHEN 'bot:dc-coach-rookie'   THEN '-40'
-             WHEN 'bot:dc-coach-beginner' THEN '-41'
-             WHEN 'bot:dc-coach-amateur'  THEN '-42'
-             WHEN 'bot:dc-coach-master'   THEN '-43'
-             ELSE substring(p.external_id FROM 9)  -- 'bot:site-101' -> '-101'
+           p.external_id AS ext,
+           -- Map each synthetic id to its native (negative) id. Match EXACTLY:
+           -- anything unexpected resolves to NULL and is skipped below, so a future
+           -- `bot:dc-coach-*` variant can never be mis-sliced into a corrupt id.
+           CASE
+             WHEN p.external_id = 'bot:dc-coach-rookie'   THEN '-40'
+             WHEN p.external_id = 'bot:dc-coach-beginner' THEN '-41'
+             WHEN p.external_id = 'bot:dc-coach-amateur'  THEN '-42'
+             WHEN p.external_id = 'bot:dc-coach-master'   THEN '-43'
+             WHEN p.external_id ~ '^bot:site-[0-9]+$'     THEN substring(p.external_id FROM 9)  -- 'bot:site-101' -> '-101'
+             ELSE NULL
            END AS target
     FROM players p
     WHERE p.external_id LIKE 'bot:dc-coach-%'
        OR p.external_id LIKE 'bot:site-%'
   LOOP
     native_id := rec.target;
+
+    -- Unexpected/unmapped synthetic id (e.g. an unknown dc-coach variant, or a
+    -- malformed `bot:site-`): leave it untouched rather than relabel to a wrong id.
+    IF native_id IS NULL THEN
+      RAISE NOTICE 'V6: skipping unmapped bot external_id %', rec.ext;
+      CONTINUE;
+    END IF;
+
     SELECT id INTO survivor FROM players WHERE external_id = native_id;
 
     IF survivor IS NULL THEN
