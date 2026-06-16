@@ -42,11 +42,12 @@ object GameReplay:
         val start: Either[ReplayError, (GameState, List[ReplayedTurn])] = Right(
           (initial, List.empty)
         )
+        val turnsSize = turns.size
         turns.zipWithIndex
           .foldLeft(start) {
             case (Left(err), _)                       => Left(err)
             case (Right((state, acc)), (turn, index)) =>
-              val isLast           = index == turns.size - 1
+              val isLast           = index == turnsSize - 1
               val isPartialAllowed =
                 isLast && termination.exists(t => t == "timeout" || t == "draw_agreement")
               replayTurn(state, turn, index, isPartialAllowed)
@@ -72,17 +73,20 @@ object GameReplay:
             // No legal move with these dice: the turn is a pass.
             Option.when(turn.moves.isEmpty)(withDice)
           else
-            val exactMatch  = legalPaths.find(path => path.map(uci) == turn.moves)
-            val prefixMatch = Option
-              .when(isPartialAllowed && turn.moves.nonEmpty)(
-                legalPaths
-                  .find(p => p.map(uci).startsWith(turn.moves))
-                  .map(p => p.take(turn.moves.size))
-              )
-              .flatten
+            val pathsWithUci = legalPaths.map(path => (path, path.map(uci)))
+            val exactMatch   =
+              pathsWithUci.find { case (_, uciPath) => uciPath == turn.moves }.map(_._1)
 
             exactMatch
-              .orElse(prefixMatch)
+              .orElse {
+                Option
+                  .when(isPartialAllowed && turn.moves.nonEmpty)(
+                    pathsWithUci
+                      .find { case (_, uciPath) => uciPath.startsWith(turn.moves) }
+                      .map { case (path, _) => path.take(turn.moves.size) }
+                  )
+                  .flatten
+              }
               .map(path => path.foldLeft(withDice)((current, move) => current.makeMove(move)))
 
         applied match
