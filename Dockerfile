@@ -44,6 +44,7 @@ USER app
 # Placed after COPY so a version change only rebuilds this tiny layer, not the staged app.
 ARG APP_VERSION=dev
 ENV APP_VERSION=$APP_VERSION
+ENV JAVA_OPTS="-Dcats.effect.warnOnNonMainThreadDetected=false --sun-misc-unsafe-memory-access=allow"
 
 EXPOSE 8000
 ENTRYPOINT ["/app/bin/dicechess-analytics-backend"]
