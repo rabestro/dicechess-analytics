@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+#MISE description="🚀 Deploy an API image tag to the Dexus staging stack and smoke-check the live endpoint"
+#
+# Staging-first promotion (issue #117, part 2). Deploys a *candidate* image tag
+# to the staging stack on Dexus and verifies the deployed endpoint actually
+# boots and serves — the gate that must be green before the tag is promoted to
+# production. Unlike `.mise/tasks/smoke-test` (an isolated throwaway container
+# CI runs before pushing), this exercises the real staging deployment: the
+# candidate image against the staging Postgres, reachable on the LAN.
+#
+# Usage:
+#   mise run staging:deploy            # deploy the latest vX.Y.Z release
+#   mise run staging:deploy v0.1.5     # deploy a specific tag (vX.Y.Z / sha-… / latest)
+#
+# Dexus is on-demand; if it is asleep, wake it first from the homelab repo
+# (`mise run dexus:wake`). Promotion to prod stays a deliberate, separate step
+# (issue #117, part 3): pin the Aurora compose `api` to the green tag and pull.
+set -euo pipefail
+
+REPO="rabestro/dicechess-analytics"
+STAGING_SSH="${STAGING_SSH:-jegors@192.168.10.4}"
+STAGING_URL="${STAGING_URL:-http://192.168.10.4:8020}"
+STAGING_DIR="${STAGING_DIR:-/home/jegors/dicechess-analytics}"
+COMPOSE_FILE="$(git rev-parse --show-toplevel)/docker-compose.yaml"
+
+# Resolve the candidate tag: explicit arg/env wins, else the latest release.
+TAG="${1:-${TAG:-}}"
+if [ -z "$TAG" ]; then
+  TAG="$(gh release list --repo "$REPO" --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || true)"
+  [ -n "$TAG" ] || TAG="$(git describe --tags --abbrev=0)"
+fi
+echo "staging: candidate tag = $TAG  ->  $STAGING_SSH ($STAGING_URL)"
+
+# Fail fast (with a wake hint) rather than hang if the on-demand box is asleep.
+if ! ssh -o BatchMode=yes -o ConnectTimeout=6 "$STAGING_SSH" true 2>/dev/null; then
+  echo "staging: cannot reach $STAGING_SSH — is Dexus awake? (homelab: mise run dexus:wake)"
+  exit 1
+fi
+
+# Sync the (parametrized) compose so staging always matches the repo, then roll
+# the api service to the candidate tag. Only `api` is recreated; db/ui untouched.
+echo "staging: syncing compose + deploying api:$TAG"
+scp -q "$COMPOSE_FILE" "$STAGING_SSH:$STAGING_DIR/docker-compose.yaml"
+ssh "$STAGING_SSH" "cd '$STAGING_DIR' && API_TAG='$TAG' docker compose pull api && API_TAG='$TAG' docker compose up -d api"
+
+dump_logs() { ssh "$STAGING_SSH" "cd '$STAGING_DIR' && docker compose logs --tail 60 api" 2>/dev/null || true; }
+
+# 1) The deployed container boots and serves the welcome payload.
+ok=
+for _ in $(seq 1 30); do
+  if curl -fsS --max-time 5 "$STAGING_URL/" 2>/dev/null | grep -q 'Welcome to Dice Chess Analytics API'; then
+    ok=1; echo "staging: GET / welcome OK"; break
+  fi
+  sleep 2
+done
+[ -n "$ok" ] || { echo "staging: API never served GET / at $STAGING_URL"; dump_logs; exit 1; }
+
+# 2) The live /version must report the tag we just deployed — proves the right
+#    image is actually running (not a stale :latest). Asserted only for vX.Y.Z
+#    tags, whose baked APP_VERSION equals the tag; informational otherwise.
+ver="$(curl -fsS --max-time 5 "$STAGING_URL/version" 2>/dev/null || true)"
+echo "staging: GET /version -> $ver"
+case "$TAG" in
+  v[0-9]*)
+    echo "$ver" | grep -q "\"version\":\"$TAG\"" \
+      || { echo "staging: /version does not report $TAG (stale/wrong image)"; dump_logs; exit 1; }
+    echo "staging: /version matches $TAG OK" ;;
+esac
+
+# 3) Write path is wired and closed by default (no token => 401).
+code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 -X POST "$STAGING_URL/api/games" \
+  -H 'Content-Type: application/json' -d '{}')"
+echo "staging: POST /api/games (no token) -> $code"
+[ "$code" = "401" ] || { echo "staging: expected 401"; dump_logs; exit 1; }
+
+echo "staging: PASS — $TAG is healthy on staging."
+echo "next: promote to prod (issue #117 part 3) — pin the Aurora compose api to '$TAG' and pull."

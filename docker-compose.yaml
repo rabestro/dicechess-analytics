@@ -24,7 +24,10 @@ services:
       retries: 5
 
   api:
-    image: ghcr.io/rabestro/dicechess-analytics-api:latest
+    # Tag is overridable so one compose file serves every environment: staging
+    # deploys a candidate tag (API_TAG=vX.Y.Z or sha-…), prod pins a released
+    # version, unset defaults to :latest for dev/local. See `mise run staging:deploy`.
+    image: ghcr.io/rabestro/dicechess-analytics-api:${API_TAG:-latest}
     restart: always
     env_file:
       - .env
@@ -39,7 +42,7 @@ services:
         condition: service_healthy
 
   ui:
-    image: ghcr.io/rabestro/dicechess-analytics-ui:latest
+    image: ghcr.io/rabestro/dicechess-analytics-ui:${UI_TAG:-latest}
     restart: always
     ports:
       - "8030:8080"
