@@ -101,14 +101,16 @@ object TerminalColorRepair:
 
   // Safe even if the global pre-checks were ever violated: only deletes positions that nothing
   // still references (legacy terminal positions are never a turn's `position_id` or a game's
-  // `initial_position_id`, so after re-pointing they are fully orphaned).
+  // `initial_position_id`, so after re-pointing they are fully orphaned). The reference checks are
+  // split one-per-column rather than OR-ed so PostgreSQL resolves each as its own anti-join instead
+  // of a sequential scan.
   private val deleteOrphans =
     sql"""DELETE FROM positions p
           WHERE $legacyCond
-            AND NOT EXISTS (SELECT 1 FROM turns t
-                            WHERE t.position_id = p.id OR t.position_after_id = p.id)
-            AND NOT EXISTS (SELECT 1 FROM games g
-                            WHERE g.initial_position_id = p.id OR g.final_position_id = p.id)
+            AND NOT EXISTS (SELECT 1 FROM turns t WHERE t.position_id = p.id)
+            AND NOT EXISTS (SELECT 1 FROM turns t WHERE t.position_after_id = p.id)
+            AND NOT EXISTS (SELECT 1 FROM games g WHERE g.initial_position_id = p.id)
+            AND NOT EXISTS (SELECT 1 FROM games g WHERE g.final_position_id = p.id)
        """.update
 
   /** Runs the full repair in one transaction and reports what changed. */
