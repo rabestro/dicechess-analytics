@@ -154,7 +154,7 @@ One turn = a dice roll plus up to three micro-moves. `UNIQUE (game_id, turn_numb
 | `turn_number` | 1-based, ordered within the game. |
 | `active_color` | `w` or `b` — who is to move. |
 | `position_id` | FK → `positions`: the board **before** the turn. |
-| `dice_sorted` | `VARCHAR(3)`. The three rolled dice (piece types), stored as strictly 3 sorted piece **letters cased by the side to move** — white `BPQ`, black `bpq`. A small legacy slice instead uses digits `1`–`6` (`1`=pawn … `6`=king, e.g. `"125"`) — see [Domain Conventions](../domain-conventions). |
+| `dice_sorted` | `VARCHAR(3)`. The three rolled dice (piece types), stored as strictly 3 sorted piece **letters cased by the side to move** — white `BPQ`, black `bpq`. The ingest API accepts the dice as numeric codes (`1`=pawn … `6`=king) and normalizes them to this letter form before storing; a `CHECK` constraint enforces letters only. See [Domain Conventions](../domain-conventions). |
 | `played_moves` | `VARCHAR(5)[]` of UCI micro-moves, e.g. `["e2e4","g1f3"]`. Up to three; **empty** when the player had no legal move. |
 | `position_after_id` | FK → `positions`: the board **after** the turn. Positions are recorded at turn boundaries, not per micro-move. |
 | `thinking_time_ms` | Time spent on the turn. |

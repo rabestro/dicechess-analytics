@@ -21,8 +21,9 @@ A query keyed on `dice_sorted` must case the code to the **queried position's** 
 endpoint derives the case from the position's `active_color`; clients send colour-agnostic letters.
 :::
 
-A small, recent slice of ingested games stores the dice as **digits** (`135`) instead of letters — a
-separate inconsistency tracked in [#128](https://github.com/rabestro/dicechess-analytics/issues/128).
+The ingest API accepts dice as numeric piece codes (`1`=pawn, `2`=knight, `3`=bishop, `4`=rook,
+`5`=queen, `6`=king); the server normalizes them to the cased-letter form above before storing, and a
+`CHECK` constraint (`chk_dice_sorted_letters`) guarantees only letters are ever stored.
 
 ## Time control — `games.time_initial_sec`
 
