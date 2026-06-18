@@ -68,6 +68,10 @@ final class Routes(
       .transact(xa)
   }
 
+  private val positionEquityLogic = Endpoints.positionEquity.serverLogicSuccess[IO] { query =>
+    PositionsRepository.equity(query.fen, query.mode).transact(xa)
+  }
+
   // Bearer auth for the write path. No token configured ⇒ reject (closed by default).
   // Constant-time compare to avoid leaking the secret via timing.
   private def tokenAccepted(provided: String): Boolean =
@@ -115,6 +119,7 @@ final class Routes(
         listPlayersLogic,
         getPlayerLogic,
         continuationsLogic,
+        positionEquityLogic,
         rootLogic,
         versionLogic,
         ingestGameLogic

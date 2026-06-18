@@ -305,6 +305,82 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
         }.guarantee(cleanup.transact(xa))
     }
 
+  test("GET /api/positions/equity aggregates across rolls, weighting draws as half, filters mode"):
+    withContainers { pg =>
+      val xa = transactor(pg)
+      // A position used by no other seed: equity has no dice filter, so it would otherwise pick up
+      // the global seed's turn on the start position. White to move throughout.
+      val equityFen = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -"
+      val afterFen  = "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq -"
+      val gW1       = UUID.fromString("00000000-0000-0000-0000-0000000000f1")
+      val gW2       = UUID.fromString("00000000-0000-0000-0000-0000000000f2")
+      val gD        = UUID.fromString("00000000-0000-0000-0000-0000000000f3")
+      val gL        = UUID.fromString("00000000-0000-0000-0000-0000000000f4")
+      val gX2       = UUID.fromString("00000000-0000-0000-0000-0000000000f5")
+      val gNoop     = UUID.fromString("00000000-0000-0000-0000-0000000000f6")
+      val ts        = OffsetDateTime.parse("2026-06-01T00:00:00Z")
+
+      // Classic: two wins (different rolls), one draw, one loss → decided 4, equity (2 + 0.5)/4.
+      // One x2 win is counted only in "all". One no-op self-loop (position_after == position) must
+      // be excluded entirely.
+      val seedC =
+        for
+          ps <- PositionsRepository.getOrCreate(equityFen)
+          pa <- PositionsRepository.getOrCreate(afterFen)
+          _  <- sql"""INSERT INTO games (id, source, mode, result, started_at) VALUES
+                      ($gW1, 'test', 'classic',  1, $ts), ($gW2, 'test', 'classic',  1, $ts),
+                      ($gD,  'test', 'classic',  0, $ts), ($gL,  'test', 'classic', -1, $ts),
+                      ($gX2, 'test', 'x2',       1, $ts), ($gNoop,'test', 'classic',  0, $ts)""".update.run
+          _ <- sql"""INSERT INTO turns (game_id, turn_number, active_color, position_id,
+                                         dice_sorted, played_moves, position_after_id) VALUES
+                      ($gW1,  1, 'w', $ps, 'NPQ', ARRAY['g1f3'], $pa),
+                      ($gW2,  1, 'w', $ps, 'BPQ', ARRAY['e4e5'], $pa),
+                      ($gD,   1, 'w', $ps, 'BPQ', ARRAY['g1f3'], $pa),
+                      ($gL,   1, 'w', $ps, 'BPQ', ARRAY['g1f3'], $pa),
+                      ($gX2,  1, 'w', $ps, 'BPQ', ARRAY['g1f3'], $pa),
+                      ($gNoop,1, 'w', $ps, 'BPQ', NULL, $ps)""".update.run
+        yield ()
+      val cleanup =
+        for
+          _ <-
+            sql"DELETE FROM turns WHERE game_id IN ($gW1, $gW2, $gD, $gL, $gX2, $gNoop)".update.run
+          _ <- sql"DELETE FROM games WHERE id IN ($gW1, $gW2, $gD, $gL, $gX2, $gNoop)".update.run
+        yield ()
+      val base = s"/api/positions/equity?fen=${URLEncoder.encode(equityFen, "UTF-8")}"
+
+      seedC.transact(xa) >>
+        withClient(pg) { client =>
+          for
+            classic <- getJson(client, s"$base&mode=classic")
+            all     <- getJson(client, base)
+          yield
+            // classic: x2 win and the no-op self-loop are both excluded
+            assertEquals(classic.hcursor.get[String]("side_to_move"), Right("w"))
+            assertEquals(classic.hcursor.get[Int]("games"), Right(4))
+            assertEquals(classic.hcursor.get[Int]("wins"), Right(2))
+            assertEquals(classic.hcursor.get[Int]("draws"), Right(1))
+            assertEquals(classic.hcursor.get[Int]("losses"), Right(1))
+            assertEquals(classic.hcursor.get[Double]("win_rate"), Right(0.625))
+            // all modes: the x2 win now counts → decided 5, equity (3 + 0.5)/5
+            assertEquals(all.hcursor.get[Int]("games"), Right(5))
+            assertEquals(all.hcursor.get[Int]("wins"), Right(3))
+            assertEquals(all.hcursor.get[Double]("win_rate"), Right(0.7))
+        }.guarantee(cleanup.transact(xa))
+    }
+
+  test("GET /api/positions/equity returns zeros for a position with no turns"):
+    withContainers { pg =>
+      withClient(pg) { client =>
+        val emptyFen = "8/8/8/8/8/8/8/K6k w - -"
+        getJson(client, s"/api/positions/equity?fen=${URLEncoder.encode(emptyFen, "UTF-8")}").map {
+          json =>
+            assertEquals(json.hcursor.get[Int]("games"), Right(0))
+            assertEquals(json.hcursor.get[Int]("wins"), Right(0))
+            assertEquals(json.hcursor.get[Double]("win_rate"), Right(0.0))
+        }
+      }
+    }
+
   test("GET /api/games lists games ordered by started_at desc with nested players"):
     withContainers { pg =>
       withClient(pg) { client =>
