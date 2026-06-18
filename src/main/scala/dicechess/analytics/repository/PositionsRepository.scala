@@ -59,7 +59,7 @@ object PositionsRepository:
       // and are kept.
       Some(fr"t.position_after_id <> t.position_id"),
       mode.map(m => fr"g.mode::text = $m"),
-      source.map(s => fr"g.source = $s"),
+      source.filter(_.trim.nonEmpty).map(s => fr"g.source = ${s.trim}"),
       // Both players at least minRating — a "strong game". Unrated games (NULL) are excluded.
       minRating.map(r => fr"g.white_rating >= $r AND g.black_rating >= $r")
     )
@@ -114,7 +114,7 @@ object PositionsRepository:
       Some(fr"p.normalized_fen = $nf"),
       Some(fr"t.position_after_id <> t.position_id"),
       mode.map(m => fr"g.mode::text = $m"),
-      source.map(s => fr"g.source = $s"),
+      source.filter(_.trim.nonEmpty).map(s => fr"g.source = ${s.trim}"),
       // Both players at least minRating — a "strong game". Unrated games (NULL) are excluded.
       minRating.map(r => fr"g.white_rating >= $r AND g.black_rating >= $r")
     )

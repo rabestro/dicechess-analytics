@@ -390,10 +390,12 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
       val gB  = UUID.fromString("00000000-0000-0000-0000-0000000000a2")
       val gC  = UUID.fromString("00000000-0000-0000-0000-0000000000a3")
       val gD  = UUID.fromString("00000000-0000-0000-0000-0000000000a4")
+      val gE  = UUID.fromString("00000000-0000-0000-0000-0000000000a5")
       val ts  = OffsetDateTime.parse("2026-06-01T00:00:00Z")
 
       // A: src-a, both >= 2000, white win | B: src-a, one < 2000, loss
       // C: src-b, both >= 2000, white win | D: src-b, both < 2000, loss
+      // E: src-b, UNRATED (NULL), white win — must be excluded whenever min_rating is set
       val seedC =
         for
           ps <- PositionsRepository.getOrCreate(fen)
@@ -403,18 +405,20 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
                       ($gA, 'unit-src-a', 'classic',  1, 2100, 2100, $ts),
                       ($gB, 'unit-src-a', 'classic', -1, 1500, 2100, $ts),
                       ($gC, 'unit-src-b', 'classic',  1, 2400, 2400, $ts),
-                      ($gD, 'unit-src-b', 'classic', -1, 1500, 1500, $ts)""".update.run
+                      ($gD, 'unit-src-b', 'classic', -1, 1500, 1500, $ts),
+                      ($gE, 'unit-src-b', 'classic',  1, NULL, NULL, $ts)""".update.run
           _ <- sql"""INSERT INTO turns (game_id, turn_number, active_color, position_id,
                                          dice_sorted, played_moves, position_after_id) VALUES
                       ($gA, 1, 'w', $ps, 'BPQ', ARRAY['e4e5'], $pa),
                       ($gB, 1, 'w', $ps, 'BPQ', ARRAY['e4e5'], $pa),
                       ($gC, 1, 'w', $ps, 'BPQ', ARRAY['e4e5'], $pa),
-                      ($gD, 1, 'w', $ps, 'BPQ', ARRAY['e4e5'], $pa)""".update.run
+                      ($gD, 1, 'w', $ps, 'BPQ', ARRAY['e4e5'], $pa),
+                      ($gE, 1, 'w', $ps, 'BPQ', ARRAY['e4e5'], $pa)""".update.run
         yield ()
       val cleanup =
         for
-          _ <- sql"DELETE FROM turns WHERE game_id IN ($gA, $gB, $gC, $gD)".update.run
-          _ <- sql"DELETE FROM games WHERE id IN ($gA, $gB, $gC, $gD)".update.run
+          _ <- sql"DELETE FROM turns WHERE game_id IN ($gA, $gB, $gC, $gD, $gE)".update.run
+          _ <- sql"DELETE FROM games WHERE id IN ($gA, $gB, $gC, $gD, $gE)".update.run
         yield ()
       val enc = URLEncoder.encode(fen, "UTF-8")
       val eq  = s"/api/positions/equity?fen=$enc"
@@ -430,10 +434,11 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
             coRate <- getJson(client, s"$co&min_rating=2000")
             coBoth <- getJson(client, s"$co&min_rating=2000&source=unit-src-a")
           yield
-            // no filter: all 4 (2 white wins, 2 losses)
-            assertEquals(none.hcursor.get[Int]("games"), Right(4))
-            assertEquals(none.hcursor.get[Double]("win_rate"), Right(0.5))
-            // min_rating=2000: only A and C qualify (B and D have a sub-2000 player) → 2 white wins
+            // no filter: all 5 (3 white wins incl. the unrated E, 2 losses)
+            assertEquals(none.hcursor.get[Int]("games"), Right(5))
+            assertEquals(none.hcursor.get[Double]("win_rate"), Right(0.6))
+            // min_rating=2000: only A and C qualify — B and D have a sub-2000 player, and the unrated
+            // E (NULL rating) is excluded too (NULL never clears the floor)
             assertEquals(byRate.hcursor.get[Int]("games"), Right(2))
             assertEquals(byRate.hcursor.get[Int]("wins"), Right(2))
             assertEquals(byRate.hcursor.get[Double]("win_rate"), Right(1.0))
