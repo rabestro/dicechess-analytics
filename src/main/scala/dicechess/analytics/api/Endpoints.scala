@@ -106,6 +106,12 @@ object Endpoints:
           .description("Game mode: classic or x2 (omit for all)")
           .validateOption(Validator.enumeration(List("classic", "x2")))
       )
+      .in(query[Option[String]]("source").description("Filter by game source, e.g. dicechess.com"))
+      .in(
+        query[Option[Int]]("min_rating")
+          .description("Keep only games where both players were rated at least this high")
+          .validateOption(Validator.min(0))
+      )
       .in(
         query[Option[Int]]("limit")
           .description("Max continuations to return, default 50")
@@ -125,6 +131,12 @@ object Endpoints:
         query[Option[String]]("mode")
           .description("Game mode: classic or x2 (omit for all)")
           .validateOption(Validator.enumeration(List("classic", "x2")))
+      )
+      .in(query[Option[String]]("source").description("Filter by game source, e.g. dicechess.com"))
+      .in(
+        query[Option[Int]]("min_rating")
+          .description("Keep only games where both players were rated at least this high")
+          .validateOption(Validator.min(0))
       )
       .mapInTo[PositionEquityQuery]
       .out(jsonBody[PositionEquity])

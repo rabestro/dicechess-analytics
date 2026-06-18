@@ -141,11 +141,16 @@ object Protocol:
       derives ConfiguredCodec,
         Schema
 
-  /** Query parameters of the position-continuations endpoint (mapped from Tapir inputs). */
+  /** Query parameters of the position-continuations endpoint (mapped from Tapir inputs). `source`
+    * and `minRating` are session filters: `minRating` keeps only games where *both* players were
+    * rated at least that high (a strong game), excluding unrated games.
+    */
   final case class ContinuationsQuery(
       fen: String,
       dice: String,
       mode: Option[String],
+      source: Option[String],
+      minRating: Option[Int],
       limit: Option[Int]
   )
 
@@ -173,10 +178,15 @@ object Protocol:
   ) derives ConfiguredCodec,
         Schema
 
-  /** Query parameters of the position-equity endpoint (mapped from Tapir inputs). */
+  /** Query parameters of the position-equity endpoint (mapped from Tapir inputs). `source` and
+    * `minRating` are the same session filters as on continuations, so the equity reflects the same
+    * game set (`minRating` keeps only games where both players were rated at least that high).
+    */
   final case class PositionEquityQuery(
       fen: String,
-      mode: Option[String]
+      mode: Option[String],
+      source: Option[String],
+      minRating: Option[Int]
   )
 
   /** Pre-roll equity of a position: how the side to move fared across ALL rolls from here,

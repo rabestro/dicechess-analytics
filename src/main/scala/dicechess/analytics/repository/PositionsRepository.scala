@@ -40,6 +40,8 @@ object PositionsRepository:
       fen: String,
       dice: String,
       mode: Option[String],
+      source: Option[String],
+      minRating: Option[Int],
       limit: Int
   ): ConnectionIO[PositionContinuations] =
     val nf = Fen.normalize(fen)
@@ -56,7 +58,10 @@ object PositionsRepository:
       // it is not a continuation. Legitimate passes flip the side to move (position_after <> position)
       // and are kept.
       Some(fr"t.position_after_id <> t.position_id"),
-      mode.map(m => fr"g.mode::text = $m")
+      mode.map(m => fr"g.mode::text = $m"),
+      source.filter(_.trim.nonEmpty).map(s => fr"g.source = ${s.trim}"),
+      // Both players at least minRating — a "strong game". Unrated games (NULL) are excluded.
+      minRating.map(r => fr"g.white_rating >= $r AND g.black_rating >= $r")
     )
     // `sum(count(*)) OVER ()` is the total games across ALL groups, evaluated before LIMIT, so the
     // reported total stays correct even when more continuations exist than `limit`. `played_moves`
@@ -97,13 +102,21 @@ object PositionsRepository:
     * `continuations`. The aggregate has no GROUP BY, so the query always returns exactly one row
     * (zeros when nothing matched).
     */
-  def equity(fen: String, mode: Option[String]): ConnectionIO[PositionEquity] =
+  def equity(
+      fen: String,
+      mode: Option[String],
+      source: Option[String],
+      minRating: Option[Int]
+  ): ConnectionIO[PositionEquity] =
     val nf    = Fen.normalize(fen)
     val side  = Fen.fields(nf).activeColor
     val where = whereAndOpt(
       Some(fr"p.normalized_fen = $nf"),
       Some(fr"t.position_after_id <> t.position_id"),
-      mode.map(m => fr"g.mode::text = $m")
+      mode.map(m => fr"g.mode::text = $m"),
+      source.filter(_.trim.nonEmpty).map(s => fr"g.source = ${s.trim}"),
+      // Both players at least minRating — a "strong game". Unrated games (NULL) are excluded.
+      minRating.map(r => fr"g.white_rating >= $r AND g.black_rating >= $r")
     )
     val select =
       fr"""SELECT count(*),
