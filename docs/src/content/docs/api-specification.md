@@ -197,6 +197,7 @@ number that matters is the pre-roll equity, not a per-roll win rate.
 - **Success Response** (`200 OK`):
   - **Type**: `PositionEquity`
   - **Example Payload**:
+
     ```json
     {
       "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -",
@@ -208,6 +209,7 @@ number that matters is the pre-roll equity, not a per-roll win rate.
       "win_rate": 0.5487
     }
     ```
+
   - `games` is the total matched turns; `win_rate` is computed over the decided games
     (`wins + draws + losses`). No-op self-loop turns are excluded (as in continuations). A position
     with no decided games returns zeros.
@@ -244,6 +246,7 @@ position (so permutations of the micro-moves collapse) and ranked by frequency.
 - **Success Response** (`200 OK`):
   - **Type**: `PositionContinuations`
   - **Example Payload**:
+
     ```json
     {
       "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -",
@@ -254,13 +257,14 @@ position (so permutations of the micro-moves collapse) and ranked by frequency.
           "fen": "rnbqk1nr/pppp1ppp/8/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b KQkq -",
           "moves": ["e2e4", "d1f3", "f1c4"],
           "games": 3680,
-          "wins": 2480,
-          "draws": 78,
-          "losses": 1122,
+          "wins": 2520,
+          "draws": 68,
+          "losses": 1092,
           "win_rate": 0.694
         }
       ]
     }
     ```
+
   - An empty `moves` list is a legal pass (the roll hit only pieces that cannot move). No-op turns
     (rolled but never played) are excluded server-side.
