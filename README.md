@@ -74,8 +74,9 @@ mise run staging:deploy v0.1.5   # deploy + smoke-check a candidate tag on stagi
 ```
 
 The task syncs the compose to the staging host, rolls `api` to the candidate tag, then
-fails unless the deployed endpoint serves `GET /`, reports the tag at `/version`, and
-returns 401 for an unauthenticated `POST /api/games`. On green, promote deliberately —
+fails unless the deployed endpoint serves `GET /`, reports the expected version at
+`/version` (asserted for `vX.Y.Z` tags), and returns 401 for an unauthenticated
+`POST /api/games`. On green, promote deliberately —
 pin the production `api` to that tag and pull, so a floating `:latest` can never break
 prod (issue [#117](https://github.com/rabestro/dicechess-analytics/issues/117)).
 

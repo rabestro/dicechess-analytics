@@ -27,7 +27,17 @@ COMPOSE_FILE="$(git rev-parse --show-toplevel)/docker-compose.yaml"
 TAG="${1:-${TAG:-}}"
 if [ -z "$TAG" ]; then
   TAG="$(gh release list --repo "$REPO" --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || true)"
-  [ -n "$TAG" ] || TAG="$(git describe --tags --abbrev=0)"
+  [ -n "$TAG" ] || TAG="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+fi
+if [ -z "$TAG" ]; then
+  echo "staging: could not resolve a candidate tag — pass one explicitly (e.g. mise run staging:deploy v0.1.5)" >&2
+  exit 1
+fi
+# TAG is interpolated into a remote shell command below, so allow only the
+# Docker tag character set — reject anything that could break out of quoting.
+if ! [[ "$TAG" =~ ^[A-Za-z0-9_][A-Za-z0-9._-]{0,127}$ ]]; then
+  echo "staging: invalid image tag '$TAG'" >&2
+  exit 1
 fi
 echo "staging: candidate tag = $TAG  ->  $STAGING_SSH ($STAGING_URL)"
 
@@ -62,8 +72,9 @@ ver="$(curl -fsS --max-time 5 "$STAGING_URL/version" 2>/dev/null || true)"
 echo "staging: GET /version -> $ver"
 case "$TAG" in
   v[0-9]*)
-    echo "$ver" | grep -q "\"version\":\"$TAG\"" \
-      || { echo "staging: /version does not report $TAG (stale/wrong image)"; dump_logs; exit 1; }
+    reported="$(printf '%s' "$ver" | jq -r '.version // empty' 2>/dev/null || true)"
+    [ "$reported" = "$TAG" ] \
+      || { echo "staging: /version reports '${reported:-?}', expected $TAG (stale/wrong image)"; dump_logs; exit 1; }
     echo "staging: /version matches $TAG OK" ;;
 esac
 
