@@ -117,6 +117,21 @@ object Endpoints:
         "Continuations from a position+dice, grouped by resulting position, ranked by frequency"
       )
 
+  val positionEquity: PublicEndpoint[PositionEquityQuery, Unit, PositionEquity, Any] =
+    endpoint.get
+      .in("api" / "positions" / "equity")
+      .in(query[String]("fen").description("Position FEN (normalized server-side)"))
+      .in(
+        query[Option[String]]("mode")
+          .description("Game mode: classic or x2 (omit for all)")
+          .validateOption(Validator.enumeration(List("classic", "x2")))
+      )
+      .mapInTo[PositionEquityQuery]
+      .out(jsonBody[PositionEquity])
+      .description(
+        "Pre-roll equity of a position: win probability for the side to move across all rolls"
+      )
+
   /** Ingest a completed, engine-validated game. Bearer-authenticated (the write path).
     *
     * The status code is set at runtime on both channels: `201`/`200` on success (created vs
@@ -133,4 +148,14 @@ object Endpoints:
       .description("Ingest a completed, engine-validated game (bearer auth required)")
 
   val all: List[AnyEndpoint] =
-    List(root, version, listGames, getGame, listPlayers, getPlayer, continuations, ingestGame)
+    List(
+      root,
+      version,
+      listGames,
+      getGame,
+      listPlayers,
+      getPlayer,
+      continuations,
+      positionEquity,
+      ingestGame
+    )

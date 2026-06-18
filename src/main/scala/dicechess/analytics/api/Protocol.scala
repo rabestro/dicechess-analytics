@@ -172,3 +172,28 @@ object Protocol:
       items: List[Continuation]
   ) derives ConfiguredCodec,
         Schema
+
+  /** Query parameters of the position-equity endpoint (mapped from Tapir inputs). */
+  final case class PositionEquityQuery(
+      fen: String,
+      mode: Option[String]
+  )
+
+  /** Pre-roll equity of a position: how the side to move fared across ALL rolls from here,
+    * aggregated without conditioning on the dice. `winRate = (wins + 0.5*draws)/decided` — the
+    * cubeless-equity-equivalent win probability a player weighs *before* rolling (and before
+    * offering a double). It equals the per-roll continuation win rates averaged over all rolls,
+    * each weighted by how often that roll was actually played and decided, so it stays consistent
+    * with the explorer. `games` is the total matched turns (the same count semantics as
+    * `continuations.totalGames`); the win rate is over the decided games `wins + draws + losses`.
+    */
+  final case class PositionEquity(
+      fen: String,
+      sideToMove: String,
+      games: Int,
+      wins: Int,
+      draws: Int,
+      losses: Int,
+      winRate: Double
+  ) derives ConfiguredCodec,
+        Schema

@@ -6,7 +6,7 @@ import doobie.implicits.*
 import doobie.util.fragments.whereAndOpt
 
 import dicechess.analytics.Fen
-import dicechess.analytics.api.Protocol.{Continuation, PositionContinuations}
+import dicechess.analytics.api.Protocol.{Continuation, PositionContinuations, PositionEquity}
 
 /** Access to the deduplicated `positions` table. */
 object PositionsRepository:
@@ -86,4 +86,37 @@ object PositionsRepository:
         Continuation(rfen, moves, games, wins, draws, losses, winRate)
       }
       PositionContinuations(nf, diceKey, rows.headOption.map(_._7).getOrElse(0), items)
+    }
+
+  /** Pre-roll equity for `fen`: the aggregate outcome of every turn played from this position
+    * across ALL dice, from the moving side's perspective — the win probability a player weighs
+    * before rolling (and before offering a double). Algebraically it is the per-roll continuation
+    * win rates averaged over all rolls, each weighted by how often that roll was actually played
+    * and decided in the data (empirical weighting, not the theoretical dice distribution), so it
+    * stays consistent with the explorer. No-op self-loop turns are excluded exactly as in
+    * `continuations`. The aggregate has no GROUP BY, so the query always returns exactly one row
+    * (zeros when nothing matched).
+    */
+  def equity(fen: String, mode: Option[String]): ConnectionIO[PositionEquity] =
+    val nf    = Fen.normalize(fen)
+    val side  = Fen.fields(nf).activeColor
+    val where = whereAndOpt(
+      Some(fr"p.normalized_fen = $nf"),
+      Some(fr"t.position_after_id <> t.position_id"),
+      mode.map(m => fr"g.mode::text = $m")
+    )
+    val select =
+      fr"""SELECT count(*),
+                  count(*) FILTER (WHERE (t.active_color = 'w' AND g.result = 1)
+                                      OR (t.active_color = 'b' AND g.result = -1)),
+                  count(*) FILTER (WHERE g.result = 0),
+                  count(*) FILTER (WHERE (t.active_color = 'w' AND g.result = -1)
+                                      OR (t.active_color = 'b' AND g.result = 1))
+           FROM turns t
+           JOIN positions p ON p.id = t.position_id
+           JOIN games g     ON g.id = t.game_id"""
+    (select ++ where).query[(Int, Int, Int, Int)].unique.map { case (games, wins, draws, losses) =>
+      val decided = wins + draws + losses
+      val winRate = if decided > 0 then (wins + 0.5 * draws) / decided else 0.0
+      PositionEquity(nf, side, games, wins, draws, losses, winRate)
     }
