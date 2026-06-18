@@ -56,10 +56,16 @@ Database schema migrations are applied by the backend itself via Flyway on start
 Every push to `main` touching the Scala sources publishes the multi-arch image
 `ghcr.io/rabestro/dicechess-analytics-api`. The production server needs only two files:
 `docker-compose.yaml` and `.env` (the compose project name is pinned, so the deploy
-directory can live anywhere without losing the data volume). Rollout:
+directory can live anywhere without losing the data volume).
+
+Production pins the image to a released version with `API_TAG` in its `.env`
+(e.g. `API_TAG=v0.1.5`), so `docker compose pull` fetches that exact tag instead of a
+floating `:latest` — a non-booting build can no longer reach prod on a re-pull (issue
+[#117](https://github.com/rabestro/dicechess-analytics/issues/117)). Promote by bumping
+the pin to a staging-verified tag, then:
 
 ```bash
-docker compose pull && docker compose up -d
+docker compose pull api && docker compose up -d api
 ```
 
 ### Staging-first promotion
@@ -76,9 +82,8 @@ mise run staging:deploy v0.1.5   # deploy + smoke-check a candidate tag on stagi
 The task syncs the compose to the staging host, rolls `api` to the candidate tag, then
 fails unless the deployed endpoint serves `GET /`, reports the expected version at
 `/version` (asserted for `vX.Y.Z` tags), and returns 401 for an unauthenticated
-`POST /api/games`. On green, promote deliberately —
-pin the production `api` to that tag and pull, so a floating `:latest` can never break
-prod (issue [#117](https://github.com/rabestro/dicechess-analytics/issues/117)).
+`POST /api/games`. On green, promote deliberately: bump `API_TAG` in the prod `.env`
+to that tag and pull (see above).
 
 ## Roadmap & Milestones
 
