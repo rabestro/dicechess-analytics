@@ -64,12 +64,19 @@ final class Routes(
 
   private val continuationsLogic = Endpoints.continuations.serverLogicSuccess[IO] { query =>
     PositionsRepository
-      .continuations(query.fen, query.dice, query.mode, query.limit.getOrElse(defaultLimit))
+      .continuations(
+        query.fen,
+        query.dice,
+        query.mode,
+        query.source,
+        query.minRating,
+        query.limit.getOrElse(defaultLimit)
+      )
       .transact(xa)
   }
 
   private val positionEquityLogic = Endpoints.positionEquity.serverLogicSuccess[IO] { query =>
-    PositionsRepository.equity(query.fen, query.mode).transact(xa)
+    PositionsRepository.equity(query.fen, query.mode, query.source, query.minRating).transact(xa)
   }
 
   // Bearer auth for the write path. No token configured ⇒ reject (closed by default).
