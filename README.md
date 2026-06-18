@@ -62,6 +62,24 @@ directory can live anywhere without losing the data volume). Rollout:
 docker compose pull && docker compose up -d
 ```
 
+### Staging-first promotion
+
+`docker-compose.yaml` reads the image tag from `API_TAG` (default `latest`), so one
+file serves every environment. CI smoke-tests each image before publishing it
+(`.mise/tasks/smoke-test`); before a tag reaches production it is also verified on the
+staging stack (Dexus):
+
+```bash
+mise run staging:deploy v0.1.5   # deploy + smoke-check a candidate tag on staging
+```
+
+The task syncs the compose to the staging host, rolls `api` to the candidate tag, then
+fails unless the deployed endpoint serves `GET /`, reports the expected version at
+`/version` (asserted for `vX.Y.Z` tags), and returns 401 for an unauthenticated
+`POST /api/games`. On green, promote deliberately —
+pin the production `api` to that tag and pull, so a floating `:latest` can never break
+prod (issue [#117](https://github.com/rabestro/dicechess-analytics/issues/117)).
+
 ## Roadmap & Milestones
 
 1. **v0.1 - Foundation & Local Setup** — done: schema, initial data import (140k+ games).
