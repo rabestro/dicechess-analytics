@@ -346,7 +346,8 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
             sql"DELETE FROM turns WHERE game_id IN ($gW1, $gW2, $gD, $gL, $gX2, $gNoop)".update.run
           _ <- sql"DELETE FROM games WHERE id IN ($gW1, $gW2, $gD, $gL, $gX2, $gNoop)".update.run
         yield ()
-      val base = s"/api/positions/equity?fen=${URLEncoder.encode(equityFen, "UTF-8")}"
+      // min_decided=1 keeps the empirical (db) result; without it the small sample would fall back to MC.
+      val base = s"/api/positions/equity?fen=${URLEncoder.encode(equityFen, "UTF-8")}&min_decided=1"
 
       seedC.transact(xa) >>
         withClient(pg) { client =>
@@ -356,6 +357,7 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
           yield
             // classic: x2 win and the no-op self-loop are both excluded
             assertEquals(classic.hcursor.get[String]("side_to_move"), Right("w"))
+            assertEquals(classic.hcursor.get[String]("source"), Right("db"))
             assertEquals(classic.hcursor.get[Int]("games"), Right(4))
             assertEquals(classic.hcursor.get[Int]("wins"), Right(2))
             assertEquals(classic.hcursor.get[Int]("draws"), Right(1))
@@ -368,16 +370,28 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
         }.guarantee(cleanup.transact(xa))
     }
 
-  test("GET /api/positions/equity returns zeros for a position with no turns"):
+  test("GET /api/positions/equity falls back to a Monte-Carlo estimate for an off-book position"):
     withContainers { pg =>
       withClient(pg) { client =>
         val emptyFen = "8/8/8/8/8/8/8/K6k w - -"
-        getJson(client, s"/api/positions/equity?fen=${URLEncoder.encode(emptyFen, "UTF-8")}").map {
-          json =>
-            assertEquals(json.hcursor.get[Int]("games"), Right(0))
-            assertEquals(json.hcursor.get[Int]("wins"), Right(0))
-            assertEquals(json.hcursor.get[Double]("win_rate"), Right(0.0))
-        }
+        val base     = s"/api/positions/equity?fen=${URLEncoder.encode(emptyFen, "UTF-8")}"
+        for
+          off <- getJson(client, base) // no turns, default threshold → MC fallback
+          dbZ <- getJson(client, s"$base&min_decided=0") // fallback disabled → empirical zeros
+        yield
+          // MC fallback: flagged source=mc, a valid probability with a standard error; db counts stay zero.
+          assertEquals(off.hcursor.get[String]("source"), Right("mc"))
+          assertEquals(off.hcursor.get[Int]("games"), Right(0))
+          val wr = off.hcursor.get[Double]("win_rate").toOption.getOrElse(-1.0)
+          assert(wr >= 0.0 && wr <= 1.0, s"win_rate out of range: $wr")
+          assert(
+            off.hcursor.get[Double]("standard_error").isRight,
+            "expected a standard_error for an MC estimate"
+          )
+          // Fallback disabled (min_decided=0): the empirical row — zeros, source=db.
+          assertEquals(dbZ.hcursor.get[String]("source"), Right("db"))
+          assertEquals(dbZ.hcursor.get[Int]("games"), Right(0))
+          assertEquals(dbZ.hcursor.get[Double]("win_rate"), Right(0.0))
       }
     }
 
@@ -421,8 +435,9 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
           _ <- sql"DELETE FROM games WHERE id IN ($gA, $gB, $gC, $gD, $gE)".update.run
         yield ()
       val enc = URLEncoder.encode(fen, "UTF-8")
-      val eq  = s"/api/positions/equity?fen=$enc"
-      val co  = s"/api/positions/continuations?fen=$enc&dice=BPQ"
+      // min_decided=1 keeps these small-sample equity checks on the empirical (db) path, not the MC fallback.
+      val eq = s"/api/positions/equity?fen=$enc&min_decided=1"
+      val co = s"/api/positions/continuations?fen=$enc&dice=BPQ"
 
       seedC.transact(xa) >>
         withClient(pg) { client =>

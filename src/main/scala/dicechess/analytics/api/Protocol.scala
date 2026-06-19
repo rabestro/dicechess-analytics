@@ -186,7 +186,8 @@ object Protocol:
       fen: String,
       mode: Option[String],
       source: Option[String],
-      minRating: Option[Int]
+      minRating: Option[Int],
+      minDecided: Option[Int]
   )
 
   /** Pre-roll equity of a position: how the side to move fared across ALL rolls from here,
@@ -197,6 +198,11 @@ object Protocol:
     * with the explorer. `games` is the total matched turns (the same count semantics as
     * `continuations.totalGames`); the win rate is over the decided games `wins + draws + losses`.
     */
+  /** `source` is `"db"` when `winRate` is the empirical win rate over decided games, or `"mc"` when
+    * the database sample was below the `minDecided` threshold and `winRate` is an on-demand
+    * Rao-Blackwellized Monte-Carlo estimate from the engine instead (with `standardError` set). The
+    * `games`/`wins`/`draws`/`losses` counts always reflect the (possibly sparse) database sample.
+    */
   final case class PositionEquity(
       fen: String,
       sideToMove: String,
@@ -204,6 +210,8 @@ object Protocol:
       wins: Int,
       draws: Int,
       losses: Int,
-      winRate: Double
+      winRate: Double,
+      source: String = "db",
+      standardError: Option[Double] = None
   ) derives ConfiguredCodec,
         Schema

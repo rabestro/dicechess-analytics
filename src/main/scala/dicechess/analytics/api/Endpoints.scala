@@ -138,10 +138,17 @@ object Endpoints:
           .description("Keep only games where both players were rated at least this high")
           .validateOption(Validator.min(0))
       )
+      .in(
+        query[Option[Int]]("min_decided")
+          .description(
+            "Below this many decided games, fall back to a Monte-Carlo estimate (source=mc). Default 30; 0 disables the fallback."
+          )
+          .validateOption(Validator.min(0))
+      )
       .mapInTo[PositionEquityQuery]
       .out(jsonBody[PositionEquity])
       .description(
-        "Pre-roll equity of a position: win probability for the side to move across all rolls"
+        "Pre-roll equity of a position: win probability for the side to move across all rolls (Monte-Carlo fallback when the sample is sparse)"
       )
 
   /** Ingest a completed, engine-validated game. Bearer-authenticated (the write path).

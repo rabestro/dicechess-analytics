@@ -76,7 +76,10 @@ final class Routes(
   }
 
   private val positionEquityLogic = Endpoints.positionEquity.serverLogicSuccess[IO] { query =>
-    PositionsRepository.equity(query.fen, query.mode, query.source, query.minRating).transact(xa)
+    PositionsRepository
+      .equity(query.fen, query.mode, query.source, query.minRating)
+      .transact(xa)
+      .map(EquityEstimator.withFallback(_, query.minDecided))
   }
 
   // Bearer auth for the write path. No token configured ⇒ reject (closed by default).
