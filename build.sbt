@@ -46,6 +46,11 @@ lazy val root = (project in file("."))
   .enablePlugins(JavaAppPackaging, BuildInfoPlugin)
   .settings(
     name := "dicechess-analytics-backend",
+    // Two IOApp entry points exist — the server `Main` and the one-shot `maintenance`
+    // repair runner — so the packaged launcher (the Docker ENTRYPOINT) must be told which
+    // to run by default, else it boots with "You need to pass -main argument". The
+    // maintenance runner stays reachable via `runMain` / `bin/... -main <class>`.
+    Compile / mainClass := Some("dicechess.analytics.Main"),
     // BuildInfo bakes name/version/scalaVersion at compile time; the running API
     // reports the effective version (APP_VERSION env override) at GET /version.
     buildInfoKeys    := Seq[BuildInfoKey](name, version, scalaVersion),
