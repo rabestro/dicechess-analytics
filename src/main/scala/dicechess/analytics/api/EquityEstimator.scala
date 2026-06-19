@@ -32,8 +32,10 @@ object EquityEstimator:
   def withFallback(db: PositionEquity, minDecided: Option[Int]): PositionEquity =
     val decided   = db.wins + db.draws + db.losses
     val threshold = minDecided.getOrElse(DefaultMinDecided)
-    if decided >= threshold then db.copy(source = "db")
-    else estimate(db).getOrElse(db.copy(source = "db"))
+    // db already carries source = "db" (the default), so return it as-is when the sample suffices
+    // or when the FEN cannot be parsed for an estimate.
+    if decided >= threshold then db
+    else estimate(db).getOrElse(db)
 
   private def estimate(db: PositionEquity): Option[PositionEquity] =
     // db.fen is the normalized 4-field FEN; FenParser needs the half/full-move fields appended.
