@@ -130,3 +130,50 @@ class IngestRepositorySpec extends CatsEffectSuite with TestContainerForAll:
         assertEquals(games, 1)
         assertEquals(turns, 1)
     }
+
+  test("persistReplace overwrites an existing game (cascading turns + events), no duplication"):
+    val id = UUID.fromString("00000000-0000-0000-0000-0000000000a4")
+    withContainers { pg =>
+      val t        = xa(pg)
+      val orig     = request(id)
+      val modified = orig.copy(
+        result = Some(0),
+        termination = Some("draw_agreement"),
+        events = List(
+          GameEventInput(1, Some(1), "DRAW_OFFER", Some("w"), Some(170000), Some(165000), None)
+        )
+      )
+      for
+        _       <- IngestRepository.persist(orig, replayedFor(orig)).transact(t)
+        created <- IngestRepository.persistReplace(modified, replayedFor(modified)).transact(t)
+        detail  <- GamesRepository.detail(id).transact(t)
+        gameN   <- sql"SELECT count(*) FROM games WHERE id = $id".query[Int].unique.transact(t)
+        eventN  <- sql"SELECT count(*) FROM game_events WHERE game_id = $id"
+          .query[Int]
+          .unique
+          .transact(t)
+        turnN <- sql"SELECT count(*) FROM turns WHERE game_id = $id".query[Int].unique.transact(t)
+      yield
+        assertEquals(created, false) // replaced, not created
+        assertEquals(gameN, 1)       // single row — not duplicated
+        assertEquals(eventN, 1)      // events replaced via cascade, not appended
+        assertEquals(turnN, 1)       // turns replaced via cascade
+        detail match
+          case None    => fail("expected the replaced game")
+          case Some(d) =>
+            assertEquals(d.result, Some(0))                     // metadata overwritten
+            assertEquals(d.events.head.eventType, "DRAW_OFFER") // event overwritten
+    }
+
+  test("persistReplace creates the game when it does not exist"):
+    val id = UUID.fromString("00000000-0000-0000-0000-0000000000a5")
+    withContainers { pg =>
+      val t   = xa(pg)
+      val req = request(id)
+      for
+        created <- IngestRepository.persistReplace(req, replayedFor(req)).transact(t)
+        gameN   <- sql"SELECT count(*) FROM games WHERE id = $id".query[Int].unique.transact(t)
+      yield
+        assertEquals(created, true) // created (did not exist before)
+        assertEquals(gameN, 1)
+    }

@@ -159,6 +159,30 @@ object Endpoints:
       .errorOut(statusCode.and(jsonBody[ApiError]))
       .description("Ingest a completed, engine-validated game (bearer auth required)")
 
+  /** Replace a previously-ingested game with a re-validated version (the re-conversion path).
+    *
+    * Unlike `POST /api/games` (create-only, idempotent), this deletes any existing game — cascading
+    * its turns and events — and re-inserts from the supplied payload, so a corrected normalization
+    * overwrites the old one. `201` when the game did not exist, `200` when it was replaced;
+    * `401`/`422` on bad token / invalid game, `400` when the path id ≠ body id.
+    */
+  val replaceGame: Endpoint[
+    String,
+    (UUID, GameIngest),
+    (StatusCode, ApiError),
+    (StatusCode, IngestResult),
+    Any
+  ] =
+    endpoint.put
+      .securityIn(auth.bearer[String]())
+      .in("api" / "games" / path[UUID]("game_id"))
+      .in(jsonBody[GameIngest])
+      .out(statusCode.and(jsonBody[IngestResult]))
+      .errorOut(statusCode.and(jsonBody[ApiError]))
+      .description(
+        "Replace a previously-ingested game with a re-validated version (bearer auth required)"
+      )
+
   val all: List[AnyEndpoint] =
     List(
       root,
@@ -169,5 +193,6 @@ object Endpoints:
       getPlayer,
       continuations,
       positionEquity,
-      ingestGame
+      ingestGame,
+      replaceGame
     )

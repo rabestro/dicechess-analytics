@@ -26,6 +26,17 @@ object IngestRepository:
       case None    => insertAll(request, replayed)
     }
 
+  /** Replaces the game with a re-validated version: deletes any existing row (cascading its turns
+    * and events) and re-inserts from `request`. Shared positions and players are left intact.
+    * Returns `true` if the game did not exist before (created), `false` if it was replaced. Run
+    * inside a transaction so the delete rolls back if the re-insert fails.
+    */
+  def persistReplace(request: GameIngest, replayed: ReplayedGame): ConnectionIO[Boolean] =
+    for
+      existed <- sql"DELETE FROM games WHERE id = ${request.id}".update.run.map(_ > 0)
+      _       <- insertAll(request, replayed)
+    yield !existed
+
   private def insertAll(request: GameIngest, replayed: ReplayedGame): ConnectionIO[Boolean] =
     if request.turns.sizeIs != replayed.turns.size then
       new IllegalArgumentException(
