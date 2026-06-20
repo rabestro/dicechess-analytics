@@ -177,3 +177,26 @@ class IngestRepositorySpec extends CatsEffectSuite with TestContainerForAll:
         assertEquals(created, true) // created (did not exist before)
         assertEquals(gameN, 1)
     }
+
+  test("persistReplace rolls back the delete when the re-insert fails (original survives)"):
+    val id = UUID.fromString("00000000-0000-0000-0000-0000000000a6")
+    withContainers { pg =>
+      val t    = xa(pg)
+      val orig = request(id)
+      // event_type is not a valid enum value → the re-insert fails mid-transaction.
+      val broken = orig.copy(
+        result = Some(0),
+        events = List(GameEventInput(1, Some(1), "NOT_A_REAL_EVENT", Some("w"), None, None, None))
+      )
+      for
+        _       <- IngestRepository.persist(orig, replayedFor(orig)).transact(t)
+        outcome <- IngestRepository.persistReplace(broken, replayedFor(broken)).transact(t).attempt
+        detail  <- GamesRepository.detail(id).transact(t)
+      yield
+        assert(outcome.isLeft, s"expected the failed replace to error, got $outcome")
+        detail match
+          case None => fail("the original game must survive a failed replace (delete rolled back)")
+          case Some(d) =>
+            assertEquals(d.result, Some(1))                       // original result, not broken 0
+            assertEquals(d.events.head.eventType, "DOUBLE_OFFER") // original event intact
+    }

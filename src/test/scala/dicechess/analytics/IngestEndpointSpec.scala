@@ -150,11 +150,24 @@ class IngestEndpointSpec extends CatsEffectSuite with TestContainerForAll:
       }
     }
 
-  test("PUT /api/games/{id} requires a valid token"):
+  test("PUT /api/games/{id} returns 422 for an illegal move"):
+    val id = UUID.fromString("00000000-0000-0000-0000-0000000000b8")
+    withContainers { pg =>
+      withClient(pg) { client =>
+        putStatus(client, id, game(id, List("a1a4")), Some(token))
+          .map(status => assertEquals(status, Status.UnprocessableEntity))
+      }
+    }
+
+  test("PUT /api/games/{id} rejects a missing or wrong token"):
     val id = UUID.fromString("00000000-0000-0000-0000-0000000000b7")
     withContainers { pg =>
       withClient(pg) { client =>
-        putStatus(client, id, game(id, opening), None)
-          .map(status => assertEquals(status, Status.Unauthorized))
+        for
+          missing <- putStatus(client, id, game(id, opening), None)
+          wrong   <- putStatus(client, id, game(id, opening), Some("nope"))
+        yield
+          assertEquals(missing, Status.Unauthorized)
+          assertEquals(wrong, Status.Unauthorized)
       }
     }

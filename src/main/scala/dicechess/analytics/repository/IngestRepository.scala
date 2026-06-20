@@ -33,8 +33,17 @@ object IngestRepository:
     */
   def persistReplace(request: GameIngest, replayed: ReplayedGame): ConnectionIO[Boolean] =
     for
-      existed <- sql"DELETE FROM games WHERE id = ${request.id}".update.run.map(_ > 0)
-      _       <- insertAll(request, replayed)
+      existed  <- sql"DELETE FROM games WHERE id = ${request.id}".update.run.map(_ > 0)
+      inserted <- insertAll(request, replayed)
+      // insertAll uses ON CONFLICT DO NOTHING; if a concurrent request re-inserted the game
+      // between our DELETE and INSERT it would skip turns/events. Fail loudly so the whole
+      // transaction (including the DELETE) rolls back rather than silently losing data.
+      _ <-
+        if inserted then ().pure[ConnectionIO]
+        else
+          new IllegalStateException(
+            s"replace of game ${request.id} inserted nothing (concurrent ingest?) — rolling back"
+          ).raiseError[ConnectionIO, Unit]
     yield !existed
 
   private def insertAll(request: GameIngest, replayed: ReplayedGame): ConnectionIO[Boolean] =
