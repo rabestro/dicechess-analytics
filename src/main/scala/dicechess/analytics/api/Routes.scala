@@ -115,6 +115,40 @@ final class Routes(
             }
       }
 
+  private val replaceGameLogic =
+    Endpoints.replaceGame
+      .serverSecurityLogic[Unit, IO] { token =>
+        IO.pure(
+          if tokenAccepted(token) then Right(())
+          else Left((StatusCode.Unauthorized, ApiError("Invalid or missing ingest token")))
+        )
+      }
+      .serverLogic { _ => input =>
+        val (gameId, game) = input
+        if gameId != game.id then
+          IO.pure(
+            Left(
+              (
+                StatusCode.BadRequest,
+                ApiError(s"Path id $gameId does not match body id ${game.id}")
+              )
+            )
+          )
+        else
+          GameReplay.replay(
+            game.initialFen,
+            game.turns.map(t => TurnInput(t.dice, t.moves)),
+            game.termination
+          ) match
+            case Left(error) =>
+              IO.pure(Left((StatusCode.UnprocessableEntity, ApiError(describe(error)))))
+            case Right(replayed) =>
+              IngestRepository.persistReplace(game, replayed).transact(xa).map { created =>
+                val status = if created then StatusCode.Created else StatusCode.Ok
+                Right((status, IngestResult(game.id, created)))
+              }
+      }
+
   private val swagger = SwaggerInterpreter()
     .fromEndpoints[IO](Endpoints.all, "Dice Chess Analytics API", version.version)
 
@@ -129,7 +163,8 @@ final class Routes(
         positionEquityLogic,
         rootLogic,
         versionLogic,
-        ingestGameLogic
+        ingestGameLogic,
+        replaceGameLogic
       )
     )
     val cors = CORS.policy

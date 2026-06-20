@@ -17,7 +17,7 @@ import dicechess.analytics.api.IngestProtocol.*
 import dicechess.analytics.api.Protocol.VersionInfo
 import dicechess.analytics.api.Routes
 
-/** End-to-end tests for `POST /api/games` (auth + replay + persist) via the full http4s app. */
+/** End-to-end tests for `POST` / `PUT /api/games` (auth + replay + persist/replace) via the app. */
 class IngestEndpointSpec extends CatsEffectSuite with TestContainerForAll:
 
   override val containerDef: PostgreSQLContainer.Def =
@@ -76,6 +76,20 @@ class IngestEndpointSpec extends CatsEffectSuite with TestContainerForAll:
     )
     client.run(req).use(response => IO.pure(response.status))
 
+  private def putStatus(
+      client: Client[IO],
+      id: UUID,
+      body: GameIngest,
+      bearer: Option[String]
+  ): IO[Status] =
+    val base = Request[IO](Method.PUT, Uri.unsafeFromString(s"/api/games/$id"))
+      .withEntity(body.asJson.noSpaces)
+      .withContentType(`Content-Type`(MediaType.application.json))
+    val req = bearer.fold(base)(t =>
+      base.putHeaders(Authorization(Credentials.Token(AuthScheme.Bearer, t)))
+    )
+    client.run(req).use(response => IO.pure(response.status))
+
   private val opening = List("b1c3", "e2e4", "d1f3")
 
   test("POST /api/games returns 201 on a valid game and 200 on re-ingest"):
@@ -107,6 +121,51 @@ class IngestEndpointSpec extends CatsEffectSuite with TestContainerForAll:
         for
           missing <- postStatus(client, game(id, opening), None)
           wrong   <- postStatus(client, game(id, opening), Some("nope"))
+        yield
+          assertEquals(missing, Status.Unauthorized)
+          assertEquals(wrong, Status.Unauthorized)
+      }
+    }
+
+  test("PUT /api/games/{id} returns 201 for a new game and 200 when replacing"):
+    val id = UUID.fromString("00000000-0000-0000-0000-0000000000b4")
+    withContainers { pg =>
+      withClient(pg) { client =>
+        for
+          created  <- putStatus(client, id, game(id, opening), Some(token))
+          replaced <- putStatus(client, id, game(id, opening), Some(token))
+        yield
+          assertEquals(created, Status.Created)
+          assertEquals(replaced, Status.Ok)
+      }
+    }
+
+  test("PUT /api/games/{id} returns 400 when the path id and body id differ"):
+    val id    = UUID.fromString("00000000-0000-0000-0000-0000000000b5")
+    val other = UUID.fromString("00000000-0000-0000-0000-0000000000b6")
+    withContainers { pg =>
+      withClient(pg) { client =>
+        putStatus(client, id, game(other, opening), Some(token))
+          .map(status => assertEquals(status, Status.BadRequest))
+      }
+    }
+
+  test("PUT /api/games/{id} returns 422 for an illegal move"):
+    val id = UUID.fromString("00000000-0000-0000-0000-0000000000b8")
+    withContainers { pg =>
+      withClient(pg) { client =>
+        putStatus(client, id, game(id, List("a1a4")), Some(token))
+          .map(status => assertEquals(status, Status.UnprocessableEntity))
+      }
+    }
+
+  test("PUT /api/games/{id} rejects a missing or wrong token"):
+    val id = UUID.fromString("00000000-0000-0000-0000-0000000000b7")
+    withContainers { pg =>
+      withClient(pg) { client =>
+        for
+          missing <- putStatus(client, id, game(id, opening), None)
+          wrong   <- putStatus(client, id, game(id, opening), Some("nope"))
         yield
           assertEquals(missing, Status.Unauthorized)
           assertEquals(wrong, Status.Unauthorized)
