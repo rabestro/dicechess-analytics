@@ -62,9 +62,9 @@ final class Routes(
       .map(_.toRight(ApiError("Player not found")))
   }
 
-  private val playerStatsLogic = Endpoints.playerStats.serverLogic[IO] { playerId =>
+  private val playerStatsLogic = Endpoints.playerStats.serverLogic[IO] { query =>
     PlayersRepository
-      .stats(playerId)
+      .stats(query)
       .transact(xa)
       .map(_.toRight(ApiError("Player not found")))
   }

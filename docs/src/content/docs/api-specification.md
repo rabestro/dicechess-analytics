@@ -36,6 +36,10 @@ Retrieves a paginated list of games, with optional player and turn filters.
 - **Query Parameters**:
   - `player_id` (UUID, optional): Filter games played by a specific player (either as White or Black).
   - `min_turns` (integer, optional): Filter games containing at least this number of turns.
+  - `color` (`w` | `b`, optional): The focal player's colour (relative to `player_id`).
+  - `opponent_type` (`human` | `bot`, optional): Opponent type (relative to `player_id`).
+  - `opponent_id` (UUID, optional): A specific opponent (relative to `player_id`).
+  - `stake` (`free` | `low` | `medium` | `high`, optional): Stake tier on the pot (`free` = 0/null, `low` = 1–20, `medium` = 21–200, `high` = > 200).
   - `limit` (integer, default: `50`, max: `200`): Limit the number of games returned.
 - **Success Response** (`200 OK`):
   - **Type**: `Array[GameSummary]`
@@ -186,6 +190,13 @@ convention matches `/api/positions/equity`: `win_rate = (wins + 0.5·draws) / de
 - **Route**: `/api/players/{player_id}/stats`
 - **Path Parameters**:
   - `player_id` (UUID, required): The unique identifier of the player.
+- **Query Parameters** (all optional; the **counts and history bounds reflect the filter**, while identity — `username`, `player_type`, `rating_classic`, `rating_x2` — does **not**):
+  - `mode` — `classic` | `x2`.
+  - `color` — `w` | `b` (the focal player's colour).
+  - `opponent_type` — `human` | `bot`.
+  - `opponent_id` (UUID) — a specific opponent.
+  - `stake` — tier `free` | `low` | `medium` | `high` on `initial_stake_amount` (the pot = 2× the site bet): `free` = `0`/`null`, `low` = `1–20` (bet 1–10), `medium` = `21–200` (bet 25–100), `high` = `> 200` (bet 300+).
+  - `date_from` / `date_to` — start-date range, inclusive.
 - **Success Response** (`200 OK`):
   - **Type**: `PlayerStats`
   - **Fields**:

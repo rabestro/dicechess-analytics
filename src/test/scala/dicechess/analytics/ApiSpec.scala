@@ -781,3 +781,119 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
           }
       }
     }
+
+  test("GET /api/players/{id}/stats & /api/games apply the mode/colour/opponent/stake filters"):
+    withContainers { pg =>
+      val xa    = transactor(pg)
+      val ed    = UUID.fromString("ed000000-0000-0000-0000-0000000000ed")
+      val hugh  = UUID.fromString("ed000000-0000-0000-0000-0000000000f0")
+      val botty = UUID.fromString("ed000000-0000-0000-0000-0000000000f1")
+      val eg1   = UUID.fromString("ed000000-0000-0000-0000-0000000000b1")
+      val eg2   = UUID.fromString("ed000000-0000-0000-0000-0000000000b2")
+      val eg3   = UUID.fromString("ed000000-0000-0000-0000-0000000000b3")
+      val eg4   = UUID.fromString("ed000000-0000-0000-0000-0000000000b4")
+      val t1    = OffsetDateTime.parse("2026-03-01T00:00:00Z")
+      val t2    = OffsetDateTime.parse("2026-03-02T00:00:00Z")
+      val t3    = OffsetDateTime.parse("2026-03-03T00:00:00Z")
+      val t4    = OffsetDateTime.parse("2026-03-04T00:00:00Z")
+
+      // Ed's four games (Ed's perspective): eg1 white/x2/vs-human/low(6) WIN; eg2 black/classic/
+      // vs-human/medium(100) LOSS; eg3 white/classic/vs-bot/free(0) DRAW; eg4 black/classic/vs-bot/
+      // high(600) WIN. Ed's per-mode rating: latest classic = eg4 (1620), x2 = eg1 (1700).
+      val seedC =
+        for
+          _ <- sql"""INSERT INTO players (id, external_id, username, player_type) VALUES
+                      ($ed, 'ext-ed', 'ed', 'human'),
+                      ($hugh, 'ext-hugh', 'hugh', 'human'),
+                      ($botty, 'ext-botty', 'botty', 'bot')""".update.run
+          _ <- sql"""INSERT INTO games (id, source, white_player_id, black_player_id,
+                                        white_rating, black_rating, mode, result,
+                                        initial_stake_amount, started_at) VALUES
+                      ($eg1, 'test', $ed,   $hugh,  1700, 1500, 'x2',      1,    6, $t1),
+                      ($eg2, 'test', $hugh, $ed,    1500, 1600, 'classic', 1,  100, $t2),
+                      ($eg3, 'test', $ed,   $botty, 1610, 1400, 'classic', 0,    0, $t3),
+                      ($eg4, 'test', $botty,$ed,    1400, 1620, 'classic', -1, 600, $t4)""".update.run
+        yield ()
+      val cleanup =
+        for
+          _ <- sql"DELETE FROM games WHERE id IN ($eg1, $eg2, $eg3, $eg4)".update.run
+          _ <- sql"DELETE FROM players WHERE id IN ($ed, $hugh, $botty)".update.run
+        yield ()
+
+      seedC.transact(xa) >>
+        withClient(pg) { client =>
+          def stat(qs: String)    = getJson(client, s"/api/players/$ed/stats$qs")
+          def gamesOf(qs: String) =
+            getJson(client, s"/api/games?player_id=$ed$qs").map(j =>
+              idsOf(j).flatMap(_.toOption).toSet
+            )
+          for
+            all     <- stat("")
+            classic <- stat("?mode=classic")
+            x2      <- stat("?mode=x2")
+            white   <- stat("?color=w")
+            black   <- stat("?color=b")
+            vsBot   <- stat("?opponent_type=bot")
+            vsHuman <- stat("?opponent_type=human")
+            vsHugh  <- stat(s"?opponent_id=$hugh")
+            free    <- stat("?stake=free")
+            low     <- stat("?stake=low")
+            medium  <- stat("?stake=medium")
+            high    <- stat("?stake=high")
+            combo   <- stat("?mode=classic&opponent_type=bot")
+            gWhite  <- gamesOf("&color=w")
+            gVsBot  <- gamesOf("&opponent_type=bot")
+            gHigh   <- gamesOf("&stake=high")
+            gVsHugh <- gamesOf(s"&opponent_id=$hugh")
+          yield
+            // unfiltered: 4 games, 2W/1D/1L, even colours
+            assertEquals(all.hcursor.get[Int]("games"), Right(4))
+            assertEquals(all.hcursor.get[Double]("win_rate"), Right(0.625))
+            assertEquals(all.hcursor.get[Int]("as_white"), Right(2))
+            assertEquals(all.hcursor.get[Int]("as_black"), Right(2))
+            assertEquals(all.hcursor.get[Int]("rating_classic"), Right(1620))
+            assertEquals(all.hcursor.get[Int]("rating_x2"), Right(1700))
+            assert(
+              all.hcursor.get[String]("first_game").toOption.exists(_.startsWith("2026-03-01"))
+            )
+            assert(all.hcursor.get[String]("last_game").toOption.exists(_.startsWith("2026-03-04")))
+            // mode: counts filter, but the per-mode ratings are identity and must NOT change
+            assertEquals(classic.hcursor.get[Int]("games"), Right(3))
+            assertEquals(classic.hcursor.get[Double]("win_rate"), Right(0.5))
+            assertEquals(classic.hcursor.get[Int]("rating_x2"), Right(1700))
+            assertEquals(x2.hcursor.get[Int]("games"), Right(1))
+            assertEquals(x2.hcursor.get[Double]("win_rate"), Right(1.0))
+            assertEquals(x2.hcursor.get[Int]("rating_classic"), Right(1620))
+            // colour
+            assertEquals(white.hcursor.get[Int]("games"), Right(2))
+            assertEquals(white.hcursor.get[Double]("win_rate"), Right(0.75))
+            assertEquals(white.hcursor.get[Int]("as_black"), Right(0))
+            assertEquals(black.hcursor.get[Int]("games"), Right(2))
+            assertEquals(black.hcursor.get[Double]("win_rate"), Right(0.5))
+            assertEquals(black.hcursor.get[Int]("as_white"), Right(0))
+            // opponent type / id
+            assertEquals(vsBot.hcursor.get[Int]("games"), Right(2))
+            assertEquals(vsBot.hcursor.get[Double]("win_rate"), Right(0.75))
+            assertEquals(vsHuman.hcursor.get[Int]("games"), Right(2))
+            assertEquals(vsHuman.hcursor.get[Double]("win_rate"), Right(0.5))
+            assertEquals(vsHugh.hcursor.get[Int]("games"), Right(2))
+            assertEquals(vsHugh.hcursor.get[Int]("losses"), Right(1))
+            // stake tiers
+            assertEquals(free.hcursor.get[Int]("games"), Right(1))
+            assertEquals(free.hcursor.get[Int]("draws"), Right(1))
+            assertEquals(low.hcursor.get[Int]("games"), Right(1))
+            assertEquals(low.hcursor.get[Double]("win_rate"), Right(1.0))
+            assertEquals(medium.hcursor.get[Int]("games"), Right(1))
+            assertEquals(medium.hcursor.get[Double]("win_rate"), Right(0.0))
+            assertEquals(high.hcursor.get[Int]("games"), Right(1))
+            assertEquals(high.hcursor.get[Double]("win_rate"), Right(1.0))
+            // combined filters
+            assertEquals(combo.hcursor.get[Int]("games"), Right(2))
+            assertEquals(combo.hcursor.get[Double]("win_rate"), Right(0.75))
+            // /api/games honours the same player-relative filters
+            assertEquals(gWhite, Set(eg1.toString, eg3.toString))
+            assertEquals(gVsBot, Set(eg3.toString, eg4.toString))
+            assertEquals(gHigh, Set(eg4.toString))
+            assertEquals(gVsHugh, Set(eg1.toString, eg2.toString))
+        }.guarantee(cleanup.transact(xa).map(_ => ()))
+    }

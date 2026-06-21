@@ -96,12 +96,35 @@ object GamesRepository:
     """
 
   def list(query: GamesQuery, defaultLimit: Int): ConnectionIO[Page[GameSummary]] =
+    // colour / opponent filters are interpreted relative to the focal player_id; opponent_type
+    // reuses the white/black player joins (wp/bp). Without player_id, opponent filters fall back to
+    // "either side".
+    val colorWhere = (query.color, query.playerId) match
+      case (Some("w"), Some(p)) => Some(fr"g.white_player_id = $p")
+      case (Some("b"), Some(p)) => Some(fr"g.black_player_id = $p")
+      case _                    => None
+    val opponentIdWhere = (query.opponentId, query.playerId) match
+      case (Some(o), Some(p)) =>
+        Some(fr"""((g.white_player_id = $p AND g.black_player_id = $o)
+               OR (g.black_player_id = $p AND g.white_player_id = $o))""")
+      case (Some(o), None) => Some(fr"(g.white_player_id = $o OR g.black_player_id = $o)")
+      case _               => None
+    val opponentTypeWhere = (query.opponentType, query.playerId) match
+      case (Some(t), Some(p)) =>
+        Some(fr"""((g.white_player_id = $p AND bp.player_type = $t)
+               OR (g.black_player_id = $p AND wp.player_type = $t))""")
+      case (Some(t), None) => Some(fr"(wp.player_type = $t OR bp.player_type = $t)")
+      case _               => None
     val where = Fragments.whereAndOpt(
       query.playerId.map(p => fr"(g.white_player_id = $p OR g.black_player_id = $p)"),
       query.minTurns.map(t => fr"g.total_turns >= $t"),
       query.maxTurns.map(t => fr"g.total_turns <= $t"),
       query.mode.map(m => fr"g.mode::text = $m"),
       query.result.map(r => fr"g.result = $r"),
+      colorWhere,
+      opponentTypeWhere,
+      opponentIdWhere,
+      query.stake.flatMap(Filters.stakePredicate),
       query.dateFrom.map(d => fr"g.started_at >= $d"),
       query.dateTo.map(d => fr"g.started_at < ${d.plusDays(1)}")
     )
@@ -116,7 +139,7 @@ object GamesRepository:
       case _           => "DESC"
     val orderBy = Fragment.const(s"ORDER BY $sortColumn $direction NULLS LAST")
     for
-      total <- (fr"SELECT count(*) FROM games g" ++ where).query[Long].unique
+      total <- (fr"SELECT count(*) " ++ gameTables ++ where).query[Long].unique
       rows  <- (gameColumns ++ gameTables ++ where ++ orderBy ++ fr"LIMIT $limit OFFSET $offset")
         .query[GameRow]
         .to[List]

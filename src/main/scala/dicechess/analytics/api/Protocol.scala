@@ -31,13 +31,20 @@ object Protocol:
   ) derives ConfiguredCodec,
         Schema
 
-  /** Query parameters of the games list endpoint (mapped from the Tapir inputs). */
+  /** Query parameters of the games list endpoint (mapped from the Tapir inputs). `color`,
+    * `opponentType` and `opponentId` are interpreted relative to `playerId` (the focal player);
+    * `stake` is a tier bucket over `initial_stake_amount` (the pot).
+    */
   final case class GamesQuery(
       playerId: Option[UUID],
       minTurns: Option[Int],
       maxTurns: Option[Int],
       mode: Option[String],
       result: Option[Int],
+      color: Option[String],
+      opponentType: Option[String],
+      opponentId: Option[UUID],
+      stake: Option[String],
       dateFrom: Option[LocalDate],
       dateTo: Option[LocalDate],
       sort: Option[String],
@@ -56,6 +63,23 @@ object Protocol:
       ratingClassic: Option[Int]
   ) derives ConfiguredCodec,
         Schema
+
+  /** Query parameters of the player-stats endpoint (mapped from the Tapir inputs). The path
+    * `playerId` is the first input; the rest are optional filters from this player's perspective:
+    * `color` is the focal player's side (`w`/`b`), `opponentType` (`human`/`bot`) and `opponentId`
+    * constrain the other side, and `stake` is a tier bucket over `initial_stake_amount` (the pot).
+    * Identity and per-mode current ratings are NOT affected by these filters.
+    */
+  final case class PlayerStatsQuery(
+      playerId: UUID,
+      mode: Option[String],
+      color: Option[String],
+      opponentType: Option[String],
+      opponentId: Option[UUID],
+      stake: Option[String],
+      dateFrom: Option[LocalDate],
+      dateTo: Option[LocalDate]
+  )
 
   /** Aggregate statistics for a single player across all of their games.
     *
