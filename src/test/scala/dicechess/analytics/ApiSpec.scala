@@ -995,3 +995,83 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
           .map(s => assertEquals(s, Status.NotFound))
       }
     }
+
+  test("GET /api/players/{id}/rating-history returns one daily point per mode"):
+    withContainers { pg =>
+      val xa  = transactor(pg)
+      val gus = UUID.fromString("ab000000-0000-0000-0000-0000000000ab")
+      val g1  = UUID.fromString("ab000000-0000-0000-0000-0000000000c1")
+      val g2  = UUID.fromString("ab000000-0000-0000-0000-0000000000c2")
+      val g3  = UUID.fromString("ab000000-0000-0000-0000-0000000000c3")
+      val g4  = UUID.fromString("ab000000-0000-0000-0000-0000000000c4")
+      val g5  = UUID.fromString("ab000000-0000-0000-0000-0000000000c5")
+      val g6  = UUID.fromString("ab000000-0000-0000-0000-0000000000c6")
+
+      // Gus (always White): two rated classic games on 02-01 then a *later* unrated one the same day
+      // (the day must still surface 1510 — the last rated rating — not be dropped), one classic on
+      // 02-03 (1530), one x2 on 02-02 (1700), and a wholly-unrated classic day on 02-05 (dropped).
+      val seedC =
+        for
+          _ <- sql"""INSERT INTO players (id, external_id, username, player_type)
+                     VALUES ($gus, 'ext-gus', 'gus', 'human')""".update.run
+          _ <- sql"""INSERT INTO games (id, source, white_player_id, white_rating, mode, result,
+                                        started_at) VALUES
+                      ($g1, 'test', $gus, 1500, 'classic', 1, '2026-02-01T10:00:00Z'),
+                      ($g2, 'test', $gus, 1510, 'classic', 1, '2026-02-01T20:00:00Z'),
+                      ($g6, 'test', $gus, NULL, 'classic', 1, '2026-02-01T22:00:00Z'),
+                      ($g3, 'test', $gus, 1530, 'classic', 1, '2026-02-03T12:00:00Z'),
+                      ($g4, 'test', $gus, 1700, 'x2',      1, '2026-02-02T12:00:00Z'),
+                      ($g5, 'test', $gus, NULL, 'classic', 1, '2026-02-05T12:00:00Z')""".update.run
+        yield ()
+      val cleanup =
+        for
+          _ <- sql"DELETE FROM games WHERE id IN ($g1, $g2, $g3, $g4, $g5, $g6)".update.run
+          _ <- sql"DELETE FROM players WHERE id = $gus".update.run
+        yield ()
+
+      def points(json: Json, key: String): Vector[(String, Int)] =
+        json.hcursor
+          .downField(key)
+          .focus
+          .flatMap(_.asArray)
+          .getOrElse(Vector.empty)
+          .map(j =>
+            (
+              j.hcursor.get[String]("date").toOption.getOrElse(""),
+              j.hcursor.get[Int]("rating").toOption.getOrElse(-1)
+            )
+          )
+
+      seedC.transact(xa) >>
+        withClient(pg) { client =>
+          for
+            all   <- getJson(client, s"/api/players/$gus/rating-history")
+            x2    <- getJson(client, s"/api/players/$gus/rating-history?mode=x2")
+            dated <- getJson(client, s"/api/players/$gus/rating-history?date_from=2026-02-02")
+          yield
+            // both series; 02-01 collapses to the day's last rating (1510), the unrated day is gone
+            assertEquals(
+              points(all, "classic"),
+              Vector(("2026-02-01", 1510), ("2026-02-03", 1530))
+            )
+            assertEquals(points(all, "x2"), Vector(("2026-02-02", 1700)))
+            // mode=x2 → only the x2 series
+            assertEquals(points(x2, "classic"), Vector.empty)
+            assertEquals(points(x2, "x2"), Vector(("2026-02-02", 1700)))
+            // date_from drops the 02-01 classic point
+            assertEquals(points(dated, "classic"), Vector(("2026-02-03", 1530)))
+            assertEquals(points(dated, "x2"), Vector(("2026-02-02", 1700)))
+        }.guarantee(cleanup.transact(xa).map(_ => ()))
+    }
+
+  test("GET /api/players/{id}/rating-history returns 404 for unknown players"):
+    withContainers { pg =>
+      withClient(pg) { client =>
+        client
+          .run(
+            Request[IO](Method.GET, Uri.unsafeFromString(s"/api/players/$missing/rating-history"))
+          )
+          .use(r => IO.pure(r.status))
+          .map(s => assertEquals(s, Status.NotFound))
+      }
+    }

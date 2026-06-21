@@ -266,6 +266,34 @@ Win-rate breakdowns for a player across categorical dimensions, plus the average
     ```
 - **Error Response** (`404 Not Found`): If the player with the given UUID does not exist.
 
+### 5. Get Rating History
+
+A player's rating over time — one point per active day (the rating after that day's last game), per mode. Rating is a per-mode, point-in-time property, so this endpoint honours **only `mode` and the date range** (colour / opponent / stake do not shape a rating curve).
+
+- **HTTP Method**: `GET`
+- **Route**: `/api/players/{player_id}/rating-history`
+- **Path Parameters**:
+  - `player_id` (UUID, required).
+- **Query Parameters**:
+  - `mode` (`classic` | `x2`, optional): omit to get both series.
+  - `date_from` / `date_to`: start-date range, inclusive.
+- **Success Response** (`200 OK`):
+  - **Type**: `RatingHistory` — `{ classic: RatingPoint[], x2: RatingPoint[] }`, each `RatingPoint` being `{ date, rating }`, ordered by date. A series is empty when the player has no rated game in that mode (or it was filtered out); unrated games are excluded.
+  - **Example Payload**:
+
+    ```json
+    {
+      "classic": [
+        { "date": "2026-05-17", "rating": 3053 },
+        { "date": "2026-05-30", "rating": 3127 },
+        { "date": "2026-06-19", "rating": 3035 }
+      ],
+      "x2": [{ "date": "2026-05-15", "rating": 3119 }]
+    }
+    ```
+
+- **Error Response** (`404 Not Found`): If the player with the given UUID does not exist.
+
 ---
 
 ## Positions Endpoint (`/api/positions`)

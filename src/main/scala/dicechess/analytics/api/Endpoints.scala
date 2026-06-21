@@ -164,6 +164,23 @@ object Endpoints:
         "Win-rate breakdowns by colour, mode and opponent type (plus average moves) for a player, same filters as stats"
       )
 
+  val ratingHistory: PublicEndpoint[RatingHistoryQuery, ApiError, RatingHistory, Any] =
+    endpoint.get
+      .in("api" / "players" / path[UUID]("player_id") / "rating-history")
+      .in(
+        query[Option[String]]("mode")
+          .description("Game mode: classic or x2 (omit for both)")
+          .validateOption(Validator.enumeration(List("classic", "x2")))
+      )
+      .in(query[Option[LocalDate]]("date_from").description("Earliest start date, inclusive"))
+      .in(query[Option[LocalDate]]("date_to").description("Latest start date, inclusive"))
+      .mapInTo[RatingHistoryQuery]
+      .out(jsonBody[RatingHistory])
+      .errorOut(notFound)
+      .description(
+        "Per-mode rating over time (one point per active day), filtered by mode and date"
+      )
+
   val continuations: PublicEndpoint[ContinuationsQuery, Unit, PositionContinuations, Any] =
     endpoint.get
       .in("api" / "positions" / "continuations")
@@ -261,6 +278,7 @@ object Endpoints:
       getPlayer,
       playerStats,
       breakdowns,
+      ratingHistory,
       continuations,
       positionEquity,
       ingestGame,
