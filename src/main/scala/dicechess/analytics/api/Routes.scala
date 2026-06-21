@@ -39,8 +39,11 @@ final class Routes(
 
   private val versionLogic = Endpoints.version.serverLogicSuccess[IO](_ => IO.pure(version))
 
-  private val listGamesLogic = Endpoints.listGames.serverLogicSuccess[IO] { query =>
-    GamesRepository.list(query, defaultLimit).transact(xa)
+  private val listGamesLogic = Endpoints.listGames.serverLogic[IO] { query =>
+    // `color` is meaningless without a focal player; reject rather than silently widen the result.
+    if query.color.isDefined && query.playerId.isEmpty then
+      IO.pure(Left(ApiError("color requires player_id")))
+    else GamesRepository.list(query, defaultLimit).transact(xa).map(Right(_))
   }
 
   private val getGameLogic = Endpoints.getGame.serverLogic[IO] { gameId =>
@@ -62,9 +65,9 @@ final class Routes(
       .map(_.toRight(ApiError("Player not found")))
   }
 
-  private val playerStatsLogic = Endpoints.playerStats.serverLogic[IO] { playerId =>
+  private val playerStatsLogic = Endpoints.playerStats.serverLogic[IO] { query =>
     PlayersRepository
-      .stats(playerId)
+      .stats(query)
       .transact(xa)
       .map(_.toRight(ApiError("Player not found")))
   }
