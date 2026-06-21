@@ -59,8 +59,10 @@ object PlayersRepository:
     * Black with `result = -1`), mirrored for losses, `result = 0` for draws — the same
     * `count(*) FILTER (...)` shape as `PositionsRepository.equity`, keyed on the player's id vs
     * `result` instead of `active_color`. `games` counts every game (undecided included); the win
-    * rate is over the decided games only. Ratings are the most-recent snapshot per mode, read as
-    * correlated scalar subqueries (no extra GROUP BY columns).
+    * rate is over the decided games only. Per-mode ratings are the most-recent snapshot in each
+    * mode, computed from the same single scan via an ordered `array_agg` filtered per mode (the
+    * `[1]` element is the latest game's rating) — so the whole stat is one pass over the player's
+    * games rather than extra correlated subqueries.
     */
   def stats(id: UUID): ConnectionIO[Option[PlayerStats]] =
     sql"""
@@ -76,16 +78,10 @@ object PlayersRepository:
         count(*) FILTER (WHERE g.black_player_id = p.id),
         min(g.started_at),
         max(g.started_at),
-        (SELECT CASE WHEN gc.white_player_id = p.id THEN gc.white_rating ELSE gc.black_rating END
-           FROM games gc
-          WHERE (gc.white_player_id = p.id OR gc.black_player_id = p.id) AND gc.mode::text = 'classic'
-          ORDER BY gc.started_at DESC NULLS LAST
-          LIMIT 1),
-        (SELECT CASE WHEN gx.white_player_id = p.id THEN gx.white_rating ELSE gx.black_rating END
-           FROM games gx
-          WHERE (gx.white_player_id = p.id OR gx.black_player_id = p.id) AND gx.mode::text = 'x2'
-          ORDER BY gx.started_at DESC NULLS LAST
-          LIMIT 1)
+        (array_agg(CASE WHEN g.white_player_id = p.id THEN g.white_rating ELSE g.black_rating END
+                   ORDER BY g.started_at DESC NULLS LAST) FILTER (WHERE g.mode::text = 'classic'))[1],
+        (array_agg(CASE WHEN g.white_player_id = p.id THEN g.white_rating ELSE g.black_rating END
+                   ORDER BY g.started_at DESC NULLS LAST) FILTER (WHERE g.mode::text = 'x2'))[1]
       FROM players p
       LEFT JOIN games g ON (g.white_player_id = p.id OR g.black_player_id = p.id)
       WHERE p.id = $id
