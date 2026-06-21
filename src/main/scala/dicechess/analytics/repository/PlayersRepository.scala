@@ -76,20 +76,10 @@ object PlayersRepository:
     */
   def stats(q: PlayerStatsQuery): ConnectionIO[Option[PlayerStats]] =
     val pid = q.playerId
-    val fp  = Fragments
-      .andOpt(
-        Some(fr"g.id IS NOT NULL"),
-        q.mode.map(m => fr"g.mode::text = $m"),
-        q.color.map(c =>
-          if c == "w" then fr"g.white_player_id = $pid" else fr"g.black_player_id = $pid"
-        ),
-        q.opponentType.map(t => fr"opp.player_type = $t"),
-        q.opponentId.map(o => fr"opp.id = $o"),
-        q.stake.flatMap(Filters.stakePredicate),
-        q.dateFrom.map(d => fr"g.started_at >= $d"),
-        q.dateTo.map(d => fr"g.started_at < ${d.plusDays(1)}")
-      )
-      .getOrElse(fr"TRUE") // always Some (the base predicate is unconditional); guard for safety
+    // Base predicate keeps a zero-games player (the all-NULL LEFT JOIN row) at zero; the shared
+    // player filters are AND-ed in. The list is always non-empty, so `reduce` is safe.
+    val fp = (Some(fr"g.id IS NOT NULL") :: Filters.playerFilters(pid, q)).flatten
+      .reduce(_ ++ fr" AND " ++ _)
     val win =
       fr"((g.white_player_id = $pid AND g.result = 1) OR (g.black_player_id = $pid AND g.result = -1))"
     val loss =
@@ -189,18 +179,9 @@ object PlayersRepository:
     */
   def breakdowns(q: PlayerStatsQuery): ConnectionIO[Option[PlayerBreakdowns]] =
     val pid      = q.playerId
-    val filtered = Fragments.whereAndOpt(
-      Some(fr"(g.white_player_id = $pid OR g.black_player_id = $pid)"),
-      q.mode.map(m => fr"g.mode::text = $m"),
-      q.color.map(c =>
-        if c == "w" then fr"g.white_player_id = $pid" else fr"g.black_player_id = $pid"
-      ),
-      q.opponentType.map(t => fr"opp.player_type = $t"),
-      q.opponentId.map(o => fr"opp.id = $o"),
-      q.stake.flatMap(Filters.stakePredicate),
-      q.dateFrom.map(d => fr"g.started_at >= $d"),
-      q.dateTo.map(d => fr"g.started_at < ${d.plusDays(1)}")
-    )
+    val filtered =
+      fr"WHERE " ++ (Some(fr"(g.white_player_id = $pid OR g.black_player_id = $pid)") ::
+        Filters.playerFilters(pid, q)).flatten.reduce(_ ++ fr" AND " ++ _)
     val oppJoin =
       fr"""LEFT JOIN players opp ON opp.id = CASE WHEN g.white_player_id = $pid
                                                   THEN g.black_player_id ELSE g.white_player_id END"""
