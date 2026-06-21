@@ -57,6 +57,38 @@ object Protocol:
   ) derives ConfiguredCodec,
         Schema
 
+  /** Aggregate statistics for a single player across all of their games.
+    *
+    * Outcomes are from the player's perspective, combining `games.result` (White-perspective: `1`
+    * White win, `-1` Black win, `0` draw, `NULL` undecided) with the colour the player had in each
+    * game. `games` counts every game played, including undecided ones; `decided = wins + draws +
+    * losses` is the win-rate denominator. `winRate = (wins + 0.5*draws)/decided` — draws weighted
+    * as half a win, the same convention as [[PositionEquity]] — and is `0.0` when nothing is
+    * decided.
+    *
+    * `ratingClassic` / `ratingX2` are the rating snapshots from the player's most recent game in
+    * each mode (a player carries an independent rating per mode); either is `None` when the player
+    * has no game in that mode.
+    */
+  final case class PlayerStats(
+      id: UUID,
+      username: Option[String],
+      playerType: String,
+      games: Int,
+      wins: Int,
+      draws: Int,
+      losses: Int,
+      decided: Int,
+      winRate: Double,
+      asWhite: Int,
+      asBlack: Int,
+      firstGame: Option[OffsetDateTime],
+      lastGame: Option[OffsetDateTime],
+      ratingClassic: Option[Int],
+      ratingX2: Option[Int]
+  ) derives ConfiguredCodec,
+        Schema
+
   /** Mirror of Pydantic `GameBase`. */
   final case class GameSummary(
       id: UUID,

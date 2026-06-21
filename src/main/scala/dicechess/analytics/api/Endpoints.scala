@@ -96,6 +96,15 @@ object Endpoints:
       .errorOut(notFound)
       .description("Get a specific player by UUID")
 
+  val playerStats: PublicEndpoint[UUID, ApiError, PlayerStats, Any] =
+    endpoint.get
+      .in("api" / "players" / path[UUID]("player_id") / "stats")
+      .out(jsonBody[PlayerStats])
+      .errorOut(notFound)
+      .description(
+        "Aggregate win/loss/draw statistics for a player across all of their games"
+      )
+
   val continuations: PublicEndpoint[ContinuationsQuery, Unit, PositionContinuations, Any] =
     endpoint.get
       .in("api" / "positions" / "continuations")
@@ -191,6 +200,7 @@ object Endpoints:
       getGame,
       listPlayers,
       getPlayer,
+      playerStats,
       continuations,
       positionEquity,
       ingestGame,

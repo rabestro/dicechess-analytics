@@ -63,6 +63,7 @@ gantt
 
 - **Objective**: Generate complex historical aggregates and optimize long-running queries.
 - **Deliverables**:
+  - Per-player aggregate stats endpoint `GET /api/players/{player_id}/stats` (win/loss/draw, win-rate, per-colour and per-mode breakdown) — the backend foundation of the analytics-UI **Players** section.
   - Player rating history graphs and opening explorer stats endpoints.
   - Use PostgreSQL Materialized Views for heavy analytical queries.
   - Game search endpoints supporting complex multi-column filters (ratings, termination type, openings, dates).

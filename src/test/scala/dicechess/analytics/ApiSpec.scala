@@ -645,3 +645,139 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
           assertEquals(status, Status.NotFound)
       }
     }
+
+  test("GET /api/players/{id}/stats attributes wins/losses by colour and reports per-mode ratings"):
+    withContainers { pg =>
+      withClient(pg) { client =>
+        for
+          aliceStats <- getJson(client, s"/api/players/$alice/stats")
+          bobStats   <- getJson(client, s"/api/players/$bob/stats")
+        yield
+          // alice: game1 (white, x2, white win) and game2 (black, classic, black win) → both wins
+          val a = aliceStats.hcursor
+          assertEquals(a.get[String]("id"), Right(alice.toString))
+          assertEquals(a.get[String]("username"), Right("alice"))
+          assertEquals(a.get[String]("player_type"), Right("human"))
+          assertEquals(a.get[Int]("games"), Right(2))
+          assertEquals(a.get[Int]("wins"), Right(2))
+          assertEquals(a.get[Int]("draws"), Right(0))
+          assertEquals(a.get[Int]("losses"), Right(0))
+          assertEquals(a.get[Int]("decided"), Right(2))
+          assertEquals(a.get[Double]("win_rate"), Right(1.0))
+          assertEquals(a.get[Int]("as_white"), Right(1))
+          assertEquals(a.get[Int]("as_black"), Right(1))
+          // per-mode ratings: classic from game2 (black, 1450), x2 from game1 (white, 1500)
+          assertEquals(a.get[Int]("rating_classic"), Right(1450))
+          assertEquals(a.get[Int]("rating_x2"), Right(1500))
+          // history bounds: earliest game2 (2026-06-01), latest game1 (2026-06-10)
+          assert(a.get[String]("first_game").toOption.exists(_.startsWith("2026-06-01")))
+          assert(a.get[String]("last_game").toOption.exists(_.startsWith("2026-06-10")))
+          // bob: only game1 (black, x2, white win) → a single loss; no classic game → no rating
+          val b = bobStats.hcursor
+          assertEquals(b.get[String]("id"), Right(bob.toString))
+          assertEquals(b.get[String]("username"), Right("bob"))
+          assertEquals(b.get[String]("player_type"), Right("bot"))
+          assertEquals(b.get[Int]("games"), Right(1))
+          assertEquals(b.get[Int]("wins"), Right(0))
+          assertEquals(b.get[Int]("losses"), Right(1))
+          assertEquals(b.get[Double]("win_rate"), Right(0.0))
+          assertEquals(b.get[Int]("as_white"), Right(0))
+          assertEquals(b.get[Int]("as_black"), Right(1))
+          assertEquals(b.get[Option[Int]]("rating_classic"), Right(None))
+          assertEquals(b.get[Int]("rating_x2"), Right(1480))
+      }
+    }
+
+  test("GET /api/players/{id}/stats counts undecided games but excludes them from the win rate"):
+    withContainers { pg =>
+      val xa    = transactor(pg)
+      val carol = UUID.fromString("00000000-0000-0000-0000-00000000000c")
+      val gC1   = UUID.fromString("00000000-0000-0000-0000-0000000005c1")
+      val gC2   = UUID.fromString("00000000-0000-0000-0000-0000000005c2")
+      val gC3   = UUID.fromString("00000000-0000-0000-0000-0000000005c3")
+      val gC4   = UUID.fromString("00000000-0000-0000-0000-0000000005c4")
+      val gC5   = UUID.fromString("00000000-0000-0000-0000-0000000005c5")
+      val ts    = OffsetDateTime.parse("2026-06-01T00:00:00Z")
+
+      // carol (always White): 2 wins, 1 draw, 1 loss, 1 undecided (NULL result).
+      // games = 5, decided = 4, win_rate = (2 + 0.5)/4 = 0.625.
+      val seedC =
+        for
+          _ <- sql"""INSERT INTO players (id, external_id, username, player_type)
+                     VALUES ($carol, 'ext-c', 'carol', 'human')""".update.run
+          _ <- sql"""INSERT INTO games (id, source, white_player_id, white_rating,
+                                        mode, result, started_at) VALUES
+                      ($gC1, 'test', $carol, 1600, 'classic',  1, $ts),
+                      ($gC2, 'test', $carol, 1600, 'classic',  1, $ts),
+                      ($gC3, 'test', $carol, 1600, 'classic',  0, $ts),
+                      ($gC4, 'test', $carol, 1600, 'classic', -1, $ts),
+                      ($gC5, 'test', $carol, 1600, 'classic', NULL, $ts)""".update.run
+        yield ()
+      val cleanup =
+        for
+          _ <- sql"DELETE FROM games WHERE id IN ($gC1, $gC2, $gC3, $gC4, $gC5)".update.run
+          _ <- sql"DELETE FROM players WHERE id = $carol".update.run
+        yield ()
+
+      seedC.transact(xa) >>
+        withClient(pg) { client =>
+          getJson(client, s"/api/players/$carol/stats").map { json =>
+            val c = json.hcursor
+            assertEquals(c.get[Int]("games"), Right(5))
+            assertEquals(c.get[Int]("wins"), Right(2))
+            assertEquals(c.get[Int]("draws"), Right(1))
+            assertEquals(c.get[Int]("losses"), Right(1))
+            assertEquals(c.get[Int]("decided"), Right(4))
+            assertEquals(c.get[Double]("win_rate"), Right(0.625))
+            assertEquals(c.get[Int]("as_white"), Right(5))
+            assertEquals(c.get[Int]("as_black"), Right(0))
+            assertEquals(c.get[Int]("rating_classic"), Right(1600))
+            assertEquals(c.get[Option[Int]]("rating_x2"), Right(None))
+          }
+        }.guarantee(cleanup.transact(xa))
+    }
+
+  test("GET /api/players/{id}/stats returns zeros for an existing player with no games"):
+    withContainers { pg =>
+      val xa    = transactor(pg)
+      val dave  = UUID.fromString("00000000-0000-0000-0000-00000000000d")
+      val seedC =
+        sql"""INSERT INTO players (id, external_id, username, player_type)
+              VALUES ($dave, 'ext-d', 'dave', 'human')""".update.run
+      val cleanup = sql"DELETE FROM players WHERE id = $dave".update.run
+
+      seedC.transact(xa) >>
+        withClient(pg) { client =>
+          getJson(client, s"/api/players/$dave/stats").map { json =>
+            val c = json.hcursor
+            assertEquals(c.get[String]("username"), Right("dave"))
+            assertEquals(c.get[Int]("games"), Right(0))
+            assertEquals(c.get[Int]("wins"), Right(0))
+            assertEquals(c.get[Int]("decided"), Right(0))
+            assertEquals(c.get[Double]("win_rate"), Right(0.0))
+            assertEquals(c.get[Int]("as_white"), Right(0))
+            assertEquals(c.get[Int]("as_black"), Right(0))
+            assertEquals(c.get[Option[Int]]("rating_classic"), Right(None))
+            assertEquals(c.get[Option[Int]]("rating_x2"), Right(None))
+            assertEquals(c.get[Option[String]]("first_game"), Right(None))
+            assertEquals(c.get[Option[String]]("last_game"), Right(None))
+          }
+        }.guarantee(cleanup.transact(xa).map(_ => ()))
+    }
+
+  test("GET /api/players/{id}/stats returns a FastAPI-style 404 for unknown players"):
+    withContainers { pg =>
+      withClient(pg) { client =>
+        client
+          .run(Request[IO](Method.GET, Uri.unsafeFromString(s"/api/players/$missing/stats")))
+          .use { response =>
+            assertEquals(response.status, Status.NotFound)
+            response.as[String].map { body =>
+              assertEquals(
+                parse(body).flatMap(_.hcursor.get[String]("detail")),
+                Right("Player not found")
+              )
+            }
+          }
+      }
+    }

@@ -173,6 +173,53 @@ Retrieves profile metadata for a specific player.
     ```
 - **Error Response** (`404 Not Found`): If the player with the given UUID does not exist.
 
+### 3. Get Player Statistics
+
+Aggregate win/loss/draw statistics for a single player across all of their games. Outcomes are
+from the player's perspective: a win is the player on the winning side (White with `result = 1`,
+Black with `result = -1`), mirrored for losses, with `result = 0` a draw. Undecided games
+(`result = null`) are counted in `games` but excluded from the win-rate denominator. The win-rate
+convention matches `/api/positions/equity`: `win_rate = (wins + 0.5·draws) / decided`, where
+`decided = wins + draws + losses` (`0.0` when nothing is decided).
+
+- **HTTP Method**: `GET`
+- **Route**: `/api/players/{player_id}/stats`
+- **Path Parameters**:
+  - `player_id` (UUID, required): The unique identifier of the player.
+- **Success Response** (`200 OK`):
+  - **Type**: `PlayerStats`
+  - **Fields**:
+    - `games` — total games played, including undecided ones.
+    - `wins`, `draws`, `losses`, `decided` — outcome counts from the player's perspective; `decided = wins + draws + losses`.
+    - `win_rate` — `(wins + 0.5·draws) / decided`; `0.0` when no game is decided.
+    - `as_white`, `as_black` — games played per colour.
+    - `first_game`, `last_game` — `started_at` of the player's earliest and latest games (`null` when the player has no games).
+    - `rating_classic`, `rating_x2` — rating snapshot from the player's most recent game in each mode (`null` when the player has no game in that mode); a player carries an independent rating per mode.
+  - **Example Payload**:
+
+    ```json
+    {
+      "id": "d13cb5fa-5f90-449e-b9ef-0a563abde12a",
+      "username": "Anonymous",
+      "player_type": "human",
+      "games": 1284,
+      "wins": 712,
+      "draws": 23,
+      "losses": 545,
+      "decided": 1280,
+      "win_rate": 0.5652,
+      "as_white": 640,
+      "as_black": 644,
+      "first_game": "2024-01-03T18:22:00Z",
+      "last_game": "2026-06-20T09:14:00Z",
+      "rating_classic": 1500,
+      "rating_x2": 1463
+    }
+    ```
+
+  - An existing player with no games returns zeroed counts and `null` ratings/dates.
+- **Error Response** (`404 Not Found`): If the player with the given UUID does not exist.
+
 ---
 
 ## Positions Endpoint (`/api/positions`)
