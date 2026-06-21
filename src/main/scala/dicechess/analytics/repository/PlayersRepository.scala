@@ -13,7 +13,10 @@ import dicechess.analytics.api.Protocol.{
   PlayerBreakdowns,
   PlayerStats,
   PlayerStatsQuery,
-  PlayerSummary
+  PlayerSummary,
+  RatingHistory,
+  RatingHistoryQuery,
+  RatingPoint
 }
 
 /** Read access to the `players` table.
@@ -254,3 +257,40 @@ object PlayersRepository:
             avgTurns = avg
           )
         )
+
+  /** A player's rating trajectory — one point per active day (the rating after that day's last
+    * game) — per mode. Rating is a per-mode point-in-time property, so only mode + date narrow it.
+    * Returns `None` (→ `404`) when the player does not exist; an empty series when there is no
+    * rated game in a mode. Daily de-duplication keeps the series bounded even for very active
+    * players.
+    */
+  def ratingHistory(q: RatingHistoryQuery): ConnectionIO[Option[RatingHistory]] =
+    val pid      = q.playerId
+    val dateFrag =
+      q.dateFrom.map(d => fr"AND g.started_at >= $d").getOrElse(Fragment.empty) ++
+        q.dateTo.map(d => fr"AND g.started_at < ${d.plusDays(1)}").getOrElse(Fragment.empty)
+    def series(mode: String): ConnectionIO[List[RatingPoint]] =
+      (fr"""
+        SELECT d.day::date, d.rating FROM (
+          SELECT date_trunc('day', g.started_at) AS day,
+                 (CASE WHEN g.white_player_id = $pid THEN g.white_rating ELSE g.black_rating END) AS rating,
+                 row_number() OVER (PARTITION BY date_trunc('day', g.started_at)
+                                    ORDER BY g.started_at DESC) AS rn
+          FROM games g
+          WHERE (g.white_player_id = $pid OR g.black_player_id = $pid)
+            AND g.mode::text = $mode
+            AND g.started_at IS NOT NULL
+            """ ++ dateFrag ++ fr"""
+        ) d
+        WHERE d.rn = 1 AND d.rating IS NOT NULL
+        ORDER BY d.day
+      """).query[RatingPoint].to[List]
+    for
+      exists  <- sql"SELECT EXISTS(SELECT 1 FROM players WHERE id = $pid)".query[Boolean].unique
+      classic <-
+        if q.mode.forall(_ == "classic") then series("classic")
+        else List.empty[RatingPoint].pure[ConnectionIO]
+      x2 <-
+        if q.mode.forall(_ == "x2") then series("x2")
+        else List.empty[RatingPoint].pure[ConnectionIO]
+    yield if exists then Some(RatingHistory(classic, x2)) else None

@@ -139,6 +139,29 @@ object Protocol:
   ) derives ConfiguredCodec,
         Schema
 
+  /** Query parameters of the rating-history endpoint. Rating is a per-mode, point-in-time property,
+    * so only `mode` and the date range apply (colour / opponent / stake do not shape a rating
+    * curve).
+    */
+  final case class RatingHistoryQuery(
+      playerId: UUID,
+      mode: Option[String],
+      dateFrom: Option[LocalDate],
+      dateTo: Option[LocalDate]
+  )
+
+  /** One point of a rating-over-time series: the player's rating after the last game of `date`. */
+  final case class RatingPoint(date: LocalDate, rating: Int) derives ConfiguredCodec, Schema
+
+  /** A player's rating trajectory as one daily point per mode. A series is empty when the player
+    * has no rated game in that mode (or the mode was filtered out).
+    */
+  final case class RatingHistory(
+      classic: List[RatingPoint],
+      x2: List[RatingPoint]
+  ) derives ConfiguredCodec,
+        Schema
+
   /** Mirror of Pydantic `GameBase`. */
   final case class GameSummary(
       id: UUID,
