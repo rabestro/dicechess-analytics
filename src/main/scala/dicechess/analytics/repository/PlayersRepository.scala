@@ -280,9 +280,13 @@ object PlayersRepository:
           WHERE (g.white_player_id = $pid OR g.black_player_id = $pid)
             AND g.mode::text = $mode
             AND g.started_at IS NOT NULL
+            -- rated games only, so row_number() picks the last *rated* game of the day: a day whose
+            -- last game is unrated must still surface the earlier rated rating
+            AND (CASE WHEN g.white_player_id = $pid THEN g.white_rating ELSE g.black_rating END)
+                IS NOT NULL
             """ ++ dateFrag ++ fr"""
         ) d
-        WHERE d.rn = 1 AND d.rating IS NOT NULL
+        WHERE d.rn = 1
         ORDER BY d.day
       """).query[RatingPoint].to[List]
     for

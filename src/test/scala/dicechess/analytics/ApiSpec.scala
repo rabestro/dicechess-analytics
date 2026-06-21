@@ -1005,9 +1005,11 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
       val g3  = UUID.fromString("ab000000-0000-0000-0000-0000000000c3")
       val g4  = UUID.fromString("ab000000-0000-0000-0000-0000000000c4")
       val g5  = UUID.fromString("ab000000-0000-0000-0000-0000000000c5")
+      val g6  = UUID.fromString("ab000000-0000-0000-0000-0000000000c6")
 
-      // Gus (always White): two classic games on 02-01 (last rating wins → 1510), one on 02-03
-      // (1530), one x2 on 02-02 (1700), and one unrated classic on 02-05 (NULL → dropped).
+      // Gus (always White): two rated classic games on 02-01 then a *later* unrated one the same day
+      // (the day must still surface 1510 — the last rated rating — not be dropped), one classic on
+      // 02-03 (1530), one x2 on 02-02 (1700), and a wholly-unrated classic day on 02-05 (dropped).
       val seedC =
         for
           _ <- sql"""INSERT INTO players (id, external_id, username, player_type)
@@ -1016,13 +1018,14 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
                                         started_at) VALUES
                       ($g1, 'test', $gus, 1500, 'classic', 1, '2026-02-01T10:00:00Z'),
                       ($g2, 'test', $gus, 1510, 'classic', 1, '2026-02-01T20:00:00Z'),
+                      ($g6, 'test', $gus, NULL, 'classic', 1, '2026-02-01T22:00:00Z'),
                       ($g3, 'test', $gus, 1530, 'classic', 1, '2026-02-03T12:00:00Z'),
                       ($g4, 'test', $gus, 1700, 'x2',      1, '2026-02-02T12:00:00Z'),
                       ($g5, 'test', $gus, NULL, 'classic', 1, '2026-02-05T12:00:00Z')""".update.run
         yield ()
       val cleanup =
         for
-          _ <- sql"DELETE FROM games WHERE id IN ($g1, $g2, $g3, $g4, $g5)".update.run
+          _ <- sql"DELETE FROM games WHERE id IN ($g1, $g2, $g3, $g4, $g5, $g6)".update.run
           _ <- sql"DELETE FROM players WHERE id = $gus".update.run
         yield ()
 

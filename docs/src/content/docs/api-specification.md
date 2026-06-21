@@ -291,6 +291,7 @@ A player's rating over time — one point per active day (the rating after that 
       "x2": [{ "date": "2026-05-15", "rating": 3119 }]
     }
     ```
+
 - **Error Response** (`404 Not Found`): If the player with the given UUID does not exist.
 
 ---
