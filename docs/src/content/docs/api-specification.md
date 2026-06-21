@@ -231,6 +231,41 @@ convention matches `/api/positions/equity`: `win_rate = (wins + 0.5·draws) / de
   - An existing player with no games returns zeroed counts and `null` ratings/dates.
 - **Error Response** (`404 Not Found`): If the player with the given UUID does not exist.
 
+### 4. Get Player Breakdowns
+
+Win-rate breakdowns for a player across categorical dimensions, plus the average number of moves — over the **same filtered slice** as the stats endpoint (the identity ratings are not part of this response).
+
+- **HTTP Method**: `GET`
+- **Route**: `/api/players/{player_id}/breakdowns`
+- **Path Parameters**:
+  - `player_id` (UUID, required).
+- **Query Parameters**: identical to the stats endpoint (`mode`, `color`, `opponent_type`, `opponent_id`, `stake`, `date_from`, `date_to`).
+- **Success Response** (`200 OK`):
+  - **Type**: `PlayerBreakdowns`
+  - **Fields**:
+    - `by_color`, `by_mode`, `by_opponent_type` — lists of `{ key, games, wins, draws, losses, win_rate }` from the player's perspective (`key` is `w`/`b`, `classic`/`x2`, `human`/`bot`); `win_rate = (wins + 0.5·draws)/decided`.
+    - `avg_turns` — mean `total_turns` over the filtered games (`null` when none match).
+  - **Example Payload**:
+
+    ```json
+    {
+      "by_color": [
+        { "key": "w", "games": 26883, "wins": 16419, "draws": 228, "losses": 10236, "win_rate": 0.615 },
+        { "key": "b", "games": 25443, "wins": 13482, "draws": 235, "losses": 11726, "win_rate": 0.535 }
+      ],
+      "by_mode": [
+        { "key": "classic", "games": 32855, "wins": 19025, "draws": 359, "losses": 13471, "win_rate": 0.585 },
+        { "key": "x2", "games": 19471, "wins": 10876, "draws": 104, "losses": 8491, "win_rate": 0.561 }
+      ],
+      "by_opponent_type": [
+        { "key": "human", "games": 47886, "wins": 26877, "draws": 463, "losses": 20546, "win_rate": 0.566 },
+        { "key": "bot", "games": 4440, "wins": 3024, "draws": 0, "losses": 1416, "win_rate": 0.681 }
+      ],
+      "avg_turns": 16.2
+    }
+    ```
+- **Error Response** (`404 Not Found`): If the player with the given UUID does not exist.
+
 ---
 
 ## Positions Endpoint (`/api/positions`)

@@ -913,3 +913,85 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
         }
       }
     }
+
+  test("GET /api/players/{id}/breakdowns splits win-rate by colour, mode and opponent type"):
+    withContainers { pg =>
+      val xa    = transactor(pg)
+      val fred  = UUID.fromString("fd000000-0000-0000-0000-0000000000fd")
+      val helen = UUID.fromString("fd000000-0000-0000-0000-0000000000e0")
+      val bo    = UUID.fromString("fd000000-0000-0000-0000-0000000000e1")
+      val f1    = UUID.fromString("fd000000-0000-0000-0000-0000000000c1")
+      val f2    = UUID.fromString("fd000000-0000-0000-0000-0000000000c2")
+      val f3    = UUID.fromString("fd000000-0000-0000-0000-0000000000c3")
+      val f4    = UUID.fromString("fd000000-0000-0000-0000-0000000000c4")
+      val ts    = OffsetDateTime.parse("2026-04-01T00:00:00Z")
+
+      // Fred: F1 white/classic/vs-human WIN (10 turns), F2 black/classic/vs-human LOSS (20),
+      // F3 white/x2/vs-bot DRAW (30), F4 white/x2/vs-bot LOSS (40).
+      val seedC =
+        for
+          _ <- sql"""INSERT INTO players (id, external_id, username, player_type) VALUES
+                      ($fred, 'ext-fred', 'fred', 'human'),
+                      ($helen, 'ext-helen', 'helen', 'human'),
+                      ($bo, 'ext-bo', 'bo', 'bot')""".update.run
+          _ <- sql"""INSERT INTO games (id, source, white_player_id, black_player_id,
+                                        mode, result, total_turns, started_at) VALUES
+                      ($f1, 'test', $fred,  $helen, 'classic',  1, 10, $ts),
+                      ($f2, 'test', $helen, $fred,  'classic',  1, 20, $ts),
+                      ($f3, 'test', $fred,  $bo,    'x2',       0, 30, $ts),
+                      ($f4, 'test', $fred,  $bo,    'x2',      -1, 40, $ts)""".update.run
+        yield ()
+      val cleanup =
+        for
+          _ <- sql"DELETE FROM games WHERE id IN ($f1, $f2, $f3, $f4)".update.run
+          _ <- sql"DELETE FROM players WHERE id IN ($fred, $helen, $bo)".update.run
+        yield ()
+
+      def rowsByKey(json: Json, dim: String): Map[String, io.circe.HCursor] =
+        json.hcursor
+          .downField(dim)
+          .focus
+          .flatMap(_.asArray)
+          .getOrElse(Vector.empty)
+          .flatMap(j => j.hcursor.get[String]("key").toOption.map(_ -> j.hcursor))
+          .toMap
+
+      seedC.transact(xa) >>
+        withClient(pg) { client =>
+          for
+            all     <- getJson(client, s"/api/players/$fred/breakdowns")
+            classic <- getJson(client, s"/api/players/$fred/breakdowns?mode=classic")
+          yield
+            // by colour: white = 3 games (1W/1D/1L), black = a single loss
+            val color = rowsByKey(all, "by_color")
+            assertEquals(color.keySet, Set("w", "b"))
+            assertEquals(color("w").get[Int]("games"), Right(3))
+            assertEquals(color("w").get[Double]("win_rate"), Right(0.5))
+            assertEquals(color("b").get[Int]("losses"), Right(1))
+            assertEquals(color("b").get[Double]("win_rate"), Right(0.0))
+            // by mode: classic 1W/1L = 0.5, x2 1D/1L = 0.25
+            val mode = rowsByKey(all, "by_mode")
+            assertEquals(mode("classic").get[Double]("win_rate"), Right(0.5))
+            assertEquals(mode("x2").get[Double]("win_rate"), Right(0.25))
+            // by opponent type: humans 0.5, bots 0.25
+            val opp = rowsByKey(all, "by_opponent_type")
+            assertEquals(opp("human").get[Double]("win_rate"), Right(0.5))
+            assertEquals(opp("bot").get[Double]("win_rate"), Right(0.25))
+            // average moves over the four games
+            assertEquals(all.hcursor.get[Double]("avg_turns"), Right(25.0))
+            // mode=classic narrows every breakdown to the two classic games
+            assertEquals(rowsByKey(classic, "by_mode").keySet, Set("classic"))
+            assertEquals(rowsByKey(classic, "by_color")("w").get[Int]("games"), Right(1))
+            assertEquals(classic.hcursor.get[Double]("avg_turns"), Right(15.0))
+        }.guarantee(cleanup.transact(xa).map(_ => ()))
+    }
+
+  test("GET /api/players/{id}/breakdowns returns 404 for unknown players"):
+    withContainers { pg =>
+      withClient(pg) { client =>
+        client
+          .run(Request[IO](Method.GET, Uri.unsafeFromString(s"/api/players/$missing/breakdowns")))
+          .use(r => IO.pure(r.status))
+          .map(s => assertEquals(s, Status.NotFound))
+      }
+    }

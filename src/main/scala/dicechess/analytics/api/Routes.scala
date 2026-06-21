@@ -72,6 +72,13 @@ final class Routes(
       .map(_.toRight(ApiError("Player not found")))
   }
 
+  private val breakdownsLogic = Endpoints.breakdowns.serverLogic[IO] { query =>
+    PlayersRepository
+      .breakdowns(query)
+      .transact(xa)
+      .map(_.toRight(ApiError("Player not found")))
+  }
+
   private val continuationsLogic = Endpoints.continuations.serverLogicSuccess[IO] { query =>
     PositionsRepository
       .continuations(
@@ -170,6 +177,7 @@ final class Routes(
         listPlayersLogic,
         getPlayerLogic,
         playerStatsLogic,
+        breakdownsLogic,
         continuationsLogic,
         positionEquityLogic,
         rootLogic,

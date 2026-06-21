@@ -3,11 +3,18 @@ package dicechess.analytics.repository
 import java.time.OffsetDateTime
 import java.util.UUID
 
+import cats.syntax.all.*
 import doobie.*
 import doobie.implicits.*
 import doobie.postgres.implicits.*
 
-import dicechess.analytics.api.Protocol.{PlayerStats, PlayerStatsQuery, PlayerSummary}
+import dicechess.analytics.api.Protocol.{
+  BreakdownRow,
+  PlayerBreakdowns,
+  PlayerStats,
+  PlayerStatsQuery,
+  PlayerSummary
+}
 
 /** Read access to the `players` table.
   *
@@ -69,20 +76,10 @@ object PlayersRepository:
     */
   def stats(q: PlayerStatsQuery): ConnectionIO[Option[PlayerStats]] =
     val pid = q.playerId
-    val fp  = Fragments
-      .andOpt(
-        Some(fr"g.id IS NOT NULL"),
-        q.mode.map(m => fr"g.mode::text = $m"),
-        q.color.map(c =>
-          if c == "w" then fr"g.white_player_id = $pid" else fr"g.black_player_id = $pid"
-        ),
-        q.opponentType.map(t => fr"opp.player_type = $t"),
-        q.opponentId.map(o => fr"opp.id = $o"),
-        q.stake.flatMap(Filters.stakePredicate),
-        q.dateFrom.map(d => fr"g.started_at >= $d"),
-        q.dateTo.map(d => fr"g.started_at < ${d.plusDays(1)}")
-      )
-      .getOrElse(fr"TRUE") // always Some (the base predicate is unconditional); guard for safety
+    // Base predicate keeps a zero-games player (the all-NULL LEFT JOIN row) at zero; the shared
+    // player filters are AND-ed in. The list is always non-empty, so `reduce` is safe.
+    val fp = (Some(fr"g.id IS NOT NULL") :: Filters.playerFilters(pid, q)).flatten
+      .reduce(_ ++ fr" AND " ++ _)
     val win =
       fr"((g.white_player_id = $pid AND g.result = 1) OR (g.black_player_id = $pid AND g.result = -1))"
     val loss =
@@ -170,3 +167,90 @@ object PlayersRepository:
             ratingX2 = ratingX2
           )
       })
+
+  /** Win-rate breakdowns for one player by colour, mode and opponent type, plus the mean number of
+    * turns — all over the same filtered slice as [[stats]]. Returns `None` (→ `404`) when the
+    * player does not exist; empty breakdown lists when no game matches the filters.
+    *
+    * A single scan builds the filtered CTE `gf` (each game tagged with the player's colour, mode,
+    * opponent type and player-perspective result); a `LATERAL VALUES` then explodes each game into
+    * one (dimension, key) row, so the win/draw/loss aggregates are written once and grouped per
+    * (dim, key). The opponent is joined in `gf` because the opponent-type breakdown needs it.
+    */
+  def breakdowns(q: PlayerStatsQuery): ConnectionIO[Option[PlayerBreakdowns]] =
+    val pid      = q.playerId
+    val filtered =
+      fr"WHERE " ++ (Some(fr"(g.white_player_id = $pid OR g.black_player_id = $pid)") ::
+        Filters.playerFilters(pid, q)).flatten.reduce(_ ++ fr" AND " ++ _)
+    val oppJoin =
+      fr"""LEFT JOIN players opp ON opp.id = CASE WHEN g.white_player_id = $pid
+                                                  THEN g.black_player_id ELSE g.white_player_id END"""
+    // Each game is exploded into one (dimension, key) row per dimension via a LATERAL VALUES, so the
+    // win/draw/loss FILTER aggregates are written once and grouped per (dim, key) — no repeated
+    // per-dimension SELECT blocks. The opponent join is always present here (the opponent-type
+    // dimension needs it); rows with a NULL key (a game with no opponent) are dropped.
+    val rowsQuery =
+      (fr"""
+        WITH gf AS (
+          SELECT
+            (CASE WHEN g.white_player_id = $pid THEN 'w' ELSE 'b' END) AS my_color,
+            g.mode::text AS mode,
+            opp.player_type AS opp_type,
+            (CASE WHEN (g.white_player_id = $pid AND g.result =  1)
+                    OR (g.black_player_id = $pid AND g.result = -1) THEN 1
+                  WHEN g.result = 0 THEN 0
+                  WHEN (g.white_player_id = $pid AND g.result = -1)
+                    OR (g.black_player_id = $pid AND g.result =  1) THEN -1
+                  ELSE NULL END) AS my_result
+          FROM games g
+          """ ++ oppJoin ++ fr"""
+          """ ++ filtered ++ fr"""
+        )
+        SELECT d.dim, d.key, count(*) AS games,
+               count(*) FILTER (WHERE my_result =  1) AS wins,
+               count(*) FILTER (WHERE my_result =  0) AS draws,
+               count(*) FILTER (WHERE my_result = -1) AS losses
+        FROM gf
+        CROSS JOIN LATERAL (VALUES ('color', gf.my_color),
+                                   ('mode', gf.mode),
+                                   ('opponent_type', gf.opp_type)) AS d(dim, key)
+        WHERE d.key IS NOT NULL
+        GROUP BY d.dim, d.key
+      """).query[(String, String, Int, Int, Int, Int)]
+    // avg doesn't group by opponent, so only join it when an opponent filter actually needs it.
+    val avgOppJoin = if q.opponentType.isDefined || q.opponentId.isDefined then oppJoin else fr""
+    val avgQuery   =
+      (fr"SELECT avg(g.total_turns)::float8 FROM games g" ++ avgOppJoin ++ fr" " ++ filtered)
+        .query[Option[Double]]
+    for
+      exists <- sql"SELECT EXISTS(SELECT 1 FROM players WHERE id = $pid)".query[Boolean].unique
+      rows   <-
+        if exists then rowsQuery.to[List]
+        else List.empty[(String, String, Int, Int, Int, Int)].pure[ConnectionIO]
+      avg <- if exists then avgQuery.unique else Option.empty[Double].pure[ConnectionIO]
+    yield
+      if !exists then None
+      else
+        val byDim = rows
+          .map { case (dim, key, games, wins, draws, losses) =>
+            val decided = wins + draws + losses
+            val winRate = if decided > 0 then (wins + 0.5 * draws) / decided else 0.0
+            dim -> BreakdownRow(key, games, wins, draws, losses, winRate)
+          }
+          .groupMap(_._1)(_._2)
+        def ordered(dim: String, keys: List[String]): List[BreakdownRow] =
+          byDim
+            .getOrElse(dim, Nil)
+            .sortBy(r =>
+              keys.indexOf(r.key) match
+                case -1 => Int.MaxValue
+                case i  => i
+            )
+        Some(
+          PlayerBreakdowns(
+            byColor = ordered("color", List("w", "b")),
+            byMode = ordered("mode", List("classic", "x2")),
+            byOpponentType = ordered("opponent_type", List("human", "bot")),
+            avgTurns = avg
+          )
+        )

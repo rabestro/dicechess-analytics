@@ -113,6 +113,32 @@ object Protocol:
   ) derives ConfiguredCodec,
         Schema
 
+  /** One row of a win/loss/draw breakdown (a single colour, mode, or opponent type). Outcomes are
+    * from the player's perspective; `winRate = (wins + 0.5*draws)/decided`, `0.0` when nothing is
+    * decided. `games` includes undecided games.
+    */
+  final case class BreakdownRow(
+      key: String,
+      games: Int,
+      wins: Int,
+      draws: Int,
+      losses: Int,
+      winRate: Double
+  ) derives ConfiguredCodec,
+        Schema
+
+  /** Win-rate breakdowns for a player across categorical dimensions, honouring the same filters as
+    * the stats endpoint. `avgTurns` is the mean `total_turns` over the filtered slice (`None` when
+    * no game matches).
+    */
+  final case class PlayerBreakdowns(
+      byColor: List[BreakdownRow],
+      byMode: List[BreakdownRow],
+      byOpponentType: List[BreakdownRow],
+      avgTurns: Option[Double]
+  ) derives ConfiguredCodec,
+        Schema
+
   /** Mirror of Pydantic `GameBase`. */
   final case class GameSummary(
       id: UUID,
