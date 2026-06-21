@@ -897,3 +897,19 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
             assertEquals(gVsHugh, Set(eg1.toString, eg2.toString))
         }.guarantee(cleanup.transact(xa).map(_ => ()))
     }
+
+  test("GET /api/games rejects color without player_id with a FastAPI-style 400"):
+    withContainers { pg =>
+      withClient(pg) { client =>
+        client.run(Request[IO](Method.GET, Uri.unsafeFromString("/api/games?color=w"))).use {
+          response =>
+            assertEquals(response.status, Status.BadRequest)
+            response.as[String].map { body =>
+              assertEquals(
+                parse(body).flatMap(_.hcursor.get[String]("detail")),
+                Right("color requires player_id")
+              )
+            }
+        }
+      }
+    }

@@ -69,18 +69,20 @@ object PlayersRepository:
     */
   def stats(q: PlayerStatsQuery): ConnectionIO[Option[PlayerStats]] =
     val pid = q.playerId
-    val fp  = List(
-      Some(fr"g.id IS NOT NULL"),
-      q.mode.map(m => fr"g.mode::text = $m"),
-      q.color.map(c =>
-        if c == "w" then fr"g.white_player_id = $pid" else fr"g.black_player_id = $pid"
-      ),
-      q.opponentType.map(t => fr"opp.player_type = $t"),
-      q.opponentId.map(o => fr"opp.id = $o"),
-      q.stake.flatMap(Filters.stakePredicate),
-      q.dateFrom.map(d => fr"g.started_at >= $d"),
-      q.dateTo.map(d => fr"g.started_at < ${d.plusDays(1)}")
-    ).flatten.reduce(_ ++ fr" AND " ++ _)
+    val fp  = Fragments
+      .andOpt(
+        Some(fr"g.id IS NOT NULL"),
+        q.mode.map(m => fr"g.mode::text = $m"),
+        q.color.map(c =>
+          if c == "w" then fr"g.white_player_id = $pid" else fr"g.black_player_id = $pid"
+        ),
+        q.opponentType.map(t => fr"opp.player_type = $t"),
+        q.opponentId.map(o => fr"opp.id = $o"),
+        q.stake.flatMap(Filters.stakePredicate),
+        q.dateFrom.map(d => fr"g.started_at >= $d"),
+        q.dateTo.map(d => fr"g.started_at < ${d.plusDays(1)}")
+      )
+      .getOrElse(fr"TRUE") // always Some (the base predicate is unconditional); guard for safety
     val win =
       fr"((g.white_player_id = $pid AND g.result = 1) OR (g.black_player_id = $pid AND g.result = -1))"
     val loss =

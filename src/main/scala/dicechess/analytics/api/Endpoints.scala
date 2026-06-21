@@ -28,7 +28,7 @@ object Endpoints:
       .out(jsonBody[VersionInfo])
       .description("Build and version information of the running API")
 
-  val listGames: PublicEndpoint[GamesQuery, Unit, Page[GameSummary], Any] =
+  val listGames: PublicEndpoint[GamesQuery, ApiError, Page[GameSummary], Any] =
     endpoint.get
       .in("api" / "games")
       .in(query[Option[UUID]]("player_id").description("Filter by player UUID (white or black)"))
@@ -86,8 +86,9 @@ object Endpoints:
           .validateOption(Validator.min(0))
       )
       .mapInTo[GamesQuery]
+      .errorOut(statusCode(StatusCode.BadRequest).and(jsonBody[ApiError]))
       .out(jsonBody[Page[GameSummary]])
-      .description("List, filter, sort and paginate games")
+      .description("List, filter, sort and paginate games (color requires player_id)")
 
   val getGame: PublicEndpoint[UUID, ApiError, GameDetail, Any] =
     endpoint.get
@@ -145,7 +146,7 @@ object Endpoints:
       .out(jsonBody[PlayerStats])
       .errorOut(notFound)
       .description(
-        "Aggregate win/loss/draw statistics for a player, optionally filtered by mode, colour, opponent and stake"
+        "Aggregate win/loss/draw statistics for a player, optionally filtered by mode, colour, opponent, stake and date"
       )
 
   val continuations: PublicEndpoint[ContinuationsQuery, Unit, PositionContinuations, Any] =

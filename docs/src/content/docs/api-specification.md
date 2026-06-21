@@ -36,7 +36,7 @@ Retrieves a paginated list of games, with optional player and turn filters.
 - **Query Parameters**:
   - `player_id` (UUID, optional): Filter games played by a specific player (either as White or Black).
   - `min_turns` (integer, optional): Filter games containing at least this number of turns.
-  - `color` (`w` | `b`, optional): The focal player's colour (relative to `player_id`).
+  - `color` (`w` | `b`, optional): The focal player's colour. **Requires `player_id`** (returns `400` otherwise).
   - `opponent_type` (`human` | `bot`, optional): Opponent type (relative to `player_id`).
   - `opponent_id` (UUID, optional): A specific opponent (relative to `player_id`).
   - `stake` (`free` | `low` | `medium` | `high`, optional): Stake tier on the pot (`free` = 0/null, `low` = 1–20, `medium` = 21–200, `high` = > 200).
