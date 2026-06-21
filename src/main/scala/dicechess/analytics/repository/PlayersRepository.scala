@@ -3,6 +3,7 @@ package dicechess.analytics.repository
 import java.time.OffsetDateTime
 import java.util.UUID
 
+import cats.syntax.all.*
 import doobie.*
 import doobie.implicits.*
 import doobie.postgres.implicits.*
@@ -182,9 +183,9 @@ object PlayersRepository:
     * player does not exist; empty breakdown lists when no game matches the filters.
     *
     * A single scan builds the filtered CTE `gf` (each game tagged with the player's colour, mode,
-    * opponent type and player-perspective result); three grouped `UNION ALL` selects then derive
-    * the per-dimension records. The opponent is joined unconditionally here because the
-    * opponent-type breakdown needs it.
+    * opponent type and player-perspective result); a `LATERAL VALUES` then explodes each game into
+    * one (dimension, key) row, so the win/draw/loss aggregates are written once and grouped per
+    * (dim, key). The opponent is joined in `gf` because the opponent-type breakdown needs it.
     */
   def breakdowns(q: PlayerStatsQuery): ConnectionIO[Option[PlayerBreakdowns]] =
     val pid      = q.playerId
@@ -203,6 +204,10 @@ object PlayersRepository:
     val oppJoin =
       fr"""LEFT JOIN players opp ON opp.id = CASE WHEN g.white_player_id = $pid
                                                   THEN g.black_player_id ELSE g.white_player_id END"""
+    // Each game is exploded into one (dimension, key) row per dimension via a LATERAL VALUES, so the
+    // win/draw/loss FILTER aggregates are written once and grouped per (dim, key) — no repeated
+    // per-dimension SELECT blocks. The opponent join is always present here (the opponent-type
+    // dimension needs it); rows with a NULL key (a game with no opponent) are dropped.
     val rowsQuery =
       (fr"""
         WITH gf AS (
@@ -210,7 +215,6 @@ object PlayersRepository:
             (CASE WHEN g.white_player_id = $pid THEN 'w' ELSE 'b' END) AS my_color,
             g.mode::text AS mode,
             opp.player_type AS opp_type,
-            g.total_turns AS total_turns,
             (CASE WHEN (g.white_player_id = $pid AND g.result =  1)
                     OR (g.black_player_id = $pid AND g.result = -1) THEN 1
                   WHEN g.result = 0 THEN 0
@@ -221,31 +225,28 @@ object PlayersRepository:
           """ ++ oppJoin ++ fr"""
           """ ++ filtered ++ fr"""
         )
-        SELECT 'color' AS dim, my_color AS key, count(*) AS games,
+        SELECT d.dim, d.key, count(*) AS games,
                count(*) FILTER (WHERE my_result =  1) AS wins,
                count(*) FILTER (WHERE my_result =  0) AS draws,
                count(*) FILTER (WHERE my_result = -1) AS losses
-        FROM gf GROUP BY my_color
-        UNION ALL
-        SELECT 'mode', mode, count(*),
-               count(*) FILTER (WHERE my_result =  1),
-               count(*) FILTER (WHERE my_result =  0),
-               count(*) FILTER (WHERE my_result = -1)
-        FROM gf GROUP BY mode
-        UNION ALL
-        SELECT 'opponent_type', opp_type, count(*),
-               count(*) FILTER (WHERE my_result =  1),
-               count(*) FILTER (WHERE my_result =  0),
-               count(*) FILTER (WHERE my_result = -1)
-        FROM gf WHERE opp_type IS NOT NULL GROUP BY opp_type
+        FROM gf
+        CROSS JOIN LATERAL (VALUES ('color', gf.my_color),
+                                   ('mode', gf.mode),
+                                   ('opponent_type', gf.opp_type)) AS d(dim, key)
+        WHERE d.key IS NOT NULL
+        GROUP BY d.dim, d.key
       """).query[(String, String, Int, Int, Int, Int)]
-    val avgQuery =
-      (fr"SELECT avg(g.total_turns)::float8 FROM games g" ++ oppJoin ++ fr" " ++ filtered)
+    // avg doesn't group by opponent, so only join it when an opponent filter actually needs it.
+    val avgOppJoin = if q.opponentType.isDefined || q.opponentId.isDefined then oppJoin else fr""
+    val avgQuery   =
+      (fr"SELECT avg(g.total_turns)::float8 FROM games g" ++ avgOppJoin ++ fr" " ++ filtered)
         .query[Option[Double]]
     for
       exists <- sql"SELECT EXISTS(SELECT 1 FROM players WHERE id = $pid)".query[Boolean].unique
-      rows   <- rowsQuery.to[List]
-      avg    <- avgQuery.unique
+      rows   <-
+        if exists then rowsQuery.to[List]
+        else List.empty[(String, String, Int, Int, Int, Int)].pure[ConnectionIO]
+      avg <- if exists then avgQuery.unique else Option.empty[Double].pure[ConnectionIO]
     yield
       if !exists then None
       else
