@@ -116,37 +116,52 @@ object Endpoints:
       .errorOut(notFound)
       .description("Get a specific player by UUID")
 
-  val playerStats: PublicEndpoint[PlayerStatsQuery, ApiError, PlayerStats, Any] =
-    endpoint.get
-      .in("api" / "players" / path[UUID]("player_id") / "stats")
-      .in(
-        query[Option[String]]("mode")
-          .description("Game mode: classic or x2")
-          .validateOption(Validator.enumeration(List("classic", "x2")))
-      )
-      .in(
+  /** The optional filter set shared by the player stats and breakdowns endpoints. Combined with the
+    * path `player_id` it maps into a `PlayerStatsQuery`.
+    */
+  private val statsFilters =
+    query[Option[String]]("mode")
+      .description("Game mode: classic or x2")
+      .validateOption(Validator.enumeration(List("classic", "x2")))
+      .and(
         query[Option[String]]("color")
           .description("Focal player's colour: w or b")
           .validateOption(Validator.enumeration(List("w", "b")))
       )
-      .in(
+      .and(
         query[Option[String]]("opponent_type")
           .description("Opponent type: human or bot")
           .validateOption(Validator.enumeration(List("human", "bot")))
       )
-      .in(query[Option[UUID]]("opponent_id").description("Filter by a specific opponent"))
-      .in(
+      .and(query[Option[UUID]]("opponent_id").description("Filter by a specific opponent"))
+      .and(
         query[Option[String]]("stake")
           .description("Stake tier on the pot: free, low, medium or high")
           .validateOption(Validator.enumeration(List("free", "low", "medium", "high")))
       )
-      .in(query[Option[LocalDate]]("date_from").description("Earliest start date, inclusive"))
-      .in(query[Option[LocalDate]]("date_to").description("Latest start date, inclusive"))
+      .and(query[Option[LocalDate]]("date_from").description("Earliest start date, inclusive"))
+      .and(query[Option[LocalDate]]("date_to").description("Latest start date, inclusive"))
+
+  val playerStats: PublicEndpoint[PlayerStatsQuery, ApiError, PlayerStats, Any] =
+    endpoint.get
+      .in("api" / "players" / path[UUID]("player_id") / "stats")
+      .in(statsFilters)
       .mapInTo[PlayerStatsQuery]
       .out(jsonBody[PlayerStats])
       .errorOut(notFound)
       .description(
         "Aggregate win/loss/draw statistics for a player, optionally filtered by mode, colour, opponent, stake and date"
+      )
+
+  val breakdowns: PublicEndpoint[PlayerStatsQuery, ApiError, PlayerBreakdowns, Any] =
+    endpoint.get
+      .in("api" / "players" / path[UUID]("player_id") / "breakdowns")
+      .in(statsFilters)
+      .mapInTo[PlayerStatsQuery]
+      .out(jsonBody[PlayerBreakdowns])
+      .errorOut(notFound)
+      .description(
+        "Win-rate breakdowns by colour, mode and opponent type (plus average moves) for a player, same filters as stats"
       )
 
   val continuations: PublicEndpoint[ContinuationsQuery, Unit, PositionContinuations, Any] =
@@ -245,6 +260,7 @@ object Endpoints:
       listPlayers,
       getPlayer,
       playerStats,
+      breakdowns,
       continuations,
       positionEquity,
       ingestGame,
