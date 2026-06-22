@@ -934,12 +934,20 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
                       ($fred, 'ext-fred', 'fred', 'human'),
                       ($helen, 'ext-helen', 'helen', 'human'),
                       ($bo, 'ext-bo', 'bo', 'bot')""".update.run
-          _ <- sql"""INSERT INTO games (id, source, white_player_id, black_player_id,
-                                        mode, result, total_turns, started_at) VALUES
-                      ($f1, 'test', $fred,  $helen, 'classic',  1, 10, $ts),
-                      ($f2, 'test', $helen, $fred,  'classic',  1, 20, $ts),
-                      ($f3, 'test', $fred,  $bo,    'x2',       0, 30, $ts),
-                      ($f4, 'test', $fred,  $bo,    'x2',      -1, 40, $ts)""".update.run
+          _ <- sql"""INSERT INTO games (id, source, white_player_id, black_player_id, mode, result,
+                                        total_turns, time_initial_sec, time_increment_sec, started_at)
+                     VALUES
+                      ($f1, 'test', $fred,  $helen, 'classic',  1, 10, 180, 0, $ts),
+                      ($f2, 'test', $helen, $fred,  'classic',  1, 20, 180, 0, $ts),
+                      ($f3, 'test', $fred,  $bo,    'x2',       0, 30,  60, 1, $ts),
+                      ($f4, 'test', $fred,  $bo,    'x2',      -1, 40,  60, 1, $ts)""".update.run
+          // F3: Fred (white) offers x2, opponent accepts. F4: opponent offers, Fred (white) declines.
+          _ <-
+            sql"""INSERT INTO game_events (game_id, sequence_number, event_type, actor_color) VALUES
+                      ($f3, 1, 'DOUBLE_OFFER',   'w'),
+                      ($f3, 2, 'DOUBLE_ACCEPT',  'b'),
+                      ($f4, 1, 'DOUBLE_OFFER',   'b'),
+                      ($f4, 2, 'DOUBLE_DECLINE', 'w')""".update.run
         yield ()
       val cleanup =
         for
@@ -979,6 +987,18 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
             assertEquals(opp("bot").get[Double]("win_rate"), Right(0.25))
             // average moves over the four games
             assertEquals(all.hcursor.get[Double]("avg_turns"), Right(25.0))
+            // by time control: 180:0 (F1 win, F2 loss → 0.5), 60:1 (F3 draw, F4 loss → 0.25)
+            val tc = rowsByKey(all, "by_time_control")
+            assertEquals(tc.keySet, Set("180:0", "60:1"))
+            assertEquals(tc("180:0").get[Int]("games"), Right(2))
+            assertEquals(tc("180:0").get[Double]("win_rate"), Right(0.5))
+            assertEquals(tc("60:1").get[Double]("win_rate"), Right(0.25))
+            // doubling: Fred offered & got accepted in F3; opponent offered & Fred declined in F4
+            val dbl = all.hcursor.downField("doubling")
+            assertEquals(dbl.downField("player_offered").get[Int]("accepted"), Right(1))
+            assertEquals(dbl.downField("player_offered").get[Int]("declined"), Right(0))
+            assertEquals(dbl.downField("opponent_offered").get[Int]("accepted"), Right(0))
+            assertEquals(dbl.downField("opponent_offered").get[Int]("declined"), Right(1))
             // mode=classic narrows every breakdown to the two classic games
             assertEquals(rowsByKey(classic, "by_mode").keySet, Set("classic"))
             assertEquals(rowsByKey(classic, "by_color")("w").get[Int]("games"), Right(1))

@@ -10,6 +10,8 @@ import doobie.postgres.implicits.*
 
 import dicechess.analytics.api.Protocol.{
   BreakdownRow,
+  Doubling,
+  DoublingOutcome,
   PlayerBreakdowns,
   PlayerStats,
   PlayerStatsQuery,
@@ -199,6 +201,9 @@ object PlayersRepository:
             (CASE WHEN g.white_player_id = $pid THEN 'w' ELSE 'b' END) AS my_color,
             g.mode::text AS mode,
             opp.player_type AS opp_type,
+            (CASE WHEN g.time_initial_sec IS NULL THEN NULL
+                  ELSE g.time_initial_sec::text || ':' || coalesce(g.time_increment_sec, 0)::text
+             END) AS tc_key,
             (CASE WHEN (g.white_player_id = $pid AND g.result =  1)
                     OR (g.black_player_id = $pid AND g.result = -1) THEN 1
                   WHEN g.result = 0 THEN 0
@@ -216,7 +221,8 @@ object PlayersRepository:
         FROM gf
         CROSS JOIN LATERAL (VALUES ('color', gf.my_color),
                                    ('mode', gf.mode),
-                                   ('opponent_type', gf.opp_type)) AS d(dim, key)
+                                   ('opponent_type', gf.opp_type),
+                                   ('time_control', gf.tc_key)) AS d(dim, key)
         WHERE d.key IS NOT NULL
         GROUP BY d.dim, d.key
       """).query[(String, String, Int, Int, Int, Int)]
@@ -225,12 +231,43 @@ object PlayersRepository:
     val avgQuery   =
       (fr"SELECT avg(g.total_turns)::float8 FROM games g" ++ avgOppJoin ++ fr" " ++ filtered)
         .query[Option[Double]]
+    // Doubling: for each DOUBLE_OFFER, its resolution is the next ACCEPT/DECLINE by sequence_number;
+    // the offerer's colour vs the focal player's splits player- from opponent-offered.
+    val doublingQuery =
+      (fr"""
+        WITH gf AS (
+          SELECT g.id AS game_id,
+                 (CASE WHEN g.white_player_id = $pid THEN 'w' ELSE 'b' END) AS my_color
+          FROM games g
+          """ ++ avgOppJoin ++ fr"""
+          """ ++ filtered ++ fr"""
+        ),
+        offers AS (
+          SELECT my_color, actor_color AS offerer, next_event AS resolution
+          FROM (
+            SELECT gf.my_color, e.actor_color, e.event_type::text AS event_type,
+                   lead(e.event_type::text) OVER (PARTITION BY e.game_id
+                                                  ORDER BY e.sequence_number) AS next_event
+            FROM game_events e
+            JOIN gf ON gf.game_id = e.game_id
+            WHERE e.event_type::text IN ('DOUBLE_OFFER', 'DOUBLE_ACCEPT', 'DOUBLE_DECLINE')
+          ) sub
+          WHERE event_type = 'DOUBLE_OFFER'
+        )
+        SELECT
+          count(*) FILTER (WHERE offerer =  my_color AND resolution = 'DOUBLE_ACCEPT'),
+          count(*) FILTER (WHERE offerer =  my_color AND resolution = 'DOUBLE_DECLINE'),
+          count(*) FILTER (WHERE offerer <> my_color AND resolution = 'DOUBLE_ACCEPT'),
+          count(*) FILTER (WHERE offerer <> my_color AND resolution = 'DOUBLE_DECLINE')
+        FROM offers
+      """).query[(Int, Int, Int, Int)]
     for
       exists <- sql"SELECT EXISTS(SELECT 1 FROM players WHERE id = $pid)".query[Boolean].unique
       rows   <-
         if exists then rowsQuery.to[List]
         else List.empty[(String, String, Int, Int, Int, Int)].pure[ConnectionIO]
       avg <- if exists then avgQuery.unique else Option.empty[Double].pure[ConnectionIO]
+      dbl <- if exists then doublingQuery.unique else (0, 0, 0, 0).pure[ConnectionIO]
     yield
       if !exists then None
       else
@@ -249,12 +286,24 @@ object PlayersRepository:
                 case -1 => Int.MaxValue
                 case i  => i
             )
+        // time-control keys are "initSec:incSec"; order by the initial clock then the increment
+        val timeControl = byDim
+          .getOrElse("time_control", Nil)
+          .sortBy(r =>
+            r.key.split(':') match
+              case Array(a, b) =>
+                (a.toIntOption.getOrElse(Int.MaxValue), b.toIntOption.getOrElse(0))
+              case _ => (Int.MaxValue, 0)
+          )
+        val (poAcc, poDec, ooAcc, ooDec) = dbl
         Some(
           PlayerBreakdowns(
             byColor = ordered("color", List("w", "b")),
             byMode = ordered("mode", List("classic", "x2")),
             byOpponentType = ordered("opponent_type", List("human", "bot")),
-            avgTurns = avg
+            byTimeControl = timeControl,
+            avgTurns = avg,
+            doubling = Doubling(DoublingOutcome(poAcc, poDec), DoublingOutcome(ooAcc, ooDec))
           )
         )
 

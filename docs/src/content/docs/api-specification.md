@@ -243,8 +243,9 @@ Win-rate breakdowns for a player across categorical dimensions, plus the average
 - **Success Response** (`200 OK`):
   - **Type**: `PlayerBreakdowns`
   - **Fields**:
-    - `by_color`, `by_mode`, `by_opponent_type` — lists of `{ key, games, wins, draws, losses, win_rate }` from the player's perspective (`key` is `w`/`b`, `classic`/`x2`, `human`/`bot`); `win_rate = (wins + 0.5·draws)/decided`.
+    - `by_color`, `by_mode`, `by_opponent_type`, `by_time_control` — lists of `{ key, games, wins, draws, losses, win_rate }` from the player's perspective. `key` is `w`/`b`, `classic`/`x2`, `human`/`bot`, or — for time control — `initSec:incSec` (e.g. `60:1`, formatted by the UI). `win_rate = (wins + 0.5·draws)/decided`.
     - `avg_turns` — mean `total_turns` over the filtered games (`null` when none match).
+    - `doubling` — x2 cube offers, `{ player_offered: { accepted, declined }, opponent_offered: { accepted, declined } }`. For each `DOUBLE_OFFER` event, its resolution is the next `DOUBLE_ACCEPT`/`DOUBLE_DECLINE` by sequence; the offerer's colour vs the focal player's decides which side it counts under (classic slices yield zeros).
   - **Example Payload**:
 
     ```json
@@ -261,7 +262,12 @@ Win-rate breakdowns for a player across categorical dimensions, plus the average
         { "key": "human", "games": 47886, "wins": 26877, "draws": 463, "losses": 20546, "win_rate": 0.566 },
         { "key": "bot", "games": 4440, "wins": 3024, "draws": 0, "losses": 1416, "win_rate": 0.681 }
       ],
-      "avg_turns": 16.2
+      "by_time_control": [{ "key": "60:1", "games": 19471, "wins": 10876, "draws": 104, "losses": 8491, "win_rate": 0.561 }],
+      "avg_turns": 16.2,
+      "doubling": {
+        "player_offered": { "accepted": 9205, "declined": 1761 },
+        "opponent_offered": { "accepted": 5815, "declined": 1913 }
+      }
     }
     ```
 - **Error Response** (`404 Not Found`): If the player with the given UUID does not exist.
