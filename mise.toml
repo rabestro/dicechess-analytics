@@ -88,3 +88,31 @@ run = """
 sbt "runMain dicechess.analytics.maintenance.EvaluateMonteCarloApp ${1:-10} ${2:-200}"
 """
 
+
+[tasks."db:export-book"]
+description = "📖 Export the opening book from PostgreSQL to opening_book.json"
+run = """
+#!/usr/bin/env bash
+docker exec dicechess-analytics-db-1 psql -U dicechess_user -d dicechess_analytics -t -q -c "
+WITH top_moves AS (
+  SELECT p.normalized_fen, t.dice_sorted, array_to_string(t.played_moves, ',') as played_moves_str, count(*) as c, sum(case when g.result = 1 then 1 else 0 end)::float / count(*) as win_rate
+  FROM turns t
+  JOIN positions p ON t.position_id = p.id
+  JOIN games g ON t.game_id = g.id
+  GROUP BY p.normalized_fen, t.dice_sorted, t.played_moves
+  HAVING count(*) >= 100
+),
+ranked_moves AS (
+  SELECT normalized_fen, dice_sorted, played_moves_str, c, win_rate,
+         row_number() OVER (PARTITION BY normalized_fen, dice_sorted ORDER BY win_rate DESC, c DESC) as rn
+  FROM top_moves
+)
+SELECT json_object_agg(
+  normalized_fen || ' ' || dice_sorted,
+  played_moves_str
+)
+FROM ranked_moves
+WHERE rn = 1;
+" > opening_book.json
+echo "Opening book exported to opening_book.json"
+"""
