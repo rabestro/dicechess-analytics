@@ -79,6 +79,13 @@ final class Routes(
       .map(_.toRight(ApiError("Player not found")))
   }
 
+  private val profitHistoryLogic = Endpoints.profitHistory.serverLogic[IO] { query =>
+    PlayersRepository
+      .profitHistory(query)
+      .transact(xa)
+      .map(_.toRight(ApiError("Player not found")))
+  }
+
   private val ratingHistoryLogic = Endpoints.ratingHistory.serverLogic[IO] { query =>
     PlayersRepository
       .ratingHistory(query)
@@ -185,6 +192,7 @@ final class Routes(
         getPlayerLogic,
         playerStatsLogic,
         breakdownsLogic,
+        profitHistoryLogic,
         ratingHistoryLogic,
         continuationsLogic,
         positionEquityLogic,

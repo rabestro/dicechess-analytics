@@ -16,6 +16,9 @@ import dicechess.analytics.api.Protocol.{
   PlayerStats,
   PlayerStatsQuery,
   PlayerSummary,
+  ProfitHistory,
+  ProfitHistoryQuery,
+  ProfitPoint,
   RatingHistory,
   RatingHistoryQuery,
   RatingPoint
@@ -306,6 +309,45 @@ object PlayersRepository:
             doubling = Doubling(DoublingOutcome(poAcc, poDec), DoublingOutcome(ooAcc, ooDec))
           )
         )
+
+  /** A player's cumulative profit trajectory — one point per day that has at least one paid game.
+    * `delta` is the net profit for the day; `cumulative` is the running total over the window
+    * defined by the optional date filters (the window resets to the filter start, not all-time).
+    * Free games and beturanga.com games contribute a NULL `money_delta` and are excluded naturally
+    * by the IS NOT NULL predicate.
+    */
+  def profitHistory(q: ProfitHistoryQuery): ConnectionIO[Option[ProfitHistory]] =
+    val pid   = q.playerId
+    val delta =
+      fr"CASE WHEN g.white_player_id = $pid THEN g.white_money_delta ELSE g.black_money_delta END"
+    val dateFrag =
+      q.dateFrom
+        .map(d => fr"AND g.started_at AT TIME ZONE 'UTC' >= $d")
+        .getOrElse(Fragment.empty) ++
+        q.dateTo
+          .map(d => fr"AND g.started_at AT TIME ZONE 'UTC' < ${d.plusDays(1)}")
+          .getOrElse(Fragment.empty)
+    val pointsQuery =
+      (fr"""
+        SELECT day::date, daily_delta, sum(daily_delta) OVER (ORDER BY day) AS cumulative
+        FROM (
+          SELECT date_trunc('day', g.started_at AT TIME ZONE 'UTC') AS day,
+                 sum(""" ++ delta ++ fr""") AS daily_delta
+          FROM games g
+          WHERE (g.white_player_id = $pid OR g.black_player_id = $pid)
+            AND g.started_at IS NOT NULL
+            AND (""" ++ delta ++ fr""") IS NOT NULL
+            """ ++ dateFrag ++ fr"""
+          GROUP BY date_trunc('day', g.started_at AT TIME ZONE 'UTC')
+        ) daily
+        ORDER BY day
+      """).query[ProfitPoint].to[List]
+    for
+      exists <- sql"SELECT EXISTS(SELECT 1 FROM players WHERE id = $pid)".query[Boolean].unique
+      points <-
+        if exists then pointsQuery
+        else List.empty[ProfitPoint].pure[ConnectionIO]
+    yield if exists then Some(ProfitHistory(points)) else None
 
   /** A player's rating trajectory — one point per active day (the rating after that day's last
     * game) — per mode. Rating is a per-mode point-in-time property, so only mode + date narrow it.

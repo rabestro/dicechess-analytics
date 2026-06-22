@@ -300,6 +300,42 @@ A player's rating over time — one point per active day (the rating after that 
 
 - **Error Response** (`404 Not Found`): If the player with the given UUID does not exist.
 
+### 6. Get Profit History
+
+A player's cumulative profit over time — one point per day with at least one paid game. Profit is
+cross-mode (a single currency denomination), so this endpoint honours **only the date range**:
+`mode`, `colour`, `opponent`, and `stake` do not shape a profit curve. Free games (`money_delta
+= null`) and beturanga.com games (always `null`) are excluded automatically.
+
+- **HTTP Method**: `GET`
+- **Route**: `/api/players/{player_id}/profit-history`
+- **Path Parameters**:
+  - `player_id` (UUID, required).
+- **Query Parameters**:
+  - `date_from` / `date_to`: game start-date range, inclusive. The cumulative **resets to the window
+    start** (it is not all-time).
+- **Success Response** (`200 OK`):
+  - **Type**: `ProfitHistory` — `{ points: ProfitPoint[] }`, each `ProfitPoint` being
+    `{ date, delta, cumulative }`, ordered ascending by date. Empty when the player has no paid
+    games in the window.
+  - **Fields per point**:
+    - `date` — the calendar day (UTC).
+    - `delta` — net profit for that day; can be negative.
+    - `cumulative` — running total from the window start up to and including this day.
+  - **Example Payload**:
+
+    ```json
+    {
+      "points": [
+        { "date": "2026-05-17", "delta": 150.00, "cumulative": 150.00 },
+        { "date": "2026-05-18", "delta": -75.50, "cumulative":  74.50 },
+        { "date": "2026-05-30", "delta": 200.00, "cumulative": 274.50 }
+      ]
+    }
+    ```
+
+- **Error Response** (`404 Not Found`): If the player with the given UUID does not exist.
+
 ---
 
 ## Positions Endpoint (`/api/positions`)
