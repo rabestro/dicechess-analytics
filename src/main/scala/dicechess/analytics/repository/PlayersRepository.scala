@@ -243,15 +243,16 @@ object PlayersRepository:
           """ ++ filtered ++ fr"""
         ),
         offers AS (
-          SELECT gf.my_color, e.actor_color AS offerer,
-                 (SELECT r.event_type::text FROM game_events r
-                   WHERE r.game_id = e.game_id AND r.sequence_number > e.sequence_number
-                     AND r.event_type::text IN ('DOUBLE_ACCEPT', 'DOUBLE_DECLINE')
-                   ORDER BY r.sequence_number
-                   LIMIT 1) AS resolution
-          FROM game_events e
-          JOIN gf ON gf.game_id = e.game_id
-          WHERE e.event_type::text = 'DOUBLE_OFFER'
+          SELECT my_color, actor_color AS offerer, next_event AS resolution
+          FROM (
+            SELECT gf.my_color, e.actor_color, e.event_type::text AS event_type,
+                   lead(e.event_type::text) OVER (PARTITION BY e.game_id
+                                                  ORDER BY e.sequence_number) AS next_event
+            FROM game_events e
+            JOIN gf ON gf.game_id = e.game_id
+            WHERE e.event_type::text IN ('DOUBLE_OFFER', 'DOUBLE_ACCEPT', 'DOUBLE_DECLINE')
+          ) sub
+          WHERE event_type = 'DOUBLE_OFFER'
         )
         SELECT
           count(*) FILTER (WHERE offerer =  my_color AND resolution = 'DOUBLE_ACCEPT'),
