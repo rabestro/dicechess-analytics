@@ -164,6 +164,18 @@ object Endpoints:
         "Win-rate breakdowns by colour, mode and opponent type (plus average moves) for a player, same filters as stats"
       )
 
+  val profitHistory: PublicEndpoint[ProfitHistoryQuery, ApiError, ProfitHistory, Any] =
+    endpoint.get
+      .in("api" / "players" / path[UUID]("player_id") / "profit-history")
+      .in(query[Option[LocalDate]]("date_from").description("Earliest start date, inclusive"))
+      .in(query[Option[LocalDate]]("date_to").description("Latest start date, inclusive"))
+      .mapInTo[ProfitHistoryQuery]
+      .out(jsonBody[ProfitHistory])
+      .errorOut(notFound)
+      .description(
+        "Daily cumulative profit across all paid games; free and beturanga games are excluded automatically"
+      )
+
   val ratingHistory: PublicEndpoint[RatingHistoryQuery, ApiError, RatingHistory, Any] =
     endpoint.get
       .in("api" / "players" / path[UUID]("player_id") / "rating-history")
@@ -278,6 +290,7 @@ object Endpoints:
       getPlayer,
       playerStats,
       breakdowns,
+      profitHistory,
       ratingHistory,
       continuations,
       positionEquity,

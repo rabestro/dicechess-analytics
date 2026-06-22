@@ -1095,3 +1095,105 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
           .map(s => assertEquals(s, Status.NotFound))
       }
     }
+
+  test("GET /api/players/{id}/profit-history returns daily delta and cumulative profit"):
+    withContainers { pg =>
+      val xa     = transactor(pg)
+      val ingrid = UUID.fromString("ac000000-0000-0000-0000-0000000000ac")
+      val hi1    = UUID.fromString("ac000000-0000-0000-0000-0000000000c1")
+      val hi2    = UUID.fromString("ac000000-0000-0000-0000-0000000000c2")
+      val hi3    = UUID.fromString("ac000000-0000-0000-0000-0000000000c3")
+      val hi4    = UUID.fromString("ac000000-0000-0000-0000-0000000000c4")
+
+      // Day 1 (2026-05-01): hi1 ingrid=white +100, hi2 ingrid=black -50 → delta=50, cumul=50.
+      // Day 2 (2026-05-02): hi3 ingrid=white +200 → delta=200, cumul=250.
+      // hi4: NULL money_delta (free game) → excluded by IS NOT NULL predicate.
+      val p100  = BigDecimal(100)
+      val p200  = BigDecimal(200)
+      val n50   = BigDecimal(-50)
+      val seedC =
+        for
+          _ <- sql"""INSERT INTO players (id, external_id, username, player_type)
+                     VALUES ($ingrid, 'ext-ingrid', 'ingrid', 'human')""".update.run
+          _ <- sql"""INSERT INTO games (id, source, white_player_id, mode, result,
+                                        white_money_delta, started_at) VALUES
+                      ($hi1, 'test', $ingrid, 'classic',  1, $p100, '2026-05-01T10:00:00Z'),
+                      ($hi3, 'test', $ingrid, 'classic',  1, $p200, '2026-05-02T10:00:00Z'),
+                      ($hi4, 'test', $ingrid, 'classic',  1, NULL,  '2026-05-02T15:00:00Z')""".update.run
+          _ <- sql"""INSERT INTO games (id, source, black_player_id, mode, result,
+                                        black_money_delta, started_at) VALUES
+                      ($hi2, 'test', $ingrid, 'classic', -1, $n50, '2026-05-01T20:00:00Z')""".update.run
+        yield ()
+      val cleanup =
+        for
+          _ <- sql"DELETE FROM games WHERE id IN ($hi1, $hi2, $hi3, $hi4)".update.run
+          _ <- sql"DELETE FROM players WHERE id = $ingrid".update.run
+        yield ()
+
+      def pointsOf(json: Json): Vector[io.circe.HCursor] =
+        json.hcursor
+          .downField("points")
+          .focus
+          .flatMap(_.asArray)
+          .getOrElse(fail("expected points array"))
+          .map(_.hcursor)
+
+      seedC.transact(xa) >>
+        withClient(pg) { client =>
+          for
+            all  <- getJson(client, s"/api/players/$ingrid/profit-history")
+            from <- getJson(client, s"/api/players/$ingrid/profit-history?date_from=2026-05-02")
+          yield
+            val pts = pointsOf(all)
+            assertEquals(pts.size, 2)
+            // day 1: delta = 100 + (−50) = 50, cumulative = 50
+            assertEquals(pts(0).get[String]("date"), Right("2026-05-01"))
+            assertEquals(pts(0).get[BigDecimal]("delta"), Right(BigDecimal(50)))
+            assertEquals(pts(0).get[BigDecimal]("cumulative"), Right(BigDecimal(50)))
+            // day 2: delta = 200 (hi4 excluded), cumulative = 250
+            assertEquals(pts(1).get[String]("date"), Right("2026-05-02"))
+            assertEquals(pts(1).get[BigDecimal]("delta"), Right(BigDecimal(200)))
+            assertEquals(pts(1).get[BigDecimal]("cumulative"), Right(BigDecimal(250)))
+            // date_from=2026-05-02 narrows to day 2 only; cumulative resets to 200
+            val fromPts = pointsOf(from)
+            assertEquals(fromPts.size, 1)
+            assertEquals(fromPts(0).get[String]("date"), Right("2026-05-02"))
+            assertEquals(fromPts(0).get[BigDecimal]("delta"), Right(BigDecimal(200)))
+            assertEquals(fromPts(0).get[BigDecimal]("cumulative"), Right(BigDecimal(200)))
+        }.guarantee(cleanup.transact(xa).map(_ => ()))
+    }
+
+  test("GET /api/players/{id}/profit-history returns empty points for a player with no paid games"):
+    withContainers { pg =>
+      val xa    = transactor(pg)
+      val jane  = UUID.fromString("ac000000-0000-0000-0000-0000000000ae")
+      val seedC =
+        sql"""INSERT INTO players (id, external_id, username, player_type)
+              VALUES ($jane, 'ext-jane', 'jane', 'human')""".update.run
+      val cleanup = sql"DELETE FROM players WHERE id = $jane".update.run
+
+      seedC.transact(xa) >>
+        withClient(pg) { client =>
+          getJson(client, s"/api/players/$jane/profit-history").map { json =>
+            assertEquals(
+              json.hcursor.downField("points").focus.flatMap(_.asArray).map(_.size),
+              Some(0)
+            )
+          }
+        }.guarantee(cleanup.transact(xa).map(_ => ()))
+    }
+
+  test("GET /api/players/{id}/profit-history returns 404 for unknown players"):
+    withContainers { pg =>
+      withClient(pg) { client =>
+        client
+          .run(
+            Request[IO](
+              Method.GET,
+              Uri.unsafeFromString(s"/api/players/$missing/profit-history")
+            )
+          )
+          .use(r => IO.pure(r.status))
+          .map(s => assertEquals(s, Status.NotFound))
+      }
+    }

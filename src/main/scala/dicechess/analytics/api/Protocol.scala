@@ -152,6 +152,31 @@ object Protocol:
   ) derives ConfiguredCodec,
         Schema
 
+  /** Query parameters of the profit-history endpoint. Profit is cross-mode (a single currency
+    * denomination), so only the date range applies — mode, colour, opponent and stake do not shape
+    * a cumulative profit curve.
+    */
+  final case class ProfitHistoryQuery(
+      playerId: UUID,
+      dateFrom: Option[LocalDate],
+      dateTo: Option[LocalDate]
+  )
+
+  /** One day of a player's cumulative profit trajectory. `delta` is the net profit for that day
+    * (sum of all paid-game `money_delta` values from the player's perspective); `cumulative` is the
+    * running total up to and including this day. Free games and beturanga.com games contribute a
+    * `NULL` `money_delta` and are therefore excluded naturally.
+    */
+  final case class ProfitPoint(date: LocalDate, delta: BigDecimal, cumulative: BigDecimal)
+      derives ConfiguredCodec,
+        Schema
+
+  /** A player's profit trajectory as a daily cumulative series (`GET
+    * /api/players/{id}/profit-history`). Only days with at least one paid game (non-null
+    * `money_delta`) appear. Empty when the player has no paid games.
+    */
+  final case class ProfitHistory(points: List[ProfitPoint]) derives ConfiguredCodec, Schema
+
   /** Query parameters of the rating-history endpoint. Rating is a per-mode, point-in-time property,
     * so only `mode` and the date range apply (colour / opponent / stake do not shape a rating
     * curve).
