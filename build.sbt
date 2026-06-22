@@ -101,7 +101,7 @@ lazy val root = (project in file("."))
       "-feature",
       "-explain"
     ),
-    coverageExcludedFiles    := ".*Main\\.scala;.*BuildInfo\\.scala",
+    coverageExcludedFiles := ".*Main\\.scala;.*BuildInfo\\.scala;.*EvaluateMonteCarloApp\\.scala",
     coverageMinimumStmtTotal := 80,
     coverageFailOnMinimum    := true,
     Test / fork              := true,

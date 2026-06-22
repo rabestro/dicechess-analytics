@@ -1,6 +1,7 @@
 package dicechess.analytics.maintenance
 
 import cats.effect.{IO, IOApp}
+import cats.syntax.all.*
 import doobie.implicits.*
 import scala.util.Random
 
@@ -45,11 +46,11 @@ object EvaluateMonteCarloApp extends IOApp:
   def getTopPositions(limit: Int): doobie.ConnectionIO[List[PositionStats]] =
     sql"""SELECT p.normalized_fen,
                  count(*) as games,
-                 count(*) FILTER (WHERE (t.active_color = 'w' AND g.result = 1)
-                                     OR (t.active_color = 'b' AND g.result = -1)),
+                 count(*) FILTER (WHERE (t.active_color::text = 'w' AND g.result = 1)
+                                     OR (t.active_color::text = 'b' AND g.result = -1)),
                  count(*) FILTER (WHERE g.result = 0),
-                 count(*) FILTER (WHERE (t.active_color = 'w' AND g.result = -1)
-                                     OR (t.active_color = 'b' AND g.result = 1))
+                 count(*) FILTER (WHERE (t.active_color::text = 'w' AND g.result = -1)
+                                     OR (t.active_color::text = 'b' AND g.result = 1))
           FROM turns t
           JOIN positions p ON p.id = t.position_id
           JOIN games g     ON g.id = t.game_id
@@ -63,38 +64,31 @@ object EvaluateMonteCarloApp extends IOApp:
       .map { case (fen, g, w, d, l) => PositionStats(fen, g, w, d, l) }
       .to[List]
 
-  def printTable(positions: List[PositionStats], rollouts: Int): IO[Unit] = IO {
+  def printTable(positions: List[PositionStats], rollouts: Int): IO[Unit] =
     val rng      = new Random()
     val mcConfig = MonteCarloConfig(rollouts = rollouts, maxPlies = 60)
 
-    println(f"${"DFEN"}%-75s | ${"Games"}%7s | ${"DB WR"}%7s | ${"MC WR"}%7s | ${"Delta"}%7s")
-    println("-" * 115)
-
-    positions.foreach { stat =>
-      val dbWinRate = stat.winRate
-
-      val mcWinRate = FenParser.parse(stat.normalizedFen) match
-        case Left(err) =>
-          println(s"Error parsing FEN ${stat.normalizedFen}: $err")
-          0.0
-        case Right(state) =>
-          // Active color is moving. MC whiteWin returns win chance for side-to-move because engine assumes
-          // the turn is starting. But wait, `MonteCarloEquity.estimate` returns `whiteWin` and `blackWin`
-          // absolutely, or relative to side to move?
-          // Looking at engine API: est.whiteWin, est.blackWin. So it's absolute.
-          // In the database, PositionEquity calculates win rate from the moving side's perspective.
-          // Wait, `stat.winRate` here calculates from the perspective of `t.active_color`.
-          // Let's verify: if t.active_color = 'w', win means g.result = 1. So it's side-to-move win rate.
-          val est  = MonteCarloEquity.estimate(state, mcConfig, rng)
-          val side = Fen.fields(stat.normalizedFen).activeColor
-          if side == "w" then est.whiteWin else est.blackWin
-
-      val delta = (mcWinRate - dbWinRate).abs
-      println(
-        f"${stat.normalizedFen}%-75s | ${stat.games}%7d | ${dbWinRate * 100}%6.2f%% | ${mcWinRate * 100}%6.2f%% | ${delta * 100}%6.2f%%"
+    for
+      _ <- IO.println(
+        f"${"DFEN"}%-75s | ${"Games"}%7s | ${"DB WR"}%7s | ${"MC WR"}%7s | ${"Delta"}%7s"
       )
-    }
+      _ <- IO.println("-" * 115)
+      _ <- positions.traverse_ { stat =>
+        IO.blocking {
+          val dbWinRate = stat.winRate
+          val mcWinRate = FenParser.parse(stat.normalizedFen) match
+            case Left(err) =>
+              println(s"Error parsing FEN ${stat.normalizedFen}: $err")
+              0.0
+            case Right(state) =>
+              val est  = MonteCarloEquity.estimate(state, mcConfig, rng)
+              val side = Fen.fields(stat.normalizedFen).activeColor
+              if side == "w" then est.whiteWin else est.blackWin
 
-    println("-" * 115)
-    println("Done.")
-  }
+          val delta = (mcWinRate - dbWinRate).abs
+          f"${stat.normalizedFen}%-75s | ${stat.games}%7d | ${dbWinRate * 100}%6.2f%% | ${mcWinRate * 100}%6.2f%% | ${delta * 100}%6.2f%%"
+        }.flatMap(IO.println)
+      }
+      _ <- IO.println("-" * 115)
+      _ <- IO.println("Done.")
+    yield ()
