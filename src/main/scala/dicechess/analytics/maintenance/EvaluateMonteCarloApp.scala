@@ -9,8 +9,8 @@ import dicechess.engine.domain.FenParser
 import dicechess.engine.search.{MonteCarloConfig, MonteCarloEquity}
 
 /** A one-off script to evaluate the accuracy of the Monte Carlo engine against empirical DB stats.
-  * It fetches the top N most played positions, calculates their win rate from the database,
-  * runs the engine's Monte Carlo estimation on them, and prints a comparison table.
+  * It fetches the top N most played positions, calculates their win rate from the database, runs
+  * the engine's Monte Carlo estimation on them, and prints a comparison table.
   */
 object EvaluateMonteCarloApp extends IOApp:
 
@@ -20,8 +20,10 @@ object EvaluateMonteCarloApp extends IOApp:
 
     for
       config <- IO.fromEither(AppConfig.load().left.map(msg => IllegalArgumentException(msg)))
-      _      <- IO.println(s"Evaluating Monte Carlo equity for top $topNPositions positions ($rollouts rollouts)...")
-      _      <- Database.transactor(config.db, 4).use { xa =>
+      _      <- IO.println(
+        s"Evaluating Monte Carlo equity for top $topNPositions positions ($rollouts rollouts)..."
+      )
+      _ <- Database.transactor(config.db, 4).use { xa =>
         for
           positions <- getTopPositions(topNPositions).transact(xa)
           _         <- printTable(positions, rollouts)
@@ -62,7 +64,7 @@ object EvaluateMonteCarloApp extends IOApp:
       .to[List]
 
   def printTable(positions: List[PositionStats], rollouts: Int): IO[Unit] = IO {
-    val rng = new Random()
+    val rng      = new Random()
     val mcConfig = MonteCarloConfig(rollouts = rollouts, maxPlies = 60)
 
     println(f"${"DFEN"}%-75s | ${"Games"}%7s | ${"DB WR"}%7s | ${"MC WR"}%7s | ${"Delta"}%7s")
@@ -72,7 +74,7 @@ object EvaluateMonteCarloApp extends IOApp:
       val dbWinRate = stat.winRate
 
       val mcWinRate = FenParser.parse(stat.normalizedFen) match
-        case Left(err) => 
+        case Left(err) =>
           println(s"Error parsing FEN ${stat.normalizedFen}: $err")
           0.0
         case Right(state) =>
@@ -83,14 +85,16 @@ object EvaluateMonteCarloApp extends IOApp:
           // In the database, PositionEquity calculates win rate from the moving side's perspective.
           // Wait, `stat.winRate` here calculates from the perspective of `t.active_color`.
           // Let's verify: if t.active_color = 'w', win means g.result = 1. So it's side-to-move win rate.
-          val est = MonteCarloEquity.estimate(state, mcConfig, rng)
+          val est  = MonteCarloEquity.estimate(state, mcConfig, rng)
           val side = Fen.fields(stat.normalizedFen).activeColor
           if side == "w" then est.whiteWin else est.blackWin
 
       val delta = (mcWinRate - dbWinRate).abs
-      println(f"${stat.normalizedFen}%-75s | ${stat.games}%7d | ${dbWinRate * 100}%6.2f%% | ${mcWinRate * 100}%6.2f%% | ${delta * 100}%6.2f%%")
+      println(
+        f"${stat.normalizedFen}%-75s | ${stat.games}%7d | ${dbWinRate * 100}%6.2f%% | ${mcWinRate * 100}%6.2f%% | ${delta * 100}%6.2f%%"
+      )
     }
-    
+
     println("-" * 115)
     println("Done.")
   }
