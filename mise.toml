@@ -81,3 +81,10 @@ description = "🏗️ Compile documentation to static HTML assets"
 dir = "docs"
 run = "npm run build"
 
+[tasks."eval:mc"]
+description = "⚖️ Evaluate Monte Carlo accuracy. Usage: `mise run eval:mc [limit] [rollouts]`"
+run = """
+#!/usr/bin/env bash
+sbt "runMain dicechess.analytics.maintenance.EvaluateMonteCarloApp ${1:-10} ${2:-200}"
+"""
+
