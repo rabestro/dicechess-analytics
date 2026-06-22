@@ -127,15 +127,28 @@ object Protocol:
   ) derives ConfiguredCodec,
         Schema
 
+  /** Accept/decline tally for x2 cube offers (one side of the doubling stats). */
+  final case class DoublingOutcome(accepted: Int, declined: Int) derives ConfiguredCodec, Schema
+
+  /** x2 doubling-cube offers from the player's perspective, split by who made the offer. */
+  final case class Doubling(
+      playerOffered: DoublingOutcome,
+      opponentOffered: DoublingOutcome
+  ) derives ConfiguredCodec,
+        Schema
+
   /** Win-rate breakdowns for a player across categorical dimensions, honouring the same filters as
-    * the stats endpoint. `avgTurns` is the mean `total_turns` over the filtered slice (`None` when
-    * no game matches).
+    * the stats endpoint. `byTimeControl` rows are keyed `initSec:incSec` (the UI formats them);
+    * `avgTurns` is the mean `total_turns` over the filtered slice (`None` when no game matches);
+    * `doubling` tallies x2 cube offers by who offered.
     */
   final case class PlayerBreakdowns(
       byColor: List[BreakdownRow],
       byMode: List[BreakdownRow],
       byOpponentType: List[BreakdownRow],
-      avgTurns: Option[Double]
+      byTimeControl: List[BreakdownRow],
+      avgTurns: Option[Double],
+      doubling: Doubling
   ) derives ConfiguredCodec,
         Schema
 
