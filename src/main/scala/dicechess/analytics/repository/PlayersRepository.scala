@@ -321,20 +321,24 @@ object PlayersRepository:
     val delta =
       fr"CASE WHEN g.white_player_id = $pid THEN g.white_money_delta ELSE g.black_money_delta END"
     val dateFrag =
-      q.dateFrom.map(d => fr"AND g.started_at >= $d").getOrElse(Fragment.empty) ++
-        q.dateTo.map(d => fr"AND g.started_at < ${d.plusDays(1)}").getOrElse(Fragment.empty)
+      q.dateFrom
+        .map(d => fr"AND g.started_at AT TIME ZONE 'UTC' >= $d")
+        .getOrElse(Fragment.empty) ++
+        q.dateTo
+          .map(d => fr"AND g.started_at AT TIME ZONE 'UTC' < ${d.plusDays(1)}")
+          .getOrElse(Fragment.empty)
     val pointsQuery =
       (fr"""
         SELECT day::date, daily_delta, sum(daily_delta) OVER (ORDER BY day) AS cumulative
         FROM (
-          SELECT date_trunc('day', g.started_at) AS day,
+          SELECT date_trunc('day', g.started_at AT TIME ZONE 'UTC') AS day,
                  sum(""" ++ delta ++ fr""") AS daily_delta
           FROM games g
           WHERE (g.white_player_id = $pid OR g.black_player_id = $pid)
             AND g.started_at IS NOT NULL
             AND (""" ++ delta ++ fr""") IS NOT NULL
             """ ++ dateFrag ++ fr"""
-          GROUP BY date_trunc('day', g.started_at)
+          GROUP BY date_trunc('day', g.started_at AT TIME ZONE 'UTC')
         ) daily
         ORDER BY day
       """).query[ProfitPoint].to[List]

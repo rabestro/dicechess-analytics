@@ -1143,6 +1143,7 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
           for
             all  <- getJson(client, s"/api/players/$ingrid/profit-history")
             from <- getJson(client, s"/api/players/$ingrid/profit-history?date_from=2026-05-02")
+            to   <- getJson(client, s"/api/players/$ingrid/profit-history?date_to=2026-05-01")
           yield
             val pts = pointsOf(all)
             assertEquals(pts.size, 2)
@@ -1160,6 +1161,12 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
             assertEquals(fromPts(0).get[String]("date"), Right("2026-05-02"))
             assertEquals(fromPts(0).get[BigDecimal]("delta"), Right(BigDecimal(200)))
             assertEquals(fromPts(0).get[BigDecimal]("cumulative"), Right(BigDecimal(200)))
+            // date_to=2026-05-01 narrows to day 1 only; cumulative resets to 50
+            val toPts = pointsOf(to)
+            assertEquals(toPts.size, 1)
+            assertEquals(toPts(0).get[String]("date"), Right("2026-05-01"))
+            assertEquals(toPts(0).get[BigDecimal]("delta"), Right(BigDecimal(50)))
+            assertEquals(toPts(0).get[BigDecimal]("cumulative"), Right(BigDecimal(50)))
         }.guarantee(cleanup.transact(xa).map(_ => ()))
     }
 
@@ -1193,7 +1200,14 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
               Uri.unsafeFromString(s"/api/players/$missing/profit-history")
             )
           )
-          .use(r => IO.pure(r.status))
-          .map(s => assertEquals(s, Status.NotFound))
+          .use { response =>
+            assertEquals(response.status, Status.NotFound)
+            response.as[String].map { body =>
+              assertEquals(
+                parse(body).flatMap(_.hcursor.get[String]("detail")),
+                Right("Player not found")
+              )
+            }
+          }
       }
     }
