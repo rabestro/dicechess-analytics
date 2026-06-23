@@ -241,8 +241,7 @@ object Endpoints:
         "Pre-roll equity of a position: win probability for the side to move across all rolls"
       )
 
-  val diceDistribution
-      : PublicEndpoint[PositionDiceDistributionQuery, Unit, PositionDiceDistribution, Any] =
+  val diceDistribution: PublicEndpoint[PositionEquityQuery, Unit, PositionDiceDistribution, Any] =
     endpoint.get
       .in("api" / "positions" / "dice-distribution")
       .in(query[String]("fen").description("Position FEN (normalized server-side)"))
@@ -257,7 +256,7 @@ object Endpoints:
           .description("Keep only games where both players were rated at least this high")
           .validateOption(Validator.min(0))
       )
-      .mapInTo[PositionDiceDistributionQuery]
+      .mapInTo[PositionEquityQuery]
       .out(jsonBody[PositionDiceDistribution])
       .description(
         "Every dice roll played from a position (up to 56), each with games and win rate"

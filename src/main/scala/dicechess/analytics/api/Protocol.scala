@@ -351,15 +351,8 @@ object Protocol:
   ) derives ConfiguredCodec,
         Schema
 
-  /** Query parameters of the dice-distribution endpoint (mapped from Tapir inputs). Same session
-    * filters as continuations/equity, so the distribution reflects the same game set.
-    */
-  final case class PositionDiceDistributionQuery(
-      fen: String,
-      mode: Option[String],
-      source: Option[String],
-      minRating: Option[Int]
-  )
+  // The dice-distribution endpoint takes the same query parameters as equity, so it reuses
+  // `PositionEquityQuery` rather than declaring an identical case class.
 
   /** How often one dice roll was played from a position, with the moving side's outcome. `dice` is
     * the sorted piece letters in upper case (e.g. BPQ), regardless of side to move;

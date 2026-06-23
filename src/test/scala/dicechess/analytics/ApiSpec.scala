@@ -105,6 +105,21 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
   private def itemsOf(json: Json): Vector[Json] =
     json.hcursor.downField("items").focus.flatMap(_.asArray).getOrElse(fail("expected items array"))
 
+  /** Insert a minimal white-to-move test game + turn (shared by the position-aggregate specs). */
+  private def seedGame(id: UUID, mode: String, result: Int, ts: OffsetDateTime): ConnectionIO[Int] =
+    sql"""INSERT INTO games (id, source, mode, result, started_at)
+          VALUES ($id, 'test', $mode::game_mode_enum, $result, $ts)""".update.run
+  private def seedTurn(
+      game: UUID,
+      position: Long,
+      dice: String,
+      moves: Option[List[String]],
+      after: Long
+  ): ConnectionIO[Int] =
+    sql"""INSERT INTO turns (game_id, turn_number, active_color, position_id,
+                             dice_sorted, played_moves, position_after_id)
+          VALUES ($game, 1, 'w', $position, $dice, $moves, $after)""".update.run
+
   private def totalOf(json: Json): Long =
     json.hcursor.get[Long]("total").fold(e => fail(s"missing total: $e"), identity)
 
@@ -473,17 +488,16 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
         for
           ps <- PositionsRepository.getOrCreate(ddFen)
           pa <- PositionsRepository.getOrCreate(ddAfter)
-          _  <- sql"""INSERT INTO games (id, source, mode, result, started_at) VALUES
-                      ($gA, 'test', 'classic',  1, $ts), ($gB, 'test', 'classic',  1, $ts),
-                      ($gC, 'test', 'classic',  0, $ts), ($gX2, 'test', 'x2',       1, $ts),
-                      ($gNoop, 'test', 'classic', 0, $ts)""".update.run
-          _ <- sql"""INSERT INTO turns (game_id, turn_number, active_color, position_id,
-                                         dice_sorted, played_moves, position_after_id) VALUES
-                      ($gA,    1, 'w', $ps, 'BPQ', ARRAY['e2e4','f1c4'], $pa),
-                      ($gB,    1, 'w', $ps, 'BPQ', ARRAY['e2e4','f1c4'], $pa),
-                      ($gC,    1, 'w', $ps, 'NPQ', ARRAY['e2e4','g1f3'], $pa),
-                      ($gX2,   1, 'w', $ps, 'BPQ', ARRAY['e2e4','f1c4'], $pa),
-                      ($gNoop, 1, 'w', $ps, 'BPQ', NULL, $ps)""".update.run
+          _  <- seedGame(gA, "classic", 1, ts)
+          _  <- seedGame(gB, "classic", 1, ts)
+          _  <- seedGame(gC, "classic", 0, ts)
+          _  <- seedGame(gX2, "x2", 1, ts)
+          _  <- seedGame(gNoop, "classic", 0, ts)
+          _  <- seedTurn(gA, ps, "BPQ", Some(List("e2e4", "f1c4")), pa)
+          _  <- seedTurn(gB, ps, "BPQ", Some(List("e2e4", "f1c4")), pa)
+          _  <- seedTurn(gC, ps, "NPQ", Some(List("e2e4", "g1f3")), pa)
+          _  <- seedTurn(gX2, ps, "BPQ", Some(List("e2e4", "f1c4")), pa)
+          _  <- seedTurn(gNoop, ps, "BPQ", None, ps)
         yield ()
       val cleanup =
         for
@@ -521,6 +535,60 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
             assertEquals(diceRow(all, "BPQ").get[Int]("games"), Right(3))
             assertEquals(diceRow(all, "BPQ").get[Int]("wins"), Right(3))
             assertEquals(diceRow(all, "BPQ").get[Double]("win_rate"), Right(1.0))
+        }.guarantee(cleanup.transact(xa))
+    }
+
+  test("GET /api/positions drops non-flipping draws but keeps complete and terminal turns"):
+    withContainers { pg =>
+      val xa  = transactor(pg)
+      val fen = "rnbqkb1r/pppppppp/7n/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -"
+      // Complete turn: white played, the move passes to black (side flips). Kept.
+      val done = "rnbqkb1r/pppppppp/7n/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -"
+      // Abandoned: still white to move (no flip) and the game DREW — a partial turn (one micro-move
+      // then a draw agreed). This is the junk to drop.
+      val draw = "rnbqkb1r/pppppppp/7n/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -"
+      // Terminal: still white to move (no flip) but DECISIVE (king captured, result 1). Legacy terminal
+      // positions are stored without the flip; they are real winning moves and must be kept.
+      val terminal = "rnbq1b1r/pppppppp/7n/8/4P3/8/PPPP1PPP/RNBQKBNR w KQ -"
+      val gOk      = UUID.fromString("00000000-0000-0000-0000-0000000000e1")
+      val gDraw    = UUID.fromString("00000000-0000-0000-0000-0000000000e2")
+      val gTerm    = UUID.fromString("00000000-0000-0000-0000-0000000000e3")
+      val ts       = OffsetDateTime.parse("2026-06-01T00:00:00Z")
+
+      val seedC =
+        for
+          ps <- PositionsRepository.getOrCreate(fen)
+          pd <- PositionsRepository.getOrCreate(done)
+          pw <- PositionsRepository.getOrCreate(draw)
+          pt <- PositionsRepository.getOrCreate(terminal)
+          _  <- seedGame(gOk, "classic", 1, ts)
+          _  <- seedGame(gDraw, "classic", 0, ts)
+          _  <- seedGame(gTerm, "classic", 1, ts)
+          _  <- seedTurn(gOk, ps, "BPQ", Some(List("e2e4", "f1c4")), pd)
+          _  <- seedTurn(gDraw, ps, "BPQ", Some(List("e2e4")), pw)
+          _  <- seedTurn(gTerm, ps, "BPQ", Some(List("e2e4")), pt)
+        yield ()
+      val cleanup =
+        for
+          _ <- sql"DELETE FROM turns WHERE game_id IN ($gOk, $gDraw, $gTerm)".update.run
+          _ <- sql"DELETE FROM games WHERE id IN ($gOk, $gDraw, $gTerm)".update.run
+        yield ()
+      val enc = URLEncoder.encode(fen, "UTF-8")
+
+      seedC.transact(xa) >>
+        withClient(pg) { client =>
+          for
+            co <- getJson(client, s"/api/positions/continuations?fen=$enc&dice=BPQ")
+            eq <- getJson(client, s"/api/positions/equity?fen=$enc")
+            dd <- getJson(client, s"/api/positions/dice-distribution?fen=$enc")
+          yield
+            // gOk (flip) + gTerm (terminal win) survive; gDraw (non-flipping draw) is dropped → 2, not 3
+            assertEquals(co.hcursor.get[Int]("total_games"), Right(2))
+            assertEquals(itemsOf(co).size, 2)
+            assertEquals(eq.hcursor.get[Int]("games"), Right(2))
+            assertEquals(eq.hcursor.get[Int]("wins"), Right(2))
+            assertEquals(eq.hcursor.get[Double]("win_rate"), Right(1.0))
+            assertEquals(dd.hcursor.get[Int]("total_games"), Right(2))
         }.guarantee(cleanup.transact(xa))
     }
 

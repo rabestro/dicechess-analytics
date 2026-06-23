@@ -3,7 +3,6 @@ package dicechess.analytics.repository
 import cats.syntax.all.*
 import doobie.*
 import doobie.implicits.*
-import doobie.util.fragments.whereAndOpt
 
 import dicechess.analytics.Fen
 import dicechess.analytics.api.Protocol.{
@@ -16,6 +15,65 @@ import dicechess.analytics.api.Protocol.{
 
 /** Access to the deduplicated `positions` table. */
 object PositionsRepository:
+
+  /** A turn counts toward a position's aggregates only when it is "complete": the side to move
+    * flips (a normal turn or a legal pass), OR the move captured a king — the resulting position
+    * `pa` is missing a king, a genuine terminal move (including unflipped/placeholder legacy
+    * backfill rows). This drops abandoned partial turns (one micro-move then a draw agreed) that
+    * leave both kings on the board without flipping the side, plus no-op self-loops. Requires the
+    * queried position joined as `p` and `position_after` as `pa`.
+    */
+  private val completedTurn: Fragment =
+    fr"(pa.active_color <> p.active_color OR pa.piece_placement NOT LIKE '%K%' OR pa.piece_placement NOT LIKE '%k%')"
+
+  /** `count(*)` plus win/draw/loss tallies from the moving side's perspective — the outcome columns
+    * shared by `continuations`, `equity` and `diceDistribution`.
+    */
+  private val outcomeCounts: Fragment =
+    fr"""count(*),
+         count(*) FILTER (WHERE (t.active_color = 'w' AND g.result = 1)
+                             OR (t.active_color = 'b' AND g.result = -1)),
+         count(*) FILTER (WHERE g.result = 0),
+         count(*) FILTER (WHERE (t.active_color = 'w' AND g.result = -1)
+                             OR (t.active_color = 'b' AND g.result = 1))"""
+
+  /** Turns joined to their before/after positions (`p` / `pa`) and game (`g`). */
+  private val turnsJoin: Fragment =
+    fr"""FROM turns t
+         JOIN positions p  ON p.id = t.position_id
+         JOIN positions pa ON pa.id = t.position_after_id
+         JOIN games g      ON g.id = t.game_id"""
+
+  /** Filters common to every position aggregate: the position, the completed-turn guard and the
+    * mode / source / min-rating session filters. `continuations` adds the dice condition on top.
+    */
+  private def baseFilters(
+      nf: String,
+      mode: Option[String],
+      source: Option[String],
+      minRating: Option[Int]
+  ): List[Option[Fragment]] =
+    List(
+      Some(fr"p.normalized_fen = $nf"),
+      // Drop no-op self-loops and abandoned partial turns; keep complete turns and terminal captures.
+      Some(fr"t.position_after_id <> t.position_id"),
+      Some(completedTurn),
+      mode.map(m => fr"g.mode::text = $m"),
+      source.filter(_.trim.nonEmpty).map(s => fr"g.source = ${s.trim}"),
+      // Both players at least minRating — a "strong game". Unrated games (NULL) are excluded.
+      minRating.map(r => fr"g.white_rating >= $r AND g.black_rating >= $r")
+    )
+
+  /** `WHERE a AND b AND …` over the present (Some) conditions; empty when none. */
+  private def whereOf(conds: List[Option[Fragment]]): Fragment =
+    conds.flatten match
+      case Nil       => Fragment.empty
+      case f :: rest => rest.foldLeft(fr"WHERE" ++ f)((acc, c) => acc ++ fr"AND" ++ c)
+
+  /** Mean game score (win 1, draw ½, loss 0) over decided games; 0.0 when nothing is decided. */
+  private def winRate(wins: Int, draws: Int, losses: Int): Double =
+    val decided = wins + draws + losses
+    if decided > 0 then (wins + 0.5 * draws) / decided else 0.0
 
   /** Returns the id of the position for `fen`, inserting it if new.
     *
@@ -56,45 +114,22 @@ object PositionsRepository:
     val diceKey =
       (if Fen.fields(nf).activeColor == "b" then dice.trim.toLowerCase
        else dice.trim.toUpperCase).sorted
-    val where = whereAndOpt(
-      Some(fr"p.normalized_fen = $nf"),
-      Some(fr"t.dice_sorted = $diceKey"),
-      // Exclude no-op turns: the player rolled but never moved (a draw agreed / game abandoned before
-      // the move), recorded as a self-loop on the same position. A pure no-op is not a legal move, so
-      // it is not a continuation. Legitimate passes flip the side to move (position_after <> position)
-      // and are kept.
-      Some(fr"t.position_after_id <> t.position_id"),
-      mode.map(m => fr"g.mode::text = $m"),
-      source.filter(_.trim.nonEmpty).map(s => fr"g.source = ${s.trim}"),
-      // Both players at least minRating — a "strong game". Unrated games (NULL) are excluded.
-      minRating.map(r => fr"g.white_rating >= $r AND g.black_rating >= $r")
-    )
+    val where =
+      whereOf(Some(fr"t.dice_sorted = $diceKey") :: baseFilters(nf, mode, source, minRating))
     // `sum(count(*)) OVER ()` is the total games across ALL groups, evaluated before LIMIT, so the
     // reported total stays correct even when more continuations exist than `limit`. `played_moves`
     // is nullable, so the representative ordering is read as Option and missing moves yield [].
     val select =
       fr"""SELECT pa.normalized_fen,
                   (array_agg(array_to_string(t.played_moves, ' ')
-                             ORDER BY array_to_string(t.played_moves, ' ')))[1],
-                  count(*),
-                  count(*) FILTER (WHERE (t.active_color = 'w' AND g.result = 1)
-                                      OR (t.active_color = 'b' AND g.result = -1)),
-                  count(*) FILTER (WHERE g.result = 0),
-                  count(*) FILTER (WHERE (t.active_color = 'w' AND g.result = -1)
-                                      OR (t.active_color = 'b' AND g.result = 1)),
-                  (sum(count(*)) OVER ())::int
-           FROM turns t
-           JOIN positions p  ON p.id = t.position_id
-           JOIN positions pa ON pa.id = t.position_after_id
-           JOIN games g      ON g.id = t.game_id"""
+                             ORDER BY array_to_string(t.played_moves, ' ')))[1], """ ++
+        outcomeCounts ++ fr", (sum(count(*)) OVER ())::int" ++ turnsJoin
     val query =
       select ++ where ++ fr"GROUP BY pa.normalized_fen ORDER BY count(*) DESC LIMIT $limit"
     query.query[(String, Option[String], Int, Int, Int, Int, Int)].to[List].map { rows =>
       val items = rows.map { case (rfen, movesText, games, wins, draws, losses, _) =>
-        val decided = wins + draws + losses
-        val winRate = if decided > 0 then (wins + 0.5 * draws) / decided else 0.0
-        val moves   = movesText.fold(List.empty[String])(_.split(' ').toList.filter(_.nonEmpty))
-        Continuation(rfen, moves, games, wins, draws, losses, winRate)
+        val moves = movesText.fold(List.empty[String])(_.split(' ').toList.filter(_.nonEmpty))
+        Continuation(rfen, moves, games, wins, draws, losses, winRate(wins, draws, losses))
       }
       PositionContinuations(nf, diceKey, rows.headOption.map(_._7).getOrElse(0), items)
     }
@@ -114,30 +149,12 @@ object PositionsRepository:
       source: Option[String],
       minRating: Option[Int]
   ): ConnectionIO[PositionEquity] =
-    val nf    = Fen.normalize(fen)
-    val side  = Fen.fields(nf).activeColor
-    val where = whereAndOpt(
-      Some(fr"p.normalized_fen = $nf"),
-      Some(fr"t.position_after_id <> t.position_id"),
-      mode.map(m => fr"g.mode::text = $m"),
-      source.filter(_.trim.nonEmpty).map(s => fr"g.source = ${s.trim}"),
-      // Both players at least minRating — a "strong game". Unrated games (NULL) are excluded.
-      minRating.map(r => fr"g.white_rating >= $r AND g.black_rating >= $r")
-    )
-    val select =
-      fr"""SELECT count(*),
-                  count(*) FILTER (WHERE (t.active_color = 'w' AND g.result = 1)
-                                      OR (t.active_color = 'b' AND g.result = -1)),
-                  count(*) FILTER (WHERE g.result = 0),
-                  count(*) FILTER (WHERE (t.active_color = 'w' AND g.result = -1)
-                                      OR (t.active_color = 'b' AND g.result = 1))
-           FROM turns t
-           JOIN positions p ON p.id = t.position_id
-           JOIN games g     ON g.id = t.game_id"""
+    val nf     = Fen.normalize(fen)
+    val side   = Fen.fields(nf).activeColor
+    val where  = whereOf(baseFilters(nf, mode, source, minRating))
+    val select = fr"SELECT " ++ outcomeCounts ++ turnsJoin
     (select ++ where).query[(Int, Int, Int, Int)].unique.map { case (games, wins, draws, losses) =>
-      val decided = wins + draws + losses
-      val winRate = if decided > 0 then (wins + 0.5 * draws) / decided else 0.0
-      PositionEquity(nf, side, games, wins, draws, losses, winRate)
+      PositionEquity(nf, side, games, wins, draws, losses, winRate(wins, draws, losses))
     }
 
   /** Distribution of every dice roll played from `fen`, grouped by the stored dice code and ranked
@@ -152,33 +169,21 @@ object PositionsRepository:
       source: Option[String],
       minRating: Option[Int]
   ): ConnectionIO[PositionDiceDistribution] =
-    val nf    = Fen.normalize(fen)
-    val side  = Fen.fields(nf).activeColor
-    val where = whereAndOpt(
-      Some(fr"p.normalized_fen = $nf"),
-      Some(fr"t.position_after_id <> t.position_id"),
-      mode.map(m => fr"g.mode::text = $m"),
-      source.filter(_.trim.nonEmpty).map(s => fr"g.source = ${s.trim}"),
-      // Both players at least minRating — a "strong game". Unrated games (NULL) are excluded.
-      minRating.map(r => fr"g.white_rating >= $r AND g.black_rating >= $r")
-    )
-    val select =
-      fr"""SELECT t.dice_sorted,
-                  count(*),
-                  count(*) FILTER (WHERE (t.active_color = 'w' AND g.result = 1)
-                                      OR (t.active_color = 'b' AND g.result = -1)),
-                  count(*) FILTER (WHERE g.result = 0),
-                  count(*) FILTER (WHERE (t.active_color = 'w' AND g.result = -1)
-                                      OR (t.active_color = 'b' AND g.result = 1))
-           FROM turns t
-           JOIN positions p ON p.id = t.position_id
-           JOIN games g     ON g.id = t.game_id"""
-    val query = select ++ where ++ fr"GROUP BY t.dice_sorted ORDER BY count(*) DESC"
+    val nf     = Fen.normalize(fen)
+    val side   = Fen.fields(nf).activeColor
+    val where  = whereOf(baseFilters(nf, mode, source, minRating))
+    val select = fr"SELECT t.dice_sorted, " ++ outcomeCounts ++ turnsJoin
+    val query  = select ++ where ++ fr"GROUP BY t.dice_sorted ORDER BY count(*) DESC"
     query.query[(String, Int, Int, Int, Int)].to[List].map { rows =>
       val items = rows.map { case (dice, games, wins, draws, losses) =>
-        val decided = wins + draws + losses
-        val winRate = if decided > 0 then (wins + 0.5 * draws) / decided else 0.0
-        DiceDistributionRow(dice.toUpperCase, games, wins, draws, losses, winRate)
+        DiceDistributionRow(
+          dice.toUpperCase,
+          games,
+          wins,
+          draws,
+          losses,
+          winRate(wins, draws, losses)
+        )
       }
       PositionDiceDistribution(nf, side, items.map(_.games).sum, items)
     }
