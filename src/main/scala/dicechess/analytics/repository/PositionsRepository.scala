@@ -6,7 +6,13 @@ import doobie.implicits.*
 import doobie.util.fragments.whereAndOpt
 
 import dicechess.analytics.Fen
-import dicechess.analytics.api.Protocol.{Continuation, PositionContinuations, PositionEquity}
+import dicechess.analytics.api.Protocol.{
+  Continuation,
+  DiceDistributionRow,
+  PositionContinuations,
+  PositionDiceDistribution,
+  PositionEquity
+}
 
 /** Access to the deduplicated `positions` table. */
 object PositionsRepository:
@@ -132,4 +138,47 @@ object PositionsRepository:
       val decided = wins + draws + losses
       val winRate = if decided > 0 then (wins + 0.5 * draws) / decided else 0.0
       PositionEquity(nf, side, games, wins, draws, losses, winRate)
+    }
+
+  /** Distribution of every dice roll played from `fen`, grouped by the stored dice code and ranked
+    * by frequency. Win/draw/loss are from the moving side's perspective, identical to
+    * `continuations`; this is `equity` broken out per roll (so a client can fetch all 56 rolls in
+    * one request instead of fanning out). No-op self-loop turns are excluded exactly as elsewhere;
+    * the dice code is upper-cased so the side to move does not change its presentation.
+    */
+  def diceDistribution(
+      fen: String,
+      mode: Option[String],
+      source: Option[String],
+      minRating: Option[Int]
+  ): ConnectionIO[PositionDiceDistribution] =
+    val nf    = Fen.normalize(fen)
+    val side  = Fen.fields(nf).activeColor
+    val where = whereAndOpt(
+      Some(fr"p.normalized_fen = $nf"),
+      Some(fr"t.position_after_id <> t.position_id"),
+      mode.map(m => fr"g.mode::text = $m"),
+      source.filter(_.trim.nonEmpty).map(s => fr"g.source = ${s.trim}"),
+      // Both players at least minRating — a "strong game". Unrated games (NULL) are excluded.
+      minRating.map(r => fr"g.white_rating >= $r AND g.black_rating >= $r")
+    )
+    val select =
+      fr"""SELECT t.dice_sorted,
+                  count(*),
+                  count(*) FILTER (WHERE (t.active_color = 'w' AND g.result = 1)
+                                      OR (t.active_color = 'b' AND g.result = -1)),
+                  count(*) FILTER (WHERE g.result = 0),
+                  count(*) FILTER (WHERE (t.active_color = 'w' AND g.result = -1)
+                                      OR (t.active_color = 'b' AND g.result = 1))
+           FROM turns t
+           JOIN positions p ON p.id = t.position_id
+           JOIN games g     ON g.id = t.game_id"""
+    val query = select ++ where ++ fr"GROUP BY t.dice_sorted ORDER BY count(*) DESC"
+    query.query[(String, Int, Int, Int, Int)].to[List].map { rows =>
+      val items = rows.map { case (dice, games, wins, draws, losses) =>
+        val decided = wins + draws + losses
+        val winRate = if decided > 0 then (wins + 0.5 * draws) / decided else 0.0
+        DiceDistributionRow(dice.toUpperCase, games, wins, draws, losses, winRate)
+      }
+      PositionDiceDistribution(nf, side, items.map(_.games).sum, items)
     }

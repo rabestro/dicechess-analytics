@@ -110,6 +110,12 @@ final class Routes(
     PositionsRepository.equity(query.fen, query.mode, query.source, query.minRating).transact(xa)
   }
 
+  private val diceDistributionLogic = Endpoints.diceDistribution.serverLogicSuccess[IO] { query =>
+    PositionsRepository
+      .diceDistribution(query.fen, query.mode, query.source, query.minRating)
+      .transact(xa)
+  }
+
   // Bearer auth for the write path. No token configured ⇒ reject (closed by default).
   // Constant-time compare to avoid leaking the secret via timing.
   private def tokenAccepted(provided: String): Boolean =
@@ -196,6 +202,7 @@ final class Routes(
         ratingHistoryLogic,
         continuationsLogic,
         positionEquityLogic,
+        diceDistributionLogic,
         rootLogic,
         versionLogic,
         ingestGameLogic,

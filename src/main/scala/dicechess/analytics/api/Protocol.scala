@@ -350,3 +350,40 @@ object Protocol:
       winRate: Double
   ) derives ConfiguredCodec,
         Schema
+
+  /** Query parameters of the dice-distribution endpoint (mapped from Tapir inputs). Same session
+    * filters as continuations/equity, so the distribution reflects the same game set.
+    */
+  final case class PositionDiceDistributionQuery(
+      fen: String,
+      mode: Option[String],
+      source: Option[String],
+      minRating: Option[Int]
+  )
+
+  /** How often one dice roll was played from a position, with the moving side's outcome. `dice` is
+    * the sorted piece letters in upper case (e.g. BPQ), regardless of side to move;
+    * `winRate = (wins + 0.5*draws)/decided`.
+    */
+  final case class DiceDistributionRow(
+      dice: String,
+      games: Int,
+      wins: Int,
+      draws: Int,
+      losses: Int,
+      winRate: Double
+  ) derives ConfiguredCodec,
+        Schema
+
+  /** Every dice roll played from a position, ranked by frequency. The per-roll win rates are the
+    * same numbers the continuations endpoint aggregates, but exposed for all rolls at once (at most
+    * 56 rows) so a client need not fan out 56 continuation requests. `totalGames` is the sum over
+    * rows (= the equity endpoint's `games` for the same filters).
+    */
+  final case class PositionDiceDistribution(
+      fen: String,
+      sideToMove: String,
+      totalGames: Int,
+      items: List[DiceDistributionRow]
+  ) derives ConfiguredCodec,
+        Schema

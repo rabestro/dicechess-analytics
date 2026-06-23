@@ -241,6 +241,28 @@ object Endpoints:
         "Pre-roll equity of a position: win probability for the side to move across all rolls"
       )
 
+  val diceDistribution
+      : PublicEndpoint[PositionDiceDistributionQuery, Unit, PositionDiceDistribution, Any] =
+    endpoint.get
+      .in("api" / "positions" / "dice-distribution")
+      .in(query[String]("fen").description("Position FEN (normalized server-side)"))
+      .in(
+        query[Option[String]]("mode")
+          .description("Game mode: classic or x2 (omit for all)")
+          .validateOption(Validator.enumeration(List("classic", "x2")))
+      )
+      .in(query[Option[String]]("source").description("Filter by game source, e.g. dicechess.com"))
+      .in(
+        query[Option[Int]]("min_rating")
+          .description("Keep only games where both players were rated at least this high")
+          .validateOption(Validator.min(0))
+      )
+      .mapInTo[PositionDiceDistributionQuery]
+      .out(jsonBody[PositionDiceDistribution])
+      .description(
+        "Every dice roll played from a position (up to 56), each with games and win rate"
+      )
+
   /** Ingest a completed, engine-validated game. Bearer-authenticated (the write path).
     *
     * The status code is set at runtime on both channels: `201`/`200` on success (created vs
@@ -294,6 +316,7 @@ object Endpoints:
       ratingHistory,
       continuations,
       positionEquity,
+      diceDistribution,
       ingestGame,
       replaceGame
     )

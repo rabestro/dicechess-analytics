@@ -455,6 +455,75 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
         }.guarantee(cleanup.transact(xa))
     }
 
+  test("GET /api/positions/dice-distribution groups rolls from a position, filters mode"):
+    withContainers { pg =>
+      val xa      = transactor(pg)
+      val ddFen   = "rnbqkb1r/pppppppp/5n2/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -"
+      val ddAfter = "rnbqkb1r/pppppppp/5n2/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -"
+      val gA      = UUID.fromString("00000000-0000-0000-0000-0000000000d1")
+      val gB      = UUID.fromString("00000000-0000-0000-0000-0000000000d2")
+      val gC      = UUID.fromString("00000000-0000-0000-0000-0000000000d3")
+      val gX2     = UUID.fromString("00000000-0000-0000-0000-0000000000d4")
+      val gNoop   = UUID.fromString("00000000-0000-0000-0000-0000000000d5")
+      val ts      = OffsetDateTime.parse("2026-06-01T00:00:00Z")
+
+      // classic: BPQ wins twice, NPQ draws once → two codes, 3 decided turns. One x2 BPQ win counts
+      // only in "all". One no-op self-loop (position_after == position) is excluded everywhere.
+      val seedC =
+        for
+          ps <- PositionsRepository.getOrCreate(ddFen)
+          pa <- PositionsRepository.getOrCreate(ddAfter)
+          _  <- sql"""INSERT INTO games (id, source, mode, result, started_at) VALUES
+                      ($gA, 'test', 'classic',  1, $ts), ($gB, 'test', 'classic',  1, $ts),
+                      ($gC, 'test', 'classic',  0, $ts), ($gX2, 'test', 'x2',       1, $ts),
+                      ($gNoop, 'test', 'classic', 0, $ts)""".update.run
+          _ <- sql"""INSERT INTO turns (game_id, turn_number, active_color, position_id,
+                                         dice_sorted, played_moves, position_after_id) VALUES
+                      ($gA,    1, 'w', $ps, 'BPQ', ARRAY['e2e4','f1c4'], $pa),
+                      ($gB,    1, 'w', $ps, 'BPQ', ARRAY['e2e4','f1c4'], $pa),
+                      ($gC,    1, 'w', $ps, 'NPQ', ARRAY['e2e4','g1f3'], $pa),
+                      ($gX2,   1, 'w', $ps, 'BPQ', ARRAY['e2e4','f1c4'], $pa),
+                      ($gNoop, 1, 'w', $ps, 'BPQ', NULL, $ps)""".update.run
+        yield ()
+      val cleanup =
+        for
+          _ <- sql"DELETE FROM turns WHERE game_id IN ($gA, $gB, $gC, $gX2, $gNoop)".update.run
+          _ <- sql"DELETE FROM games WHERE id IN ($gA, $gB, $gC, $gX2, $gNoop)".update.run
+        yield ()
+      val base = s"/api/positions/dice-distribution?fen=${URLEncoder.encode(ddFen, "UTF-8")}"
+
+      def diceRow(json: Json, code: String): io.circe.HCursor =
+        itemsOf(json)
+          .find(_.hcursor.get[String]("dice") == Right(code))
+          .getOrElse(fail(s"missing dice row $code"))
+          .hcursor
+
+      seedC.transact(xa) >>
+        withClient(pg) { client =>
+          for
+            classic <- getJson(client, s"$base&mode=classic")
+            all     <- getJson(client, base)
+          yield
+            // classic: BPQ(2) + NPQ(1); the x2 win and the no-op self-loop are excluded
+            assertEquals(classic.hcursor.get[String]("side_to_move"), Right("w"))
+            assertEquals(classic.hcursor.get[Int]("total_games"), Right(3))
+            assertEquals(itemsOf(classic).size, 2)
+            // ranked by frequency, most-played first
+            assertEquals(itemsOf(classic).head.hcursor.get[String]("dice"), Right("BPQ"))
+            assertEquals(diceRow(classic, "BPQ").get[Int]("games"), Right(2))
+            assertEquals(diceRow(classic, "BPQ").get[Int]("wins"), Right(2))
+            assertEquals(diceRow(classic, "BPQ").get[Double]("win_rate"), Right(1.0))
+            assertEquals(diceRow(classic, "NPQ").get[Int]("games"), Right(1))
+            assertEquals(diceRow(classic, "NPQ").get[Int]("draws"), Right(1))
+            assertEquals(diceRow(classic, "NPQ").get[Double]("win_rate"), Right(0.5))
+            // all modes: the x2 BPQ win now counts → BPQ games 3, total 4
+            assertEquals(all.hcursor.get[Int]("total_games"), Right(4))
+            assertEquals(diceRow(all, "BPQ").get[Int]("games"), Right(3))
+            assertEquals(diceRow(all, "BPQ").get[Int]("wins"), Right(3))
+            assertEquals(diceRow(all, "BPQ").get[Double]("win_rate"), Right(1.0))
+        }.guarantee(cleanup.transact(xa))
+    }
+
   test("GET /api/games lists games ordered by started_at desc with nested players"):
     withContainers { pg =>
       withClient(pg) { client =>
