@@ -15,6 +15,7 @@ node_modules
 *.md
 mise.toml
 mise.local.toml
+mise.*.local.toml
 docker-compose.yaml
 .env
 .env.example
