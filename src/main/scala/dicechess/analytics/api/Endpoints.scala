@@ -301,6 +301,34 @@ object Endpoints:
         "Replace a previously-ingested game with a re-validated version (bearer auth required)"
       )
 
+  /** List curated opening-book favorites for a position. Public (read-only). */
+  val getFavorites: PublicEndpoint[String, Unit, PositionFavorites, Any] =
+    endpoint.get
+      .in("api" / "opening-book" / "favorites")
+      .in(query[String]("fen").description("Position FEN (normalized server-side)"))
+      .out(jsonBody[PositionFavorites])
+      .description("Curated opening-book favorites for a position")
+
+  /** Create or update a curated favorite. Bearer-authenticated (`CURATION_TOKEN`). */
+  val putFavorite: Endpoint[String, FavoriteInput, (StatusCode, ApiError), FavoriteEntry, Any] =
+    endpoint.put
+      .securityIn(auth.bearer[String]())
+      .in("api" / "opening-book" / "favorites")
+      .in(jsonBody[FavoriteInput])
+      .out(jsonBody[FavoriteEntry])
+      .errorOut(statusCode.and(jsonBody[ApiError]))
+      .description("Create or update a curated opening-book favorite (bearer auth required)")
+
+  /** Delete a curated favorite. Bearer-authenticated (`CURATION_TOKEN`). */
+  val deleteFavorite: Endpoint[String, FavoriteKeyInput, (StatusCode, ApiError), Unit, Any] =
+    endpoint.delete
+      .securityIn(auth.bearer[String]())
+      .in("api" / "opening-book" / "favorites")
+      .in(jsonBody[FavoriteKeyInput])
+      .out(statusCode(StatusCode.NoContent))
+      .errorOut(statusCode.and(jsonBody[ApiError]))
+      .description("Delete a curated opening-book favorite (bearer auth required)")
+
   val all: List[AnyEndpoint] =
     List(
       root,
@@ -317,5 +345,8 @@ object Endpoints:
       positionEquity,
       diceDistribution,
       ingestGame,
-      replaceGame
+      replaceGame,
+      getFavorites,
+      putFavorite,
+      deleteFavorite
     )

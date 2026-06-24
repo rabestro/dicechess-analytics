@@ -3,14 +3,17 @@ package dicechess.analytics.repository
 import cats.syntax.all.*
 import doobie.*
 import doobie.implicits.*
+import doobie.postgres.implicits.*
 
 import dicechess.analytics.Fen
 import dicechess.analytics.api.Protocol.{
   Continuation,
   DiceDistributionRow,
+  FavoriteEntry,
   PositionContinuations,
   PositionDiceDistribution,
-  PositionEquity
+  PositionEquity,
+  PositionFavorites
 }
 
 /** Access to the deduplicated `positions` table. */
@@ -208,6 +211,68 @@ object PositionsRepository:
     *     empty move is not a bookable continuation. This filter is opening-book-specific — the
     *     explorer (`continuations` / `equity` / `dice-distribution`) still surfaces passes as "—".
     */
+  /** All curated favorites as a book-shaped map (canonical key → comma-separated moves). Entries
+    * with an empty `played_moves` array are excluded for safety, mirroring the statistical branch.
+    * Combined with the statistical result in [[openingBook]] via `statistical ++ curated` so a
+    * favorite always overrides the statistical pick for the same key.
+    */
+  private val favoritesMap: ConnectionIO[Map[String, String]] =
+    sql"""SELECT normalized_fen, dice_sorted, array_to_string(played_moves, ',')
+          FROM opening_book_favorites
+          WHERE cardinality(played_moves) > 0"""
+      .query[(String, String, String)]
+      .to[List]
+      .map(_.map { case (nf, d, m) =>
+        s"$nf $d" -> m
+      }.toMap)
+
+  /** Inserts or replaces the curated favorite for `(fen, dice)`. Dice are re-cased to the
+    * position's side to move (white upper-case, black lower-case) so the stored key matches
+    * [[openingBook]] and the engine's `OpeningBook.key` byte-for-byte.
+    */
+  def setFavorite(
+      fen: String,
+      dice: String,
+      moves: List[String],
+      note: Option[String]
+  ): ConnectionIO[FavoriteEntry] =
+    val nf         = Fen.normalize(fen)
+    val diceSorted =
+      (if Fen.fields(nf).activeColor == "b" then dice.trim.toLowerCase
+       else dice.trim.toUpperCase).sorted
+    sql"""INSERT INTO opening_book_favorites (normalized_fen, dice_sorted, played_moves, note, updated_at)
+          VALUES ($nf, $diceSorted, $moves, $note, now())
+          ON CONFLICT (normalized_fen, dice_sorted) DO UPDATE
+            SET played_moves = EXCLUDED.played_moves,
+                note         = EXCLUDED.note,
+                updated_at   = now()""".update.run
+      .as(FavoriteEntry(nf, diceSorted, moves, note))
+
+  /** Deletes the curated favorite for `(fen, dice)`. Returns `true` when a row was deleted. */
+  def deleteFavorite(fen: String, dice: String): ConnectionIO[Boolean] =
+    val nf         = Fen.normalize(fen)
+    val diceSorted =
+      (if Fen.fields(nf).activeColor == "b" then dice.trim.toLowerCase
+       else dice.trim.toUpperCase).sorted
+    sql"""DELETE FROM opening_book_favorites
+          WHERE normalized_fen = $nf AND dice_sorted = $diceSorted""".update.run.map(_ > 0)
+
+  /** Returns all curated favorites for `fen`, ordered by `dice_sorted`. */
+  def favoritesForPosition(fen: String): ConnectionIO[PositionFavorites] =
+    val nf = Fen.normalize(fen)
+    sql"""SELECT dice_sorted, array_to_string(played_moves, ','), note
+          FROM opening_book_favorites
+          WHERE normalized_fen = $nf AND cardinality(played_moves) > 0
+          ORDER BY dice_sorted"""
+      .query[(String, String, Option[String])]
+      .to[List]
+      .map { rows =>
+        val items = rows.map { case (d, movesStr, n) =>
+          FavoriteEntry(nf, d, movesStr.split(',').toList.filter(_.nonEmpty), n)
+        }
+        PositionFavorites(nf, items)
+      }
+
   def openingBook(minGames: Int, minRating: Option[Int]): ConnectionIO[Map[String, String]] =
     val select =
       fr"""SELECT p.normalized_fen, t.dice_sorted,
@@ -226,12 +291,19 @@ object PositionsRepository:
     val query =
       select ++ where ++
         fr"GROUP BY p.normalized_fen, t.dice_sorted, pa.normalized_fen HAVING count(*) >= $minGames"
-    query.query[(String, String, Option[String], Int, Int, Int, Int)].to[List].map { rows =>
-      rows
-        .groupBy { case (pos, dice, _, _, _, _, _) => s"$pos $dice" }
-        .flatMap { case (key, group) =>
-          val best = group.maxBy { case (_, _, _, _, w, d, l) => (winRate(w, d, l), w + d + l) }
-          best._3.filter(_.nonEmpty).map(moves => key -> moves)
+    for
+      statistical <- query
+        .query[(String, String, Option[String], Int, Int, Int, Int)]
+        .to[List]
+        .map { rows =>
+          rows
+            .groupBy { case (pos, dice, _, _, _, _, _) => s"$pos $dice" }
+            .flatMap { case (key, group) =>
+              val best =
+                group.maxBy { case (_, _, _, _, w, d, l) => (winRate(w, d, l), w + d + l) }
+              best._3.filter(_.nonEmpty).map(moves => key -> moves)
+            }
+            .toMap
         }
-        .toMap
-    }
+      curated <- favoritesMap
+    yield statistical ++ curated

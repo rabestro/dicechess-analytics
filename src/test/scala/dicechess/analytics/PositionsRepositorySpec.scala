@@ -88,7 +88,7 @@ class PositionsRepositorySpec extends CatsEffectSuite with TestContainerForAll:
     }
 
   private val resetTables: ConnectionIO[Unit] =
-    sql"TRUNCATE turns, games, positions RESTART IDENTITY CASCADE".update.run.void
+    sql"TRUNCATE opening_book_favorites, turns, games, positions RESTART IDENTITY CASCADE".update.run.void
 
   test(
     "openingBook picks the best mover win-rate continuation, applying strength, sample and completed-turn filters"
@@ -175,4 +175,106 @@ class PositionsRepositorySpec extends CatsEffectSuite with TestContainerForAll:
         assertEquals(book.get(s"${Fen.normalize(pos)} bkq"), None)         // forced pass excluded
         assertEquals(book.get(s"${Fen.normalize(pos)} bbn"), Some("b8c6")) // real move kept
         assert(book.values.forall(_.nonEmpty), "the book must contain no empty-move entries")
+    }
+
+  // --- opening-book favorites tests ---
+
+  test("setFavorite upserts and favoritesForPosition returns the canonical entry"):
+    withContainers { pg =>
+      val t   = xa(pg)
+      val pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      val nf  = Fen.normalize(pos)
+      for
+        _ <- resetTables.transact(t)
+        // UI sends uppercase dice; server must store uppercase for white-to-move
+        entry <- PositionsRepository
+          .setFavorite(pos, "BPR", List("e2e4", "f1c4"), Some("test note"))
+          .transact(t)
+        favs <- PositionsRepository.favoritesForPosition(pos).transact(t)
+        // Upsert: change the moves; should update
+        _       <- PositionsRepository.setFavorite(pos, "bpr", List("d2d4"), None).transact(t)
+        updated <- PositionsRepository.favoritesForPosition(pos).transact(t)
+      yield
+        assertEquals(entry.normalizedFen, nf)
+        assertEquals(entry.diceSorted, "BPR") // white-to-move → uppercase
+        assertEquals(entry.moves, List("e2e4", "f1c4"))
+        assertEquals(entry.note, Some("test note"))
+        assertEquals(favs.items.size, 1)
+        assertEquals(favs.items.head.diceSorted, "BPR")
+        // Second call used lowercase input but position is white-to-move → re-cased to uppercase
+        assertEquals(updated.items.head.diceSorted, "BPR")
+        assertEquals(updated.items.head.moves, List("d2d4"))
+        assertEquals(updated.items.head.note, None)
+    }
+
+  test("setFavorite stores lowercase dice_sorted for black-to-move positions"):
+    withContainers { pg =>
+      val t   = xa(pg)
+      val pos = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+      for
+        _     <- resetTables.transact(t)
+        entry <- PositionsRepository.setFavorite(pos, "BPR", List("e7e5"), None).transact(t)
+      yield
+        // Black-to-move: dice must be stored lowercase regardless of what the UI sent
+        assertEquals(entry.diceSorted, "bpr")
+    }
+
+  test("deleteFavorite removes the row and returns true; missing returns false"):
+    withContainers { pg =>
+      val t   = xa(pg)
+      val pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      for
+        _       <- resetTables.transact(t)
+        _       <- PositionsRepository.setFavorite(pos, "BPR", List("e2e4"), None).transact(t)
+        deleted <- PositionsRepository.deleteFavorite(pos, "BPR").transact(t)
+        again   <- PositionsRepository.deleteFavorite(pos, "BPR").transact(t)
+        favs    <- PositionsRepository.favoritesForPosition(pos).transact(t)
+      yield
+        assert(deleted, "first delete should return true")
+        assert(!again, "second delete on missing row should return false")
+        assertEquals(favs.items, Nil)
+    }
+
+  test("openingBook: curated favorite overrides the statistical best-pick for the same key"):
+    withContainers { pg =>
+      val t   = xa(pg)
+      val pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      val a1  = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+      val a2  = "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1"
+      for
+        _    <- resetTables.transact(t)
+        idP  <- PositionsRepository.getOrCreate(pos).transact(t)
+        idA1 <- PositionsRepository.getOrCreate(a1).transact(t)
+        idA2 <- PositionsRepository.getOrCreate(a2).transact(t)
+        // Statistical best: e2e4 with win-rate 0.9
+        _ <- seedTurns("w", 1, 9, 2200, idP, "BPR", List("e2e4"), idA1).transact(t)
+        _ <- seedTurns("w", -1, 1, 2200, idP, "BPR", List("e2e4"), idA1).transact(t)
+        // Statistical second: d2d4 with win-rate 0.5
+        _ <- seedTurns("w", 1, 5, 2200, idP, "BPR", List("d2d4"), idA2).transact(t)
+        _ <- seedTurns("w", -1, 5, 2200, idP, "BPR", List("d2d4"), idA2).transact(t)
+        // Curated favorite overrides with a different move
+        _    <- PositionsRepository.setFavorite(pos, "BPR", List("g1f3", "f1c4"), None).transact(t)
+        book <- PositionsRepository.openingBook(minGames = 5, minRating = Some(2000)).transact(t)
+      yield
+        // Curated wins over the statistically-best e2e4
+        assertEquals(book.get(s"${Fen.normalize(pos)} BPR"), Some("g1f3,f1c4"))
+    }
+
+  test("openingBook: favorite below minGames threshold is still included"):
+    withContainers { pg =>
+      val t   = xa(pg)
+      val pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      val a1  = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+      for
+        _    <- resetTables.transact(t)
+        idP  <- PositionsRepository.getOrCreate(pos).transact(t)
+        idA1 <- PositionsRepository.getOrCreate(a1).transact(t)
+        // Only 2 games — below minGames=5; statistical branch would drop it
+        _ <- seedTurns("w", 1, 2, 2200, idP, "BPR", List("e2e4"), idA1).transact(t)
+        // Curated favorite for the same key: bypasses the sample gate
+        _    <- PositionsRepository.setFavorite(pos, "BPR", List("h2h4"), None).transact(t)
+        book <- PositionsRepository.openingBook(minGames = 5, minRating = Some(2000)).transact(t)
+      yield
+        // The expert override is present even though only 2 statistical games were played
+        assertEquals(book.get(s"${Fen.normalize(pos)} BPR"), Some("h2h4"))
     }

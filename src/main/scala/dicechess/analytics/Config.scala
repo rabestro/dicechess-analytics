@@ -21,7 +21,10 @@ final case class AppConfig(
     dbPoolSize: Int,
     // Bearer secret required to write via POST /api/games. None ⇒ writes are rejected
     // (closed by default); reads are unaffected.
-    ingestToken: Option[String]
+    ingestToken: Option[String],
+    // Bearer secret required to write opening-book favorites (PUT/DELETE /api/opening-book/favorites).
+    // None ⇒ curation writes are rejected; the read endpoint (GET) is always public.
+    curatorToken: Option[String]
 )
 
 object AppConfig:
@@ -41,7 +44,8 @@ object AppConfig:
         .map(_.split(',').map(_.trim).filter(_.nonEmpty).toList)
         .getOrElse(List("http://localhost:5173", "http://localhost:3000")),
       dbPoolSize = pool,
-      ingestToken = env.get("INGEST_TOKEN").filter(_.nonEmpty)
+      ingestToken = env.get("INGEST_TOKEN").filter(_.nonEmpty),
+      curatorToken = env.get("CURATION_TOKEN").filter(_.nonEmpty)
     )
 
   private def parseHost(value: String): Either[String, Host] =

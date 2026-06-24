@@ -74,3 +74,22 @@ object IngestProtocol:
     * (`200`).
     */
   final case class IngestResult(id: UUID, created: Boolean) derives ConfiguredCodec, Schema
+
+  /** Request body for `PUT /api/opening-book/favorites`: the position, dice roll and chosen moves.
+    * `dice` is accepted in any case and casing (the server re-derives it from the FEN's active
+    * color). `moves` must be non-empty — starring a forced pass is rejected.
+    */
+  final case class FavoriteInput(
+      fen: String,
+      dice: String,
+      moves: List[String],
+      note: Option[String]
+  ) derives ConfiguredCodec,
+        Schema
+
+  /** Request body for `DELETE /api/opening-book/favorites`. */
+  final case class FavoriteKeyInput(
+      fen: String,
+      dice: String
+  ) derives ConfiguredCodec,
+        Schema
