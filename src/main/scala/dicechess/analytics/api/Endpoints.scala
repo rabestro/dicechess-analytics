@@ -16,6 +16,9 @@ object Endpoints:
   private val notFound =
     statusCode(StatusCode.NotFound).and(jsonBody[ApiError].description("Entity not found"))
 
+  private val fenQueryDescription = "Position FEN (normalized server-side)"
+  private val openingBookSegment  = "opening-book"
+
   val root: PublicEndpoint[Unit, Unit, Welcome, Any] =
     endpoint.get
       .in("")
@@ -223,7 +226,7 @@ object Endpoints:
   val positionEquity: PublicEndpoint[PositionEquityQuery, Unit, PositionEquity, Any] =
     endpoint.get
       .in("api" / "positions" / "equity")
-      .in(query[String]("fen").description("Position FEN (normalized server-side)"))
+      .in(query[String]("fen").description(fenQueryDescription))
       .in(
         query[Option[String]]("mode")
           .description("Game mode: classic or x2 (omit for all)")
@@ -244,7 +247,7 @@ object Endpoints:
   val diceDistribution: PublicEndpoint[PositionEquityQuery, Unit, PositionDiceDistribution, Any] =
     endpoint.get
       .in("api" / "positions" / "dice-distribution")
-      .in(query[String]("fen").description("Position FEN (normalized server-side)"))
+      .in(query[String]("fen").description(fenQueryDescription))
       .in(
         query[Option[String]]("mode")
           .description("Game mode: classic or x2 (omit for all)")
@@ -304,8 +307,8 @@ object Endpoints:
   /** List curated opening-book favorites for a position. Public (read-only). */
   val getFavorites: PublicEndpoint[String, Unit, PositionFavorites, Any] =
     endpoint.get
-      .in("api" / "opening-book" / "favorites")
-      .in(query[String]("fen").description("Position FEN (normalized server-side)"))
+      .in("api" / openingBookSegment / "favorites")
+      .in(query[String]("fen").description(fenQueryDescription))
       .out(jsonBody[PositionFavorites])
       .description("Curated opening-book favorites for a position")
 
@@ -313,7 +316,7 @@ object Endpoints:
   val putFavorite: Endpoint[String, FavoriteInput, (StatusCode, ApiError), FavoriteEntry, Any] =
     endpoint.put
       .securityIn(auth.bearer[String]())
-      .in("api" / "opening-book" / "favorites")
+      .in("api" / openingBookSegment / "favorites")
       .in(jsonBody[FavoriteInput])
       .out(jsonBody[FavoriteEntry])
       .errorOut(statusCode.and(jsonBody[ApiError]))
@@ -323,7 +326,7 @@ object Endpoints:
   val deleteFavorite: Endpoint[String, FavoriteKeyInput, (StatusCode, ApiError), Unit, Any] =
     endpoint.delete
       .securityIn(auth.bearer[String]())
-      .in("api" / "opening-book" / "favorites")
+      .in("api" / openingBookSegment / "favorites")
       .in(jsonBody[FavoriteKeyInput])
       .out(statusCode(StatusCode.NoContent))
       .errorOut(statusCode.and(jsonBody[ApiError]))
