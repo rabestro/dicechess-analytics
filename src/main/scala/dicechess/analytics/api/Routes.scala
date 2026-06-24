@@ -205,8 +205,19 @@ final class Routes(
         )
       }
       .serverLogic { _ => input =>
-        if input.moves.isEmpty then
-          IO.pure(Left((StatusCode.BadRequest, ApiError("Favorite must have at least one move"))))
+        if input.dice.trim.isEmpty then
+          IO.pure(
+            Left((StatusCode.BadRequest, ApiError("Favorite must have a non-empty dice roll")))
+          )
+        else if input.moves.isEmpty || input.moves.exists(_.trim.isEmpty) then
+          IO.pure(
+            Left(
+              (
+                StatusCode.BadRequest,
+                ApiError("Favorite must have at least one move and no blank moves")
+              )
+            )
+          )
         else
           PositionsRepository
             .setFavorite(input.fen, input.dice, input.moves, input.note)

@@ -260,16 +260,14 @@ object PositionsRepository:
   /** Returns all curated favorites for `fen`, ordered by `dice_sorted`. */
   def favoritesForPosition(fen: String): ConnectionIO[PositionFavorites] =
     val nf = Fen.normalize(fen)
-    sql"""SELECT dice_sorted, array_to_string(played_moves, ','), note
+    sql"""SELECT dice_sorted, played_moves, note
           FROM opening_book_favorites
           WHERE normalized_fen = $nf AND cardinality(played_moves) > 0
           ORDER BY dice_sorted"""
-      .query[(String, String, Option[String])]
+      .query[(String, List[String], Option[String])]
       .to[List]
       .map { rows =>
-        val items = rows.map { case (d, movesStr, n) =>
-          FavoriteEntry(nf, d, movesStr.split(',').toList.filter(_.nonEmpty), n)
-        }
+        val items = rows.map { case (d, moves, n) => FavoriteEntry(nf, d, moves, n) }
         PositionFavorites(nf, items)
       }
 
