@@ -153,3 +153,26 @@ class PositionsRepositorySpec extends CatsEffectSuite with TestContainerForAll:
         // A White-centric exporter would wrongly pick B2 (more result=1); the mover-perspective book picks B1.
         assertEquals(book.get(s"${Fen.normalize(pb)} bpr"), Some("d7d5"))
     }
+
+  test("openingBook drops forced-pass (empty-move) turns but keeps real moves"):
+    withContainers { pg =>
+      val t      = xa(pg)
+      val pos    = "rnbqkbnr/pppppppp/8/1N6/8/8/PPPPPPPP/R1BQKBNR b KQkq - 0 1"   // black to move
+      val passed =
+        "rnbqkbnr/pppppppp/8/1N6/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 2" // pass: flipped, no move
+      val moved  = "r1bqkbnr/pppppppp/2n5/1N6/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 2" // a real reply
+      for
+        _      <- resetTables.transact(t)
+        idPos  <- PositionsRepository.getOrCreate(pos).transact(t)
+        idPass <- PositionsRepository.getOrCreate(passed).transact(t)
+        idMove <- PositionsRepository.getOrCreate(moved).transact(t)
+        // dice "bkq": forced pass — empty played_moves; must NOT reach the book
+        _ <- seedTurns("b", -1, 8, 2200, idPos, "bkq", List.empty[String], idPass).transact(t)
+        // dice "bbn": a real move; must reach the book
+        _    <- seedTurns("b", -1, 8, 2200, idPos, "bbn", List("b8c6"), idMove).transact(t)
+        book <- PositionsRepository.openingBook(minGames = 5, minRating = Some(2000)).transact(t)
+      yield
+        assertEquals(book.get(s"${Fen.normalize(pos)} bkq"), None)         // forced pass excluded
+        assertEquals(book.get(s"${Fen.normalize(pos)} bbn"), Some("b8c6")) // real move kept
+        assert(book.values.forall(_.nonEmpty), "the book must contain no empty-move entries")
+    }
