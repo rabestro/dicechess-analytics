@@ -204,6 +204,9 @@ object PositionsRepository:
     *     `minRating`, when set, keeps only games where BOTH players are at least that strong;
     *     abandoned partial turns and no-op self-loops are excluded exactly as elsewhere
     *     ([[completedTurn]]).
+    *   - Forced passes (no legal move for the roll, so `played_moves` is empty) are dropped: an
+    *     empty move is not a bookable continuation. This filter is opening-book-specific — the
+    *     explorer (`continuations` / `equity` / `dice-distribution`) still surfaces passes as "—".
     */
   def openingBook(minGames: Int, minRating: Option[Int]): ConnectionIO[Map[String, String]] =
     val select =
@@ -215,6 +218,8 @@ object PositionsRepository:
       List(
         Some(fr"t.position_after_id <> t.position_id"),
         Some(completedTurn),
+        // Drop forced passes: an empty played_moves array is not a bookable move.
+        Some(fr"cardinality(t.played_moves) > 0"),
         minRating.map(r => fr"g.white_rating >= $r AND g.black_rating >= $r")
       )
     )
@@ -226,7 +231,7 @@ object PositionsRepository:
         .groupBy { case (pos, dice, _, _, _, _, _) => s"$pos $dice" }
         .flatMap { case (key, group) =>
           val best = group.maxBy { case (_, _, _, _, w, d, l) => (winRate(w, d, l), w + d + l) }
-          best._3.map(moves => key -> moves)
+          best._3.filter(_.nonEmpty).map(moves => key -> moves)
         }
         .toMap
     }

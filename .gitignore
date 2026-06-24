@@ -223,8 +223,9 @@ __marimo__/
 .scala-build/
 project/project/
 
-# mise machine-local overrides
+# mise machine-local overrides (incl. env-scoped, e.g. mise.prod.local.toml for a prod DATABASE_URL)
 mise.local.toml
+mise.*.local.toml
 
 # Node (docs site)
 node_modules/
