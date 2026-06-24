@@ -33,8 +33,10 @@ object ExportOpeningBookApp extends IOApp:
 
     for
       config <- IO.fromEither(AppConfig.load().left.map(msg => IllegalArgumentException(msg)))
-      _      <- IO.println(
-        s"Exporting opening book (minGames=$minGames, minRating=${ratingArg.fold("none")(_.toString)}) to $outputPath ..."
+      // Surface the target DB (never the password) so the book is not exported from the wrong database by mistake.
+      _ <- IO.println(
+        s"Exporting opening book from ${config.db.jdbcUrl} (user=${config.db.user}); " +
+          s"minGames=$minGames, minRating=${ratingArg.fold("none")(_.toString)} -> $outputPath ..."
       )
       book <- Database.transactor(config.db, 4).use { xa =>
         PositionsRepository.openingBook(minGames, ratingArg).transact(xa)
