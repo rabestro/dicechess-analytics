@@ -104,6 +104,8 @@ and why a bare `sbt` invocation works too: just keep `gh auth login` current.
 | `mise run compile` | Compiles the backend. |
 | `mise run test` | Runs the test suite without the coverage/clean overhead. |
 | `mise run run` | Starts the API server on port `8000`. |
+| `mise run eval:mc` | One-shot: evaluates Monte-Carlo accuracy against empirical DB stats. |
+| `mise run db:export-book` | Exports the opening book for the bots — see [Opening-book export](#opening-book-export). |
 | `mise run docs:dev` | Starts the Astro/Starlight dev server at [http://localhost:4321](http://localhost:4321). |
 | `mise run docs:build` | Compiles the documentation site into static HTML inside `docs/dist/`. |
 
@@ -169,3 +171,74 @@ that performed it was retired together with the rest of the Python codebase.
 Ongoing ingestion uses the transactional `POST /api/games` endpoint, which validates every
 game against `dicechess-engine-scala` before persisting it. See the
 [Game Ingestion](../ingestion) page for the contract.
+
+---
+
+## Opening-book export
+
+`db:export-book` generates `opening_book.json` — the data-driven opening book the engine's
+bots consume (`OpeningBookBot`). For every `(position, dice)` reached often enough in strong
+games it stores the continuation with the best win rate **from the moving side's perspective**.
+
+```bash
+mise run db:export-book [minGames] [minRating] [outputPath]
+# defaults: 100   2000   opening_book.json
+```
+
+- `minGames` — minimum games a continuation needs, after filtering, to be booked.
+- `minRating` — both players must be at least this strong (`0` disables the strength filter).
+- Forced passes (no legal move for the roll) are excluded — they are not bookable moves.
+- On startup the app logs the **target database** (host/db and user, never the password), so
+  you can confirm which database you are reading from before it runs.
+
+### Choosing the database
+
+The exporter reads whatever `DATABASE_URL` / `POSTGRES_*` resolve to (see
+[Configuration](#configuration)) — **by default the local dev database**, which is small, so
+the book comes out nearly empty. For a real book, point it at the full production database.
+
+Keep the production URL in a git-ignored `mise.prod.local.toml` at the repo root, activated
+only under the `prod` environment so it never affects your other commands (e.g. a local
+`mise run run`):
+
+```toml
+# mise.prod.local.toml  — git-ignored via the mise.*.local.toml pattern
+[env]
+DATABASE_URL = "postgresql://dicechess_user:<PROD_PASSWORD>@<prod-host>:5432/dicechess_analytics"
+```
+
+mise config precedence is `mise.{env}.local.toml` > `mise.local.toml` > `mise.{env}.toml` >
+`mise.toml`, and **without `MISE_ENV` set the `prod` files are ignored entirely**. The
+`-E` / `--env` flag is the cleanest, shell-agnostic way to activate it for a single run:
+
+```bash
+mise -E prod run db:export-book 100 2000
+```
+
+### PowerShell
+
+The `-E` flag behaves identically in PowerShell — no environment-variable juggling:
+
+```powershell
+mise -E prod run db:export-book 100 2000
+```
+
+Create the local config file from PowerShell with a here-string:
+
+```powershell
+@'
+[env]
+DATABASE_URL = "postgresql://dicechess_user:<PROD_PASSWORD>@<prod-host>:5432/dicechess_analytics"
+'@ | Set-Content -Path mise.prod.local.toml -Encoding utf8
+```
+
+:::caution
+Prefer `mise -E prod run …` over `$env:MISE_ENV = 'prod'`. In PowerShell a `$env:` assignment
+persists for the whole session, so a later `mise run run` could unexpectedly hit production.
+The `-E` flag scopes the environment to that one invocation.
+:::
+
+The export is read-only (a pure aggregation), so it is safe to run against production — prefer
+off-peak hours, as it scans the full `turns` / `games` history. The resulting `opening_book.json`
+is keyed by the canonical position+dice key shared with the engine and is loaded into the bots
+at runtime via the engine's `registerOpeningBookBot`.

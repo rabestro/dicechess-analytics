@@ -46,6 +46,13 @@ the repository.
 
 Database schema migrations are applied by the backend itself via Flyway on startup.
 
+### Maintenance
+
+- `mise run db:export-book` - Exports the opening book (`opening_book.json`) for the bots.
+  Reads the **local** database by default; to build it from production (via `MISE_ENV=prod`
+  and a git-ignored `mise.prod.local.toml`), with bash and PowerShell examples, see
+  [Opening-book export](docs/src/content/docs/development.md#opening-book-export).
+
 ### Documentation
 
 - `mise run docs:dev` - Runs the local Astro/Starlight docs dev server.
