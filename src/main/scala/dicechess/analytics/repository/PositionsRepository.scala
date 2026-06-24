@@ -187,3 +187,46 @@ object PositionsRepository:
       }
       PositionDiceDistribution(nf, side, items.map(_.games).sum, items)
     }
+
+  /** Builds the opening book consumed by the engine's `OpeningBookBot`: for every
+    * `(position, dice)` reached often enough in strong, completed turns, the single best
+    * continuation by the **moving side's** win rate (ties broken by sample size).
+    *
+    *   - Key: the canonical `normalized_fen + " " + dice_sorted` shared with the engine's
+    *     `OpeningBook.key` — `dice_sorted` is already the alphabetically sorted, side-cased dice,
+    *     so the strings match byte-for-byte.
+    *   - Value: the chosen continuation's representative micro-moves, comma-separated (e.g.
+    *     `"e2e4,f1c4"`); permutations collapse because continuations are grouped by the resulting
+    *     position.
+    *   - Win rate is from the mover's perspective (the shared [[winRate]] over [[outcomeCounts]]),
+    *     so Black positions are ranked by Black's success — not White's.
+    *   - Only continuations played at least `minGames` times after filtering are eligible;
+    *     `minRating`, when set, keeps only games where BOTH players are at least that strong;
+    *     abandoned partial turns and no-op self-loops are excluded exactly as elsewhere
+    *     ([[completedTurn]]).
+    */
+  def openingBook(minGames: Int, minRating: Option[Int]): ConnectionIO[Map[String, String]] =
+    val select =
+      fr"""SELECT p.normalized_fen, t.dice_sorted,
+                  (array_agg(array_to_string(t.played_moves, ',')
+                             ORDER BY array_to_string(t.played_moves, ',')))[1], """ ++
+        outcomeCounts ++ turnsJoin
+    val where = whereOf(
+      List(
+        Some(fr"t.position_after_id <> t.position_id"),
+        Some(completedTurn),
+        minRating.map(r => fr"g.white_rating >= $r AND g.black_rating >= $r")
+      )
+    )
+    val query =
+      select ++ where ++
+        fr"GROUP BY p.normalized_fen, t.dice_sorted, pa.normalized_fen HAVING count(*) >= $minGames"
+    query.query[(String, String, Option[String], Int, Int, Int, Int)].to[List].map { rows =>
+      rows
+        .groupBy { case (pos, dice, _, _, _, _, _) => s"$pos $dice" }
+        .flatMap { case (key, group) =>
+          val best = group.maxBy { case (_, _, _, _, w, d, l) => (winRate(w, d, l), w + d + l) }
+          best._3.map(moves => key -> moves)
+        }
+        .toMap
+    }
