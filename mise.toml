@@ -88,3 +88,10 @@ run = """
 sbt "runMain dicechess.analytics.maintenance.EvaluateMonteCarloApp ${1:-10} ${2:-200}"
 """
 
+[tasks."db:export-book"]
+description = "📖 Export the opening book to opening_book.json. Usage: `mise run db:export-book [minGames] [minRating] [outputPath]`"
+run = """
+#!/usr/bin/env bash
+sbt "runMain dicechess.analytics.maintenance.ExportOpeningBookApp ${1:-100} ${2:-2000} ${3:-opening_book.json}"
+"""
+
