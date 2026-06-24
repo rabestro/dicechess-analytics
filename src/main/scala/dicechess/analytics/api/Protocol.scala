@@ -380,3 +380,22 @@ object Protocol:
       items: List[DiceDistributionRow]
   ) derives ConfiguredCodec,
         Schema
+
+  /** One curated opening-book favorite: the expert-chosen continuation for a (position, dice) pair.
+    * `normalizedFen` and `diceSorted` together form the canonical book key; `diceSorted` is always
+    * side-cased (upper-case for White, lower-case for Black) and sorted alphabetically.
+    */
+  final case class FavoriteEntry(
+      normalizedFen: String,
+      diceSorted: String,
+      moves: List[String],
+      note: Option[String]
+  ) derives ConfiguredCodec,
+        Schema
+
+  /** All curated favorites for a position, ordered by `diceSorted`. */
+  final case class PositionFavorites(
+      normalizedFen: String,
+      items: List[FavoriteEntry]
+  ) derives ConfiguredCodec,
+        Schema

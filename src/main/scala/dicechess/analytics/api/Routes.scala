@@ -28,6 +28,7 @@ final class Routes(
     xa: Transactor[IO],
     corsOrigins: List[String],
     ingestToken: Option[String],
+    curatorToken: Option[String],
     version: VersionInfo
 ):
 
@@ -123,6 +124,11 @@ final class Routes(
       MessageDigest.isEqual(expected.getBytes(UTF_8), provided.getBytes(UTF_8))
     )
 
+  private def curatorAccepted(provided: String): Boolean =
+    curatorToken.exists(expected =>
+      MessageDigest.isEqual(expected.getBytes(UTF_8), provided.getBytes(UTF_8))
+    )
+
   private def describe(error: ReplayError): String = error match
     case ReplayError.InvalidInitialFen(_, reason) => s"Invalid initial FEN: $reason"
     case ReplayError.UnknownDie(turn, value)      => s"Turn $turn: unknown die value $value"
@@ -186,6 +192,54 @@ final class Routes(
               }
       }
 
+  private val getFavoritesLogic = Endpoints.getFavorites.serverLogicSuccess[IO] { fen =>
+    PositionsRepository.favoritesForPosition(fen).transact(xa)
+  }
+
+  private val putFavoriteLogic =
+    Endpoints.putFavorite
+      .serverSecurityLogic[Unit, IO] { token =>
+        IO.pure(
+          if curatorAccepted(token) then Right(())
+          else Left((StatusCode.Unauthorized, ApiError("Invalid or missing curator token")))
+        )
+      }
+      .serverLogic { _ => input =>
+        if input.dice.trim.isEmpty then
+          IO.pure(
+            Left((StatusCode.BadRequest, ApiError("Favorite must have a non-empty dice roll")))
+          )
+        else if input.moves.isEmpty || input.moves.exists(_.trim.isEmpty) then
+          IO.pure(
+            Left(
+              (
+                StatusCode.BadRequest,
+                ApiError("Favorite must have at least one move and no blank moves")
+              )
+            )
+          )
+        else
+          PositionsRepository
+            .setFavorite(input.fen, input.dice, input.moves, input.note)
+            .transact(xa)
+            .map(Right(_))
+      }
+
+  private val deleteFavoriteLogic =
+    Endpoints.deleteFavorite
+      .serverSecurityLogic[Unit, IO] { token =>
+        IO.pure(
+          if curatorAccepted(token) then Right(())
+          else Left((StatusCode.Unauthorized, ApiError("Invalid or missing curator token")))
+        )
+      }
+      .serverLogic { _ => input =>
+        PositionsRepository.deleteFavorite(input.fen, input.dice).transact(xa).map { deleted =>
+          if deleted then Right(())
+          else Left((StatusCode.NotFound, ApiError("Favorite not found")))
+        }
+      }
+
   private val swagger = SwaggerInterpreter()
     .fromEndpoints[IO](Endpoints.all, "Dice Chess Analytics API", version.version)
 
@@ -206,7 +260,10 @@ final class Routes(
         rootLogic,
         versionLogic,
         ingestGameLogic,
-        replaceGameLogic
+        replaceGameLogic,
+        getFavoritesLogic,
+        putFavoriteLogic,
+        deleteFavoriteLogic
       )
     )
     val cors = CORS.policy

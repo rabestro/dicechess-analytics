@@ -40,7 +40,7 @@ class IngestEndpointSpec extends CatsEffectSuite with TestContainerForAll:
 
   private def withClient[A](pg: PostgreSQLContainer)(run: Client[IO] => IO[A]): IO[A] =
     val app =
-      Routes(transactor(pg), List("http://localhost:5173"), Some(token), testVersion).httpApp
+      Routes(transactor(pg), List("http://localhost:5173"), Some(token), None, testVersion).httpApp
     run(Client.fromHttpApp(app))
 
   private val start = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
