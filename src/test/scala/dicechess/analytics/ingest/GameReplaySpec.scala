@@ -92,6 +92,11 @@ class GameReplaySpec extends munit.FunSuite:
       case Left(ReplayError.UnknownDie(0, 7)) => ()
       case other                              => fail(s"expected UnknownDie, got $other")
 
+  test("rejects a turn with an empty dice pool"):
+    GameReplay.replay(start, List(TurnInput(dice = List.empty, moves = List.empty))) match
+      case Left(ReplayError.EmptyDice(0)) => ()
+      case other                          => fail(s"expected EmptyDice, got $other")
+
   test("reports an invalid initial FEN"):
     GameReplay.replay("not a fen", List.empty) match
       case Left(ReplayError.InvalidInitialFen(_, _)) => ()

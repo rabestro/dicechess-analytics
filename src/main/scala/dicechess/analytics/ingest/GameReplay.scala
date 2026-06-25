@@ -20,6 +20,7 @@ final case class ReplayedGame(initialFen: String, turns: List[ReplayedTurn]):
 enum ReplayError:
   case InvalidInitialFen(fen: String, reason: String)
   case UnknownDie(turnIndex: Int, value: Int)
+  case EmptyDice(turnIndex: Int)
   case IllegalTurn(turnIndex: Int, played: List[String], legal: List[List[String]])
 
 /** Replays a game through the engine to validate it and derive each turn's positions.
@@ -57,6 +58,15 @@ object GameReplay:
           .map((_, acc) => ReplayedGame(FenParser.serialize(initial), acc.reverse))
 
   private def replayTurn(
+      state: GameState,
+      turn: TurnInput,
+      index: Int,
+      isPartialAllowed: Boolean
+  ): Either[ReplayError, (GameState, ReplayedTurn)] =
+    if turn.dice.isEmpty then Left(ReplayError.EmptyDice(index))
+    else replayTurnValidated(state, turn, index, isPartialAllowed)
+
+  private def replayTurnValidated(
       state: GameState,
       turn: TurnInput,
       index: Int,
