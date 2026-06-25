@@ -40,27 +40,33 @@ object GameReplay:
     FenParser.parse(initialFen) match
       case Left(reason)   => Left(ReplayError.InvalidInitialFen(initialFen, reason))
       case Right(initial) =>
-        turns.zipWithIndex.find { case (turn, _) => turn.dice.isEmpty } match
-          case Some((_, index)) => Left(ReplayError.EmptyDice(index))
-          case None             =>
-            val start: Either[ReplayError, (GameState, List[ReplayedTurn])] = Right(
-              (initial, List.empty)
-            )
-            val turnsSize = turns.size
-            turns.zipWithIndex
-              .foldLeft(start) {
-                case (Left(err), _)                       => Left(err)
-                case (Right((state, acc)), (turn, index)) =>
-                  val isLast           = index == turnsSize - 1
-                  val isPartialAllowed =
-                    isLast && termination
-                      .exists(t => t == "timeout" || t == "draw_agreement" || t == "resign")
-                  replayTurn(state, turn, index, isPartialAllowed)
-                    .map((next, replayed) => (next, replayed :: acc))
-              }
-              .map((_, acc) => ReplayedGame(FenParser.serialize(initial), acc.reverse))
+        val start: Either[ReplayError, (GameState, List[ReplayedTurn])] = Right(
+          (initial, List.empty)
+        )
+        val turnsSize = turns.size
+        turns.zipWithIndex
+          .foldLeft(start) {
+            case (Left(err), _)                       => Left(err)
+            case (Right((state, acc)), (turn, index)) =>
+              val isLast           = index == turnsSize - 1
+              val isPartialAllowed =
+                isLast && termination
+                  .exists(t => t == "timeout" || t == "draw_agreement" || t == "resign")
+              replayTurn(state, turn, index, isPartialAllowed)
+                .map((next, replayed) => (next, replayed :: acc))
+          }
+          .map((_, acc) => ReplayedGame(FenParser.serialize(initial), acc.reverse))
 
   private def replayTurn(
+      state: GameState,
+      turn: TurnInput,
+      index: Int,
+      isPartialAllowed: Boolean
+  ): Either[ReplayError, (GameState, ReplayedTurn)] =
+    if turn.dice.isEmpty then Left(ReplayError.EmptyDice(index))
+    else replayTurnValidated(state, turn, index, isPartialAllowed)
+
+  private def replayTurnValidated(
       state: GameState,
       turn: TurnInput,
       index: Int,
