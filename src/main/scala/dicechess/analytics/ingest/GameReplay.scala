@@ -20,6 +20,7 @@ final case class ReplayedGame(initialFen: String, turns: List[ReplayedTurn]):
 enum ReplayError:
   case InvalidInitialFen(fen: String, reason: String)
   case UnknownDie(turnIndex: Int, value: Int)
+  case EmptyDice(turnIndex: Int)
   case IllegalTurn(turnIndex: Int, played: List[String], legal: List[List[String]])
 
 /** Replays a game through the engine to validate it and derive each turn's positions.
@@ -39,22 +40,25 @@ object GameReplay:
     FenParser.parse(initialFen) match
       case Left(reason)   => Left(ReplayError.InvalidInitialFen(initialFen, reason))
       case Right(initial) =>
-        val start: Either[ReplayError, (GameState, List[ReplayedTurn])] = Right(
-          (initial, List.empty)
-        )
-        val turnsSize = turns.size
-        turns.zipWithIndex
-          .foldLeft(start) {
-            case (Left(err), _)                       => Left(err)
-            case (Right((state, acc)), (turn, index)) =>
-              val isLast           = index == turnsSize - 1
-              val isPartialAllowed =
-                isLast && termination
-                  .exists(t => t == "timeout" || t == "draw_agreement" || t == "resign")
-              replayTurn(state, turn, index, isPartialAllowed)
-                .map((next, replayed) => (next, replayed :: acc))
-          }
-          .map((_, acc) => ReplayedGame(FenParser.serialize(initial), acc.reverse))
+        turns.zipWithIndex.find { case (turn, _) => turn.dice.isEmpty } match
+          case Some((_, index)) => Left(ReplayError.EmptyDice(index))
+          case None             =>
+            val start: Either[ReplayError, (GameState, List[ReplayedTurn])] = Right(
+              (initial, List.empty)
+            )
+            val turnsSize = turns.size
+            turns.zipWithIndex
+              .foldLeft(start) {
+                case (Left(err), _)                       => Left(err)
+                case (Right((state, acc)), (turn, index)) =>
+                  val isLast           = index == turnsSize - 1
+                  val isPartialAllowed =
+                    isLast && termination
+                      .exists(t => t == "timeout" || t == "draw_agreement" || t == "resign")
+                  replayTurn(state, turn, index, isPartialAllowed)
+                    .map((next, replayed) => (next, replayed :: acc))
+              }
+              .map((_, acc) => ReplayedGame(FenParser.serialize(initial), acc.reverse))
 
   private def replayTurn(
       state: GameState,

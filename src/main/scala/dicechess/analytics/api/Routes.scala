@@ -132,6 +132,7 @@ final class Routes(
   private def describe(error: ReplayError): String = error match
     case ReplayError.InvalidInitialFen(_, reason) => s"Invalid initial FEN: $reason"
     case ReplayError.UnknownDie(turn, value)      => s"Turn $turn: unknown die value $value"
+    case ReplayError.EmptyDice(turn)              => s"Turn $turn: dice pool cannot be empty"
     case ReplayError.IllegalTurn(turn, played, _) =>
       s"Turn $turn: illegal move sequence [${played.mkString(", ")}]"
 
