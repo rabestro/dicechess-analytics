@@ -36,3 +36,14 @@ class FenSpec extends munit.FunSuite:
       -5606592683697872391L -> "rnbqkbr1/pppppppp/7n/8/P1B1P3/R4Q2/1PPP1PPP/1NB1K1NR b Kq a3"
     )
     known.foreach((expected, nf) => assertEquals(Fen.hash(nf), expected))
+
+  // Suspended regression for #203: `normalize` must canonicalize the en-passant field. After White
+  // plays h2-h4 no black pawn can take en passant, so the target `h3` is not capturable and must
+  // collapse to `-`; otherwise the same board splits into two `positions` rows. Currently fails
+  // because `normalize` keeps the naive FEN target verbatim — un-suspend once it delegates to the
+  // engine's canonical `Dfen` normalization.
+  test("normalize canonicalizes an uncapturable en-passant target".fail):
+    assertEquals(
+      Fen.normalize("rnbqkbnr/pppppppp/8/8/7P/8/PPPPPPP1/RNBQKBNR b KQkq h3 0 1"),
+      "rnbqkbnr/pppppppp/8/8/7P/8/PPPPPPP1/RNBQKBNR b KQkq -"
+    )
