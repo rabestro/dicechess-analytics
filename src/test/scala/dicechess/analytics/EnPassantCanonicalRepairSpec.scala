@@ -130,3 +130,8 @@ class EnPassantCanonicalRepairSpec extends CatsEffectSuite with TestContainerFor
         assertEquals(r1, EnPassantCanonicalRepair.RepairReport(2, 2, 1, 0, 0, 2))
         assertEquals(r2, EnPassantCanonicalRepair.RepairReport(0, 0, 0, 0, 0, 0))
     }
+
+  test("runBatched rejects a non-positive batch size"):
+    withContainers { pg =>
+      interceptIO[IllegalArgumentException](EnPassantCanonicalRepair.runBatched(xa(pg), 0)).void
+    }

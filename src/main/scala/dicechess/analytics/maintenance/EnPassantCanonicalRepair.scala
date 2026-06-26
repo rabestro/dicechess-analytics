@@ -138,15 +138,16 @@ object EnPassantCanonicalRepair:
             AND NOT EXISTS (SELECT 1 FROM opening_book_favorites f
                             WHERE f.normalized_fen = p.normalized_fen)""".update
 
-  /** Processes one keyset window `(afterId, afterId + batchSize]` in a single transaction. Returns
-    * the greatest scanned `id` (the next cursor), how many positions were scanned (0 once the
-    * cursor is exhausted), and what changed in this batch.
+  /** Processes the next `batchSize` candidate rows with `id > afterId` (ordered by `id`) in a
+    * single transaction. Returns the greatest scanned `id` (the next cursor), how many positions
+    * were scanned (0 once the cursor is exhausted), and what changed in this batch.
     */
   def processBatch(afterId: Long, batchSize: Int): ConnectionIO[(Long, Int, RepairReport)] =
     loadCandidates(afterId, batchSize).flatMap { candidates =>
       if candidates.isEmpty then (afterId, 0, RepairReport.zero).pure[ConnectionIO]
       else
-        val lastId  = candidates.map(_._1).max
+        // candidates is ordered by id ascending, so the last one is the greatest scanned id.
+        val lastId  = candidates.last._1
         val scanned = candidates.size
         val changed = candidates.flatMap { (id, nf) =>
           val canonical = Fen.normalize(nf)
@@ -176,7 +177,9 @@ object EnPassantCanonicalRepair:
     }
 
   /** Runs the repair to completion, one transaction per batch, accumulating the report and logging
-    * progress. Stops when the keyset cursor is exhausted.
+    * progress. Stops when the keyset cursor is exhausted. Requires a positive `batchSize`:
+    * `LIMIT 0` would report completion without scanning, and a negative limit fails at the
+    * database.
     */
   def runBatched(xa: Transactor[IO], batchSize: Int = DefaultBatchSize): IO[RepairReport] =
     def loop(afterId: Long, acc: RepairReport, batchNo: Int): IO[RepairReport] =
@@ -189,4 +192,6 @@ object EnPassantCanonicalRepair:
               s"merged ${next.positionsMerged}, turns ${next.turnsRepointed}, deleted ${next.positionsDeleted}"
           ) *> loop(lastId, next, batchNo + 1)
       }
-    loop(0L, RepairReport.zero, 1)
+    IO.raiseWhen(batchSize <= 0)(
+      IllegalArgumentException(s"batchSize must be positive, got $batchSize")
+    ) *> loop(0L, RepairReport.zero, 1)
