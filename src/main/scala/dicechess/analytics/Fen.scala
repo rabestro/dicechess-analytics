@@ -4,11 +4,16 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import net.openhft.hashing.LongHashFunction
 
+import dicechess.engine.movegen.Dfen
+
 /** Position identity helpers.
   *
   * A position is identified by its *normalized* FEN — the first four FEN fields (placement, active
   * color, castling, en passant). The halfmove and fullmove counters are dropped: they do not change
-  * the tactical identity of a position, and on some sources they are unreliable.
+  * the tactical identity of a position, and on some sources they are unreliable. The en-passant
+  * field is canonicalised to the X-FEN form (a target is kept only when it can actually be
+  * captured) so positions that differ only by an uncapturable en-passant target — common when a
+  * Dice Chess turn double-pushes mid-turn — share one identity.
   */
 object Fen:
 
@@ -20,12 +25,23 @@ object Fen:
       enPassant: String
   )
 
-  /** Keep the first four FEN fields, padding with `-` if fewer are present.
+  /** The canonical normalized FEN: the first four FEN fields with the en-passant target reduced to
+    * its X-FEN form (kept only when the side to move can actually capture it).
+    *
+    * Delegates to the engine's [[dicechess.engine.movegen.Dfen]] so `normalized_fen` stays
+    * byte-identical to the engine's `OpeningBook.key`. Falls back to the plain first-four-fields
+    * form for inputs the engine cannot parse (short or malformed FENs).
+    */
+  def normalize(fen: String): String =
+    Dfen.normalize(fen).getOrElse(plainFields(fen))
+
+  /** The first four FEN fields, padding with `-` if fewer are present — the fallback when `fen` is
+    * not a parseable position.
     *
     * Splitting on `\s+` and dropping empties tolerates leading or consecutive whitespace (unlike
     * Python's `str.split()`, Java's `split` keeps empty tokens).
     */
-  def normalize(fen: String): String =
+  private def plainFields(fen: String): String =
     val parts = fen.split("\\s+").filter(_.nonEmpty).take(4)
     (parts ++ Array.fill(4 - parts.length)("-")).mkString(" ")
 
