@@ -105,14 +105,19 @@ object EnPassantCanonicalRepair:
                               AND g.dice_sorted = f.dice_sorted)""".update
 
   // After re-pointing, legacy rows are fully orphaned. The reference checks are split one-per-column
-  // so PostgreSQL resolves each as its own anti-join (V7 indexes) instead of a sequential scan.
+  // so PostgreSQL resolves each as its own anti-join (V7 indexes) instead of a sequential scan. The
+  // last check keeps a position alive if a curated favorite still references its FEN — `repoint
+  // Favorites` skips the rare key collision, and `opening_book_favorites` has no foreign key, so
+  // this avoids leaving a favorite pointing at a deleted position's FEN.
   private val deleteOrphans =
     sql"""DELETE FROM positions p USING ep_repair_map m
           WHERE p.id = m.old_id
             AND NOT EXISTS (SELECT 1 FROM turns t WHERE t.position_id = p.id)
             AND NOT EXISTS (SELECT 1 FROM turns t WHERE t.position_after_id = p.id)
             AND NOT EXISTS (SELECT 1 FROM games g WHERE g.initial_position_id = p.id)
-            AND NOT EXISTS (SELECT 1 FROM games g WHERE g.final_position_id = p.id)""".update
+            AND NOT EXISTS (SELECT 1 FROM games g WHERE g.final_position_id = p.id)
+            AND NOT EXISTS (SELECT 1 FROM opening_book_favorites f
+                            WHERE f.normalized_fen = p.normalized_fen)""".update
 
   /** Runs the full repair in one transaction and reports what changed. */
   def run: ConnectionIO[RepairReport] =
