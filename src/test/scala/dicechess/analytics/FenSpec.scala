@@ -37,13 +37,28 @@ class FenSpec extends munit.FunSuite:
     )
     known.foreach((expected, nf) => assertEquals(Fen.hash(nf), expected))
 
-  // Suspended regression for #203: `normalize` must canonicalize the en-passant field. After White
-  // plays h2-h4 no black pawn can take en passant, so the target `h3` is not capturable and must
-  // collapse to `-`; otherwise the same board splits into two `positions` rows. Currently fails
-  // because `normalize` keeps the naive FEN target verbatim — un-suspend once it delegates to the
-  // engine's canonical `Dfen` normalization.
-  test("normalize canonicalizes an uncapturable en-passant target".fail):
+  // Regression for #203: `normalize` canonicalises the en-passant field (delegating to the engine's
+  // Dfen) so positions that differ only by an uncapturable target share one identity. After White
+  // plays h2-h4 no black pawn can take en passant, so the target `h3` collapses to `-`.
+  test("normalize canonicalizes an uncapturable en-passant target"):
     assertEquals(
       Fen.normalize("rnbqkbnr/pppppppp/8/8/7P/8/PPPPPPP1/RNBQKBNR b KQkq h3 0 1"),
       "rnbqkbnr/pppppppp/8/8/7P/8/PPPPPPP1/RNBQKBNR b KQkq -"
     )
+
+  test("normalize keeps a genuinely capturable en-passant target"):
+    // Black pawn on d4 can take the white e4 pawn en passant via e3.
+    assertEquals(
+      Fen.normalize("rnbqkbnr/ppp1pppp/8/8/3pP3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"),
+      "rnbqkbnr/ppp1pppp/8/8/3pP3/8/PPPP1PPP/RNBQKBNR b KQkq e3"
+    )
+
+  test("normalize drops an en-passant target on an occupied square"):
+    // The legacy "h2h4 h1h3" shape: a rook on h3 blocks the en-passant square.
+    assertEquals(
+      Fen.normalize("rnbqkbnr/pppppppp/8/8/7P/7R/PPPPPPP1/RNBQKBN1 b Qkq h3 0 1"),
+      "rnbqkbnr/pppppppp/8/8/7P/7R/PPPPPPP1/RNBQKBN1 b Qkq -"
+    )
+
+  test("normalize falls back to the first four fields for an unparseable FEN"):
+    assertEquals(Fen.normalize("8/8/8/8/8/8/8/8 w"), "8/8/8/8/8/8/8/8 w - -")
