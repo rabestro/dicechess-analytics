@@ -1,7 +1,6 @@
 package dicechess.analytics.maintenance
 
 import cats.effect.{IO, IOApp}
-import doobie.implicits.*
 
 import dicechess.analytics.{AppConfig, Database}
 
@@ -27,6 +26,6 @@ object RepairEnPassantCanonicalApp extends IOApp.Simple:
       _      <- Database.migrate(config.db)
       report <- Database
         .transactor(config.db, config.dbPoolSize)
-        .use(xa => EnPassantCanonicalRepair.run.transact(xa))
+        .use(xa => EnPassantCanonicalRepair.runBatched(xa))
       _ <- IO.println(s"EnPassantCanonicalRepair complete: $report")
     yield ()

@@ -1,5 +1,6 @@
 package dicechess.analytics.maintenance
 
+import cats.effect.IO
 import cats.syntax.all.*
 import doobie.*
 import doobie.implicits.*
@@ -20,12 +21,19 @@ import dicechess.analytics.Fen
   * from its stored one is merged into its canonical twin (created via the same hash path as
   * [[dicechess.analytics.repository.PositionsRepository.getOrCreate]] when missing), the `turns`
   * and `games` foreign keys and any `opening_book_favorites` are re-pointed, and the orphaned rows
-  * are deleted. It is idempotent: a second run finds nothing left to fix.
+  * are deleted.
+  *
+  * The work is **batched** by a keyset cursor over `positions.id`: each batch is its own
+  * transaction, so locks stay short, WAL is emitted incrementally, and live ingests interleave
+  * between batches — measured production scope is ~1.43M changing positions and ~1.5M turns, far
+  * too large for a single transaction on the homelab node. It is idempotent and resumable: a re-run
+  * (always from the start of the cursor) reprocesses the cheap, already-canonical survivors as
+  * no-ops and changes nothing once the data is clean.
   *
   * Only positions with a non-empty en-passant field can change (the canonical target set is a
-  * subset of the naive one), so they are the sole candidates. The re-pointing is set-based through
-  * a transaction-scoped temp table and relies on the V7 foreign-key indexes to delete orphans
-  * without a per-row sequential scan.
+  * subset of the naive one), so they are the sole candidates. Re-pointing is set-based through a
+  * transaction-scoped temp table and relies on the V7 foreign-key indexes to delete orphans without
+  * a per-row sequential scan.
   */
 object EnPassantCanonicalRepair:
 
@@ -37,13 +45,27 @@ object EnPassantCanonicalRepair:
       initialsRepointed: Int,
       favoritesRepointed: Int,
       positionsDeleted: Int
-  )
+  ):
+    def +(o: RepairReport): RepairReport =
+      RepairReport(
+        positionsMerged + o.positionsMerged,
+        turnsRepointed + o.turnsRepointed,
+        finalsRepointed + o.finalsRepointed,
+        initialsRepointed + o.initialsRepointed,
+        favoritesRepointed + o.favoritesRepointed,
+        positionsDeleted + o.positionsDeleted
+      )
 
-  /** Positions that could change: only those carrying an en-passant target. */
-  private val loadCandidates: ConnectionIO[List[(Long, String)]] =
-    sql"SELECT id, normalized_fen FROM positions WHERE en_passant <> '-'"
-      .query[(Long, String)]
-      .to[List]
+  object RepairReport:
+    val zero: RepairReport = RepairReport(0, 0, 0, 0, 0, 0)
+
+  /** Default batch size: positions scanned per transaction. */
+  val DefaultBatchSize: Int = 10000
+
+  private def loadCandidates(afterId: Long, batchSize: Int): ConnectionIO[List[(Long, String)]] =
+    sql"""SELECT id, normalized_fen FROM positions
+          WHERE en_passant <> '-' AND id > $afterId
+          ORDER BY id LIMIT $batchSize""".query[(Long, String)].to[List]
 
   private val createTempMap: ConnectionIO[Int] =
     sql"""CREATE TEMP TABLE ep_repair_map (
@@ -51,9 +73,6 @@ object EnPassantCanonicalRepair:
             old_nf       VARCHAR NOT NULL,
             canonical_nf VARCHAR NOT NULL
           ) ON COMMIT DROP""".update.run
-
-  private val indexTempMap: ConnectionIO[Int] =
-    sql"CREATE INDEX ep_repair_map_old_id ON ep_repair_map (old_id)".update.run
 
   private val insertMap =
     Update[(Long, String, String)](
@@ -119,16 +138,21 @@ object EnPassantCanonicalRepair:
             AND NOT EXISTS (SELECT 1 FROM opening_book_favorites f
                             WHERE f.normalized_fen = p.normalized_fen)""".update
 
-  /** Runs the full repair in one transaction and reports what changed. */
-  def run: ConnectionIO[RepairReport] =
-    for
-      candidates <- loadCandidates
-      changed = candidates.flatMap { (id, nf) =>
-        val canonical = Fen.normalize(nf)
-        Option.when(canonical != nf)((id, nf, canonical))
-      }
-      report <-
-        if changed.isEmpty then RepairReport(0, 0, 0, 0, 0, 0).pure[ConnectionIO]
+  /** Processes one keyset window `(afterId, afterId + batchSize]` in a single transaction. Returns
+    * the greatest scanned `id` (the next cursor), how many positions were scanned (0 once the
+    * cursor is exhausted), and what changed in this batch.
+    */
+  def processBatch(afterId: Long, batchSize: Int): ConnectionIO[(Long, Int, RepairReport)] =
+    loadCandidates(afterId, batchSize).flatMap { candidates =>
+      if candidates.isEmpty then (afterId, 0, RepairReport.zero).pure[ConnectionIO]
+      else
+        val lastId  = candidates.map(_._1).max
+        val scanned = candidates.size
+        val changed = candidates.flatMap { (id, nf) =>
+          val canonical = Fen.normalize(nf)
+          Option.when(canonical != nf)((id, nf, canonical))
+        }
+        if changed.isEmpty then (lastId, scanned, RepairReport.zero).pure[ConnectionIO]
         else
           val twins = changed.map(_._3).distinct.map { nf =>
             val f = Fen.fields(nf)
@@ -137,7 +161,6 @@ object EnPassantCanonicalRepair:
           for
             _         <- createTempMap
             _         <- insertMap.updateMany(changed)
-            _         <- indexTempMap
             _         <- insertTwin.updateMany(twins)
             tBefore   <- repointTurnsBefore.run
             tAfter    <- repointTurnsAfter.run
@@ -145,5 +168,25 @@ object EnPassantCanonicalRepair:
             initials  <- repointInitials.run
             favorites <- repointFavorites.run
             deleted   <- deleteOrphans.run
-          yield RepairReport(changed.size, tBefore + tAfter, finals, initials, favorites, deleted)
-    yield report
+          yield (
+            lastId,
+            scanned,
+            RepairReport(changed.size, tBefore + tAfter, finals, initials, favorites, deleted)
+          )
+    }
+
+  /** Runs the repair to completion, one transaction per batch, accumulating the report and logging
+    * progress. Stops when the keyset cursor is exhausted.
+    */
+  def runBatched(xa: Transactor[IO], batchSize: Int = DefaultBatchSize): IO[RepairReport] =
+    def loop(afterId: Long, acc: RepairReport, batchNo: Int): IO[RepairReport] =
+      processBatch(afterId, batchSize).transact(xa).flatMap { case (lastId, scanned, delta) =>
+        if scanned == 0 then IO.pure(acc)
+        else
+          val next = acc + delta
+          IO.println(
+            s"[ep-repair] batch $batchNo: scanned $scanned up to id=$lastId; " +
+              s"merged ${next.positionsMerged}, turns ${next.turnsRepointed}, deleted ${next.positionsDeleted}"
+          ) *> loop(lastId, next, batchNo + 1)
+      }
+    loop(0L, RepairReport.zero, 1)
