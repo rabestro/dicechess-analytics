@@ -97,10 +97,11 @@ class EnPassantCanonicalRepairSpec extends CatsEffectSuite with TestContainerFor
     withContainers { pg =>
       val t       = xa(pg)
       def conts() = PositionsRepository.continuations(start, "PR", None, None, None, 50).transact(t)
+      // batchSize = 1 forces several keyset batches over the seeded legacy positions.
       for
         _         <- seed.transact(t)
         before    <- conts()
-        r1        <- EnPassantCanonicalRepair.run.transact(t)
+        r1        <- EnPassantCanonicalRepair.runBatched(t, 1)
         after     <- conts()
         twinAHash <- sql"SELECT fen_hash FROM positions WHERE normalized_fen = $twinA"
           .query[Long]
@@ -114,7 +115,7 @@ class EnPassantCanonicalRepairSpec extends CatsEffectSuite with TestContainerFor
         finalA <- sql"""SELECT p.normalized_fen FROM games g
                         JOIN positions p ON p.id = g.final_position_id
                         WHERE g.id = $gLegacyA""".query[String].unique.transact(t)
-        r2 <- EnPassantCanonicalRepair.run.transact(t)
+        r2 <- EnPassantCanonicalRepair.runBatched(t, 1)
       yield
         // Before: three distinct resulting positions (h3, twinH '-', a3). After: two ('-' twins).
         assertEquals(before.items.size, 3)
@@ -128,4 +129,9 @@ class EnPassantCanonicalRepairSpec extends CatsEffectSuite with TestContainerFor
         // Report, then idempotency: a second run changes nothing.
         assertEquals(r1, EnPassantCanonicalRepair.RepairReport(2, 2, 1, 0, 0, 2))
         assertEquals(r2, EnPassantCanonicalRepair.RepairReport(0, 0, 0, 0, 0, 0))
+    }
+
+  test("runBatched rejects a non-positive batch size"):
+    withContainers { pg =>
+      interceptIO[IllegalArgumentException](EnPassantCanonicalRepair.runBatched(xa(pg), 0)).void
     }
