@@ -37,7 +37,7 @@ object PartialTurnsRepair:
   def run(xa: Transactor[IO]): IO[RepairReport] =
     for
       candidates <- loadCandidates.transact(xa)
-      _          <- IO.println(s"[partial-turns-repair] Found ${candidates.size} candidates to analyze.")
+      _ <- IO.println(s"[partial-turns-repair] Found ${candidates.size} candidates to analyze.")
       repointed <- candidates.foldLeftM(0) { (acc, c) =>
         processCandidate(c, xa).map {
           case true  => acc + 1
@@ -70,8 +70,8 @@ object PartialTurnsRepair:
                             WHERE f.normalized_fen = p.normalized_fen)""".update.run
 
   private def processCandidate(c: Candidate, xa: Transactor[IO]): IO[Boolean] =
-    val pieces = Array('p', 'n', 'b', 'r', 'q', 'k')
-    val dice   = c.diceSorted.toLowerCase.toList.map(char => pieces.indexOf(char) + 1)
+    val pieces    = Array('p', 'n', 'b', 'r', 'q', 'k')
+    val dice      = c.diceSorted.toLowerCase.toList.map(char => pieces.indexOf(char) + 1)
     val turnInput = TurnInput(dice, c.playedMoves)
 
     val replayResult = GameReplay.replay(
@@ -90,9 +90,10 @@ object PartialTurnsRepair:
         if isDifferent then
           val repairIO = for
             newPositionId <- PositionsRepository.getOrCreate(replayedAfterFen)
-            _ <- sql"UPDATE turns SET position_after_id = $newPositionId WHERE id = ${c.turnId}".update.run
-            _ <- sql"UPDATE games SET final_position_id = $newPositionId WHERE id = ${c.gameId}".update.run
+            _             <-
+              sql"UPDATE turns SET position_after_id = $newPositionId WHERE id = ${c.turnId}".update.run
+            _ <-
+              sql"UPDATE games SET final_position_id = $newPositionId WHERE id = ${c.gameId}".update.run
           yield ()
           repairIO.transact(xa).as(true)
-        else
-          IO.pure(false)
+        else IO.pure(false)
