@@ -30,7 +30,6 @@ object PartialTurnsRepair:
       diceSorted: String,
       beforeFen: String,
       afterFen: String,
-      termination: String,
       expectedColor: String
   )
 
@@ -49,7 +48,7 @@ object PartialTurnsRepair:
 
   private val loadCandidates: ConnectionIO[List[Candidate]] =
     sql"""SELECT t.id, t.game_id, t.played_moves, t.dice_sorted,
-                 p.normalized_fen, pa.normalized_fen, g.termination::text, p.active_color
+                 p.normalized_fen, pa.normalized_fen, p.active_color
           FROM turns t
           JOIN positions p ON p.id = t.position_id
           JOIN positions pa ON pa.id = t.position_after_id
