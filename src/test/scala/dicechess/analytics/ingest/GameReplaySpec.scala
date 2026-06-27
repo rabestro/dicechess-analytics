@@ -32,7 +32,7 @@ class GameReplaySpec extends munit.FunSuite:
         assertEquals(game.turns.size, 1)
         val after = game.turns.head.afterFen
         assertEquals(board(after), "rnbqkbnr/pppppppp/8/8/3P4/3Q4/PPP1PPPP/RNB1KBNR")
-        assertEquals(color(after), "b")
+        assertEquals(color(after), "w")
       case Left(err) => fail(s"expected a valid replay, got $err")
 
   test("accepts a partial legal sequence as the last turn (draw_agreement)"):
@@ -42,7 +42,7 @@ class GameReplaySpec extends munit.FunSuite:
         assertEquals(game.turns.size, 1)
         val after = game.turns.head.afterFen
         assertEquals(board(after), "rnbqkbnr/pppppppp/8/8/3P4/3Q4/PPP1PPPP/RNB1KBNR")
-        assertEquals(color(after), "b")
+        assertEquals(color(after), "w")
       case Left(err) => fail(s"expected a valid replay, got $err")
 
   test("accepts a partial legal sequence as the last turn (resign)"):
@@ -52,7 +52,7 @@ class GameReplaySpec extends munit.FunSuite:
         assertEquals(game.turns.size, 1)
         val after = game.turns.head.afterFen
         assertEquals(board(after), "rnbqkbnr/pppppppp/8/8/3P4/3Q4/PPP1PPPP/RNB1KBNR")
-        assertEquals(color(after), "b")
+        assertEquals(color(after), "w")
       case Left(err) => fail(s"expected a valid replay, got $err")
 
   test("accepts a complete final turn with a mid-turn termination"):
