@@ -30,6 +30,7 @@ object PartialTurnsRepair:
       diceSorted: String,
       beforeFen: String,
       afterFen: String,
+      oldPositionId: Long,
       expectedColor: String
   )
 
@@ -37,18 +38,20 @@ object PartialTurnsRepair:
     for
       candidates <- loadCandidates.transact(xa)
       _ <- IO.println(s"[partial-turns-repair] Found ${candidates.size} candidates to analyze.")
-      repointed <- candidates.foldLeftM(0) { (acc, c) =>
-        processCandidate(c, xa).map {
-          case true  => acc + 1
-          case false => acc
+      counts <- candidates.foldLeftM((0, 0)) { case ((repointed, orphans), c) =>
+        processCandidate(c, xa).map { case (isRepointed, isOrphanDeleted) =>
+          (
+            if isRepointed then repointed + 1 else repointed,
+            if isOrphanDeleted then orphans + 1 else orphans
+          )
         }
       }
-      orphansDeleted <- deleteOrphans.transact(xa)
+      (repointed, orphansDeleted) = counts
     yield RepairReport(candidates.size, repointed, repointed, orphansDeleted)
 
   private val loadCandidates: ConnectionIO[List[Candidate]] =
     sql"""SELECT t.id, t.game_id, t.played_moves, t.dice_sorted,
-                 p.normalized_fen, pa.normalized_fen, p.active_color
+                 p.normalized_fen, pa.normalized_fen, t.position_after_id, p.active_color
           FROM turns t
           JOIN positions p ON p.id = t.position_id
           JOIN positions pa ON pa.id = t.position_after_id
@@ -59,16 +62,7 @@ object PartialTurnsRepair:
             AND pa.active_color <> p.active_color
        """.query[Candidate].to[List]
 
-  private val deleteOrphans =
-    sql"""DELETE FROM positions p
-          WHERE NOT EXISTS (SELECT 1 FROM turns t WHERE t.position_id = p.id)
-            AND NOT EXISTS (SELECT 1 FROM turns t WHERE t.position_after_id = p.id)
-            AND NOT EXISTS (SELECT 1 FROM games g WHERE g.initial_position_id = p.id)
-            AND NOT EXISTS (SELECT 1 FROM games g WHERE g.final_position_id = p.id)
-            AND NOT EXISTS (SELECT 1 FROM opening_book_favorites f
-                            WHERE f.normalized_fen = p.normalized_fen)""".update.run
-
-  private def processCandidate(c: Candidate, xa: Transactor[IO]): IO[Boolean] =
+  private def processCandidate(c: Candidate, xa: Transactor[IO]): IO[(Boolean, Boolean)] =
     val pieces    = Array('p', 'n', 'b', 'r', 'q', 'k')
     val dice      = c.diceSorted.toLowerCase.toList.map(char => pieces.indexOf(char) + 1)
     val turnInput = TurnInput(dice, c.playedMoves)
@@ -81,7 +75,8 @@ object PartialTurnsRepair:
 
     replayResult match
       case Left(err) =>
-        IO.println(s"[partial-turns-repair] Replay failed for turn ${c.turnId}: $err").as(false)
+        IO.println(s"[partial-turns-repair] Replay failed for turn ${c.turnId}: $err")
+          .as((false, false))
       case Right(game) =>
         val replayedAfterFen = game.turns.head.afterFen
         val isDifferent      = Fen.normalize(replayedAfterFen) != Fen.normalize(c.afterFen)
@@ -93,6 +88,14 @@ object PartialTurnsRepair:
               sql"UPDATE turns SET position_after_id = $newPositionId WHERE id = ${c.turnId}".update.run
             _ <-
               sql"UPDATE games SET final_position_id = $newPositionId WHERE id = ${c.gameId}".update.run
-          yield ()
-          repairIO.transact(xa).as(true)
-        else IO.pure(false)
+            deletedCount <- sql"""DELETE FROM positions p
+                                    WHERE p.id = ${c.oldPositionId}
+                                      AND NOT EXISTS (SELECT 1 FROM turns t WHERE t.position_id = p.id)
+                                      AND NOT EXISTS (SELECT 1 FROM turns t WHERE t.position_after_id = p.id)
+                                      AND NOT EXISTS (SELECT 1 FROM games g WHERE g.initial_position_id = p.id)
+                                      AND NOT EXISTS (SELECT 1 FROM games g WHERE g.final_position_id = p.id)
+                                      AND NOT EXISTS (SELECT 1 FROM opening_book_favorites f
+                                                      WHERE f.normalized_fen = p.normalized_fen)""".update.run
+          yield deletedCount > 0
+          repairIO.transact(xa).map(isOrphanDeleted => (true, isOrphanDeleted))
+        else IO.pure((false, false))
