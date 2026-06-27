@@ -79,31 +79,35 @@ object GameReplay:
         val withDice   = state.withDicePool(turn.dice)
         val legalPaths = TurnGenerator.generateAllLegalTurnPaths(withDice)
 
-        val applied: Option[GameState] =
+        val applied: Option[(GameState, Boolean)] =
           if legalPaths.isEmpty then
             // No legal move with these dice: the turn is a pass.
-            Option.when(turn.moves.isEmpty)(withDice)
+            Option.when(turn.moves.isEmpty)((withDice, false))
           else
             val pathsWithUci = legalPaths.map(path => (path, path.map(uci)))
             val exactMatch   =
               pathsWithUci.find { case (_, uciPath) => uciPath == turn.moves }.map(_._1)
 
-            exactMatch
+            val resolved = exactMatch
+              .map(path => (path, false))
               .orElse {
                 Option
                   .when(isPartialAllowed && turn.moves.nonEmpty)(
                     pathsWithUci
                       .find { case (_, uciPath) => uciPath.startsWith(turn.moves) }
-                      .map { case (path, _) => path.take(turn.moves.size) }
+                      .map { case (path, _) => (path.take(turn.moves.size), true) }
                   )
                   .flatten
               }
-              .map(path => path.foldLeft(withDice)((current, move) => current.makeMove(move)))
+
+            resolved.map { case (path, isPartial) =>
+              (path.foldLeft(withDice)((current, move) => current.makeMove(move)), isPartial)
+            }
 
         applied match
           case None => Left(ReplayError.IllegalTurn(index, turn.moves, legalPaths.map(_.map(uci))))
-          case Some(state) =>
-            val ended = state.endTurn()
+          case Some((state, isPartial)) =>
+            val ended = if isPartial then state else state.endTurn()
             Right((ended, ReplayedTurn(beforeFen, FenParser.serialize(ended))))
 
   private def uci(move: Move): String =
