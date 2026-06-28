@@ -4,18 +4,16 @@ Branch naming rules, milestones, and agent guidance for the Dice Chess Analytics
 
 ## Branch Naming Conventions
 
-Allowed branch prefixes:
-- `task` — work items / tasks
-- `feat` — new features
-- `bug` — bug fixes
-- `refactor` — code cleanup / restructuring
+Branch name pattern: `<type>/<short-description>`, optionally `<type>/<id>-<short-description>` to link an issue.
 
-Branch name pattern (required):
-  `(task|feat|bug|refactor)/<issue-number>-<short-description>`
-Example: `bug/6-fix-mermaid-syntax`
+Allowed prefixes:
+- Issue-driven: `task` (work items), `feat` (features), `bug` (fixes) — typically carry an `<id>`.
+- Issueless: `refactor`, `chore`, `docs`, `ci`, `test`, `perf` — no issue required.
+
+Examples: `bug/6-fix-mermaid-syntax`, `refactor/extract-query`, `chore/bump-deps`.
 
 ## Agent Rules (AI Assistance)
-- Do not implement or open a PR unless an issue exists and the branch is named according to the pattern.
+- Issue-driven work (`task`/`feat`/`bug`) starts from an issue; the branch carries its `<id>` and the PR links it with `Closes #<id>`. Issueless work (`refactor`/`chore`/`docs`/`ci`/`test`/`perf`) needs no issue. Name the branch per the pattern above.
 - Always run `mise run format` on any generated code and ensure `mise run check` passes successfully locally before proposing a PR.
 - Human retains the ultimate authority to review, approve, and merge the PR.
 - **GitHub CLI Authentication**: On macOS, credentials are saved in the Keychain. When executing `gh` commands, explicitly set the token to an empty string (e.g., `GH_TOKEN="" gh issue create ...`) to avoid authentication errors.
