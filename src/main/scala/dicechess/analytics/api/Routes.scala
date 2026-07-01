@@ -292,17 +292,21 @@ final class Routes(
           Left((StatusCode.BadRequest, ApiError("Invalid role. Must be USER or ADMIN")))
         )
       case Some(_) =>
-        // Lock the active-admin rows first so concurrent demotions serialize (no lost-admin race).
-        UserRepository.lockActiveAdmins().flatMap { adminIds =>
-          val isLastActiveAdmin = adminIds.contains(userId) && adminIds.sizeIs <= 1
-          if isLastActiveAdmin && removesAdmin then doobie.free.connection.pure(lastAdminBlocked)
-          else
-            for
-              _ <- update.isApproved.fold(noOp)(UserRepository.updateApproval(userId, _))
-              _ <- update.isActive.fold(noOp)(UserRepository.updateActive(userId, _))
-              _ <- update.role.fold(noOp)(UserRepository.updateRole(userId, _))
-            yield updated
-        }
+        val applyUpdate: doobie.ConnectionIO[AdminResult] =
+          for
+            _ <- update.isApproved.fold(noOp)(UserRepository.updateApproval(userId, _))
+            _ <- update.isActive.fold(noOp)(UserRepository.updateActive(userId, _))
+            _ <- update.role.fold(noOp)(UserRepository.updateRole(userId, _))
+          yield updated
+        // Only the changes that could drop this user out of the admin set need to serialize against
+        // concurrent demotions; the common case (e.g. approving a pending user) applies directly.
+        if !removesAdmin then applyUpdate
+        else
+          UserRepository.lockActiveAdmins().flatMap { adminIds =>
+            if adminIds.contains(userId) && adminIds.sizeIs <= 1 then
+              doobie.free.connection.pure(lastAdminBlocked)
+            else applyUpdate
+          }
     }
     action.transact(xa)
   }

@@ -39,8 +39,10 @@ import dicechess.analytics.api.Protocol.MeResponse
   */
 object AuthRoutes:
 
+  // Finite timeouts on every outbound Google call so a slow upstream can't stall the OAuth callback.
+  private val HttpTimeout  = java.time.Duration.ofSeconds(10)
   private val logger       = LoggerFactory.getLogger(getClass)
-  private val httpClient   = HttpClient.newHttpClient()
+  private val httpClient   = HttpClient.newBuilder().connectTimeout(HttpTimeout).build()
   private val secureRandom = new SecureRandom()
 
   private val GoogleAuthUrl  = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -53,9 +55,11 @@ object AuthRoutes:
   private val SessionTtl    = 30L * 24L * 3600L // 30 days, in seconds
   private val StateTtl      = 600L              // 10 minutes, in seconds
 
-  /** Fetches and caches Google's public signing keys (JWKS). Thread-safe; built once. */
+  /** Fetches and caches Google's public signing keys (JWKS). Thread-safe; built once. Bounded
+    * connect/read timeouts so a slow JWKS fetch cannot hang the callback.
+    */
   private val jwkProvider: JwkProvider =
-    JwkProviderBuilder(URI.create(GoogleCertsUrl).toURL).build()
+    JwkProviderBuilder(URI.create(GoogleCertsUrl).toURL).timeouts(10000, 10000).build()
 
   private def enc(value: String): String = URLEncoder.encode(value, UTF_8)
 
@@ -132,6 +136,7 @@ object AuthRoutes:
     val request = HttpRequest
       .newBuilder()
       .uri(URI.create(GoogleTokenUrl))
+      .timeout(HttpTimeout)
       .header("Content-Type", "application/x-www-form-urlencoded")
       .POST(HttpRequest.BodyPublishers.ofString(form))
       .build()

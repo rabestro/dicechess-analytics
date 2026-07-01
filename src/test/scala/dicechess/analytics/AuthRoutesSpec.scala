@@ -64,10 +64,16 @@ class AuthRoutesSpec extends CatsEffectSuite with TestContainerForAll:
         val request = Request[IO](Method.GET, Uri.unsafeFromString("/api/auth/login"))
         client.run(request).use { response =>
           assertEquals(response.status, Status.SeeOther)
-          val location = response.headers.get[org.http4s.headers.Location]
-          assert(location.isDefined)
+          val redirectUrl =
+            response.headers.get[org.http4s.headers.Location].map(_.uri.renderString).getOrElse("")
+          assert(redirectUrl.startsWith("https://accounts.google.com/o/oauth2/v2/auth"))
+          assert(redirectUrl.contains("response_type=code"))
+          assert(redirectUrl.contains("scope="))
+          assert(redirectUrl.contains("state="), "login must include a CSRF state parameter")
+          // The same state must be planted as a cookie so the callback can verify it.
           assert(
-            location.get.uri.renderString.startsWith("https://accounts.google.com/o/oauth2/v2/auth")
+            response.cookies.exists(_.name == "oauth_state"),
+            "login must set the oauth_state cookie"
           )
           IO.unit
         }

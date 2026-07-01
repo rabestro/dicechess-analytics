@@ -7,7 +7,9 @@ import cats.data.OptionT
 import cats.effect.IO
 import doobie.Transactor
 import doobie.implicits.*
+import io.circe.Json
 import org.http4s.*
+import org.http4s.headers.`Content-Type`
 
 import dicechess.analytics.repository.{User, UserRepository}
 import dicechess.analytics.api.AuthSupport.AuthError
@@ -36,8 +38,16 @@ object CookieAuthMiddleware:
   )(routes: HttpRoutes[IO]): HttpRoutes[IO] =
     val verifier = AuthSupport.sessionVerifier(AuthSupport.resolveSecret(secretKey, mockAuth))
 
-    val unauthorized = OptionT.pure[IO](Response[IO](Status.Unauthorized))
-    val forbidden    = OptionT.pure[IO](Response[IO](Status.Forbidden))
+    // Match the FastAPI-style `{"detail": ...}` error shape used by the rest of the API.
+    def deny(status: Status, message: String): OptionT[IO, Response[IO]] =
+      OptionT.pure[IO](
+        Response[IO](status = status)
+          .withEntity(Json.obj("detail" -> Json.fromString(message)).noSpaces)
+          .withContentType(`Content-Type`(MediaType.application.json))
+      )
+
+    val unauthorized = deny(Status.Unauthorized, "Not authenticated")
+    val forbidden    = deny(Status.Forbidden, "Forbidden")
 
     HttpRoutes[IO] { req =>
       val path                                        = req.uri.path.renderString
@@ -58,22 +68,31 @@ object CookieAuthMiddleware:
             }
     }
 
+  // Boundary-aware so an adjacent path (e.g. `/docsx`) can't accidentally fall into the allowlist.
   private def isPublic(path: String): Boolean =
     path == "/" ||
       path == "/version" ||
-      path.startsWith("/docs") ||
-      path.startsWith("/swagger-ui") ||
+      path == "/docs" || path.startsWith("/docs/") ||
+      path == "/swagger-ui" || path.startsWith("/swagger-ui/") ||
       path.startsWith("/api/auth/")
 
   /** Machine-to-machine write endpoints that carry their own bearer token (`INGEST_TOKEN` /
     * `CURATION_TOKEN`), validated by the Tapir security layer. A human browser never hits these; a
-    * caller without the correct token is rejected downstream with 401.
+    * caller without the correct token is rejected downstream with 401. Matched precisely so a
+    * future sibling route is not silently exempted from the cookie gate.
     */
   private def isMachineWrite(method: Method, path: String): Boolean =
-    (method == Method.POST && path == "/api/games") ||            // ingest a game
-      (method == Method.PUT && path.startsWith("/api/games/")) || // replace a game
+    (method == Method.POST && path == "/api/games") ||     // ingest a game
+      (method == Method.PUT && isGameReplacePath(path)) || // replace a game: PUT /api/games/{id}
       ((method == Method.PUT || method == Method.DELETE) &&
         path == "/api/opening-book/favorites") // curate favorites
+
+  /** Exactly `/api/games/{id}` — one segment after the prefix, not a deeper sub-resource. */
+  private def isGameReplacePath(path: String): Boolean =
+    path.startsWith("/api/games/") && {
+      val rest = path.stripPrefix("/api/games/")
+      rest.nonEmpty && !rest.contains("/")
+    }
 
   /** In MOCK_AUTH mode, transparently provide a pre-approved admin so the API is usable without a
     * real Google login (local dev / tests).

@@ -63,9 +63,9 @@ lazy val root = (project in file("."))
       "net.openhft" % "zero-allocation-hashing" % ZeroAllocHashingVersion,
 
       // Authentication and JWT
-      "com.auth0" % "java-jwt" % "4.4.0",
+      "com.auth0" % "java-jwt" % "4.5.2",
       // Fetches & caches Google's public keys (JWKS) to verify the OAuth id_token signature
-      "com.auth0" % "jwks-rsa" % "0.22.1",
+      "com.auth0" % "jwks-rsa" % "0.24.1",
       // SLF4J API for server-side logging (bound by logback-classic at runtime)
       "org.slf4j" % "slf4j-api" % "2.0.17",
 
