@@ -172,7 +172,8 @@ object AuthRoutes:
 
   /** Create the user on first login, or refresh profile + last-login on return. If the email
     * matches `ADMIN_EMAIL` the user is (re)promoted to an approved admin even if the row already
-    * existed as a plain user — this is the only admin bootstrap path. Runs in one transaction.
+    * existed as a plain user — this is the only admin bootstrap path. A single atomic upsert, so a
+    * concurrent first login can never mint a session for a non-persisted id.
     */
   private def upsertOnLogin(
       xa: Transactor[IO],
@@ -182,40 +183,18 @@ object AuthRoutes:
     val email        = identity.email.toLowerCase(java.util.Locale.ROOT)
     val isAdminEmail = config.adminEmail.exists(_.equalsIgnoreCase(email))
     val now          = OffsetDateTime.now()
-
-    val action = UserRepository.getByEmail(email).flatMap {
-      case Some(existing) =>
-        val promote = isAdminEmail && (existing.role != "ADMIN" || !existing.isApproved)
-        for
-          _ <- UserRepository.updateLogin(
-            existing.id,
-            now,
-            identity.name.orElse(existing.name),
-            identity.picture.orElse(existing.pictureUrl)
-          )
-          _ <-
-            if promote then UserRepository.updateRole(existing.id, "ADMIN")
-            else doobie.free.connection.pure(0)
-          _ <-
-            if promote then UserRepository.updateApproval(existing.id, true)
-            else doobie.free.connection.pure(0)
-          refreshed <- UserRepository.get(existing.id)
-        yield refreshed.getOrElse(existing)
-      case None =>
-        val user = User(
-          id = UUID.randomUUID(),
-          email = email,
-          name = identity.name,
-          pictureUrl = identity.picture,
-          role = if isAdminEmail then "ADMIN" else "USER",
-          isApproved = isAdminEmail,
-          isActive = true,
-          lastLoginAt = Some(now),
-          createdAt = now
-        )
-        UserRepository.create(user).map(_ => user)
-    }
-    action.transact(xa)
+    val candidate    = User(
+      id = UUID.randomUUID(),
+      email = email,
+      name = identity.name,
+      pictureUrl = identity.picture,
+      role = if isAdminEmail then "ADMIN" else "USER",
+      isApproved = isAdminEmail,
+      isActive = true,
+      lastLoginAt = Some(now),
+      createdAt = now
+    )
+    UserRepository.upsert(candidate, isAdminEmail).transact(xa)
 
   private def signSession(algorithm: Algorithm, user: User): String =
     JWT

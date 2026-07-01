@@ -34,7 +34,7 @@ object UserRepository:
     sql"""
       SELECT id, email, name, picture_url, role, is_approved, is_active, last_login_at, created_at
       FROM users
-      WHERE lower(email) = lower($email)
+      WHERE email = lower($email)
     """
       .query[User]
       .option
@@ -75,17 +75,23 @@ object UserRepository:
       ON CONFLICT (email) DO UPDATE SET last_login_at = EXCLUDED.last_login_at
     """.update.run
 
-  def updateLogin(
-      id: UUID,
-      lastLoginAt: OffsetDateTime,
-      name: Option[String],
-      pictureUrl: Option[String]
-  ): ConnectionIO[Int] =
+  /** Atomic create-or-refresh used by the login flow. Inserts a new user, or on an existing email
+    * refreshes last-login and profile and (re)promotes to an approved admin when `isAdminEmail`.
+    * `RETURNING` yields the row actually persisted, so a concurrent first login can never hand back
+    * a client-generated id that was not the one stored (which would produce an unusable session).
+    */
+  def upsert(user: User, isAdminEmail: Boolean): ConnectionIO[User] =
     sql"""
-      UPDATE users
-      SET last_login_at = $lastLoginAt, name = $name, picture_url = $pictureUrl
-      WHERE id = $id
-    """.update.run
+      INSERT INTO users (id, email, name, picture_url, role, is_approved, is_active, last_login_at, created_at)
+      VALUES (${user.id}, ${user.email}, ${user.name}, ${user.pictureUrl}, ${user.role}, ${user.isApproved}, ${user.isActive}, ${user.lastLoginAt}, ${user.createdAt})
+      ON CONFLICT (email) DO UPDATE SET
+        last_login_at = EXCLUDED.last_login_at,
+        name          = COALESCE(EXCLUDED.name, users.name),
+        picture_url   = COALESCE(EXCLUDED.picture_url, users.picture_url),
+        role          = CASE WHEN $isAdminEmail THEN 'ADMIN' ELSE users.role END,
+        is_approved   = CASE WHEN $isAdminEmail THEN TRUE ELSE users.is_approved END
+      RETURNING id, email, name, picture_url, role, is_approved, is_active, last_login_at, created_at
+    """.query[User].unique
 
   def updateApproval(id: UUID, isApproved: Boolean): ConnectionIO[Int] =
     sql"UPDATE users SET is_approved = $isApproved WHERE id = $id".update.run

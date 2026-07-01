@@ -80,15 +80,30 @@ class UserRepositorySpec extends CatsEffectSuite with TestContainerForAll:
         adminUsers <- UserRepository.list(Some("admins")).transact(transactor)
         _ = assertEquals(adminUsers.size, 1)
 
-        // 7. Update Login
+        // 7. Upsert on a repeat login: refreshes profile, keeps role/approval when not an admin
+        // email, and RETURNS the already-persisted row (its id, not the freshly generated one).
         now = OffsetDateTime.now()
-        _ <- UserRepository
-          .updateLogin(userId, now, Some("New Name"), Some("new-pic.jpg"))
+        returned <- UserRepository
+          .upsert(
+            User(
+              id = UUID.randomUUID(),
+              email = "test@example.com",
+              name = Some("New Name"),
+              pictureUrl = Some("new-pic.jpg"),
+              role = "USER",
+              isApproved = false,
+              isActive = true,
+              lastLoginAt = Some(now),
+              createdAt = now
+            ),
+            isAdminEmail = false
+          )
           .transact(transactor)
-        updatedUser <- UserRepository.get(userId).transact(transactor)
-        _ = assert(updatedUser.isDefined)
-        _ = assertEquals(updatedUser.get.name, Some("New Name"))
-        _ = assertEquals(updatedUser.get.pictureUrl, Some("new-pic.jpg"))
+        _ = assertEquals(returned.id, userId)    // existing row, not the new random id
+        _ = assertEquals(returned.name, Some("New Name"))
+        _ = assertEquals(returned.pictureUrl, Some("new-pic.jpg"))
+        _ = assertEquals(returned.role, "ADMIN") // not demoted by a non-admin upsert
+        _ = assertEquals(returned.isApproved, true)
 
         // 8. Update Active Status
         _            <- UserRepository.updateActive(userId, false).transact(transactor)

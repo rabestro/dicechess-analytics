@@ -37,13 +37,28 @@ final case class AppConfig(
 object AppConfig:
 
   def load(env: Map[String, String] = sys.env): Either[String, AppConfig] =
-    val mockAuth  = env.get("MOCK_AUTH").flatMap(_.toBooleanOption).getOrElse(false)
-    val secretKey = env.get("SECRET_KEY").filter(_.nonEmpty)
+    val mockAuth = env.get("MOCK_AUTH").flatMap(_.toBooleanOption).getOrElse(false)
+    def nonEmpty(name: String): Option[String] = env.get(name).filter(_.nonEmpty)
+    val secretKey                              = nonEmpty("SECRET_KEY")
+    val googleClientId                         = nonEmpty("GOOGLE_CLIENT_ID")
+    val googleClientSecret                     = nonEmpty("GOOGLE_CLIENT_SECRET")
+    val googleRedirectUri                      = nonEmpty("GOOGLE_REDIRECT_URI")
+
+    // Real-auth mode needs the session secret and the full Google client config. Fail on load with a
+    // precise message rather than booting into a login flow that can only 500 on the first attempt.
+    val authRequirements: Either[String, Unit] =
+      if mockAuth then Right(())
+      else
+        List(
+          "SECRET_KEY"           -> secretKey,
+          "GOOGLE_CLIENT_ID"     -> googleClientId,
+          "GOOGLE_CLIENT_SECRET" -> googleClientSecret,
+          "GOOGLE_REDIRECT_URI"  -> googleRedirectUri
+        ).collectFirst { case (name, None) => s"$name must be provided unless MOCK_AUTH=true" }
+          .toLeft(())
+
     for
-      _ <-
-        if !mockAuth && secretKey.isEmpty then
-          Left("SECRET_KEY must be provided unless MOCK_AUTH=true")
-        else Right(())
+      _    <- authRequirements
       db   <- dbConfig(env)
       host <- parseHost(env.getOrElse("HTTP_HOST", "0.0.0.0"))
       port <- parsePort(env.getOrElse("HTTP_PORT", "8000"))
@@ -59,10 +74,10 @@ object AppConfig:
       dbPoolSize = pool,
       ingestToken = env.get("INGEST_TOKEN").filter(_.nonEmpty),
       curatorToken = env.get("CURATION_TOKEN").filter(_.nonEmpty),
-      secretKey = env.get("SECRET_KEY").filter(_.nonEmpty),
-      googleClientId = env.get("GOOGLE_CLIENT_ID").filter(_.nonEmpty),
-      googleClientSecret = env.get("GOOGLE_CLIENT_SECRET").filter(_.nonEmpty),
-      googleRedirectUri = env.get("GOOGLE_REDIRECT_URI").filter(_.nonEmpty),
+      secretKey = secretKey,
+      googleClientId = googleClientId,
+      googleClientSecret = googleClientSecret,
+      googleRedirectUri = googleRedirectUri,
       frontendUrl = env.get("FRONTEND_URL").filter(_.nonEmpty).getOrElse("/"),
       adminEmail = env.get("ADMIN_EMAIL").filter(_.nonEmpty),
       mockAuth = mockAuth
