@@ -29,9 +29,7 @@ object Main extends IOApp.Simple:
         .use { xa =>
           val app = Routes(
             xa,
-            config.corsOrigins,
-            config.ingestToken,
-            config.curatorToken,
+            config,
             versionInfo
           ).httpApp
           EmberServerBuilder

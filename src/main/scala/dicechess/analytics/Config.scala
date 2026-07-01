@@ -24,13 +24,26 @@ final case class AppConfig(
     ingestToken: Option[String],
     // Bearer secret required to write opening-book favorites (PUT/DELETE /api/opening-book/favorites).
     // None ⇒ curation writes are rejected; the read endpoint (GET) is always public.
-    curatorToken: Option[String]
+    curatorToken: Option[String],
+    secretKey: Option[String],
+    googleClientId: Option[String],
+    googleClientSecret: Option[String],
+    googleRedirectUri: Option[String],
+    frontendUrl: String,
+    adminEmail: Option[String],
+    mockAuth: Boolean
 )
 
 object AppConfig:
 
   def load(env: Map[String, String] = sys.env): Either[String, AppConfig] =
+    val mockAuth  = env.get("MOCK_AUTH").flatMap(_.toBooleanOption).getOrElse(false)
+    val secretKey = env.get("SECRET_KEY").filter(_.nonEmpty)
     for
+      _ <-
+        if !mockAuth && secretKey.isEmpty then
+          Left("SECRET_KEY must be provided unless MOCK_AUTH=true")
+        else Right(())
       db   <- dbConfig(env)
       host <- parseHost(env.getOrElse("HTTP_HOST", "0.0.0.0"))
       port <- parsePort(env.getOrElse("HTTP_PORT", "8000"))
@@ -45,7 +58,14 @@ object AppConfig:
         .getOrElse(List("http://localhost:5173", "http://localhost:3000")),
       dbPoolSize = pool,
       ingestToken = env.get("INGEST_TOKEN").filter(_.nonEmpty),
-      curatorToken = env.get("CURATION_TOKEN").filter(_.nonEmpty)
+      curatorToken = env.get("CURATION_TOKEN").filter(_.nonEmpty),
+      secretKey = env.get("SECRET_KEY").filter(_.nonEmpty),
+      googleClientId = env.get("GOOGLE_CLIENT_ID").filter(_.nonEmpty),
+      googleClientSecret = env.get("GOOGLE_CLIENT_SECRET").filter(_.nonEmpty),
+      googleRedirectUri = env.get("GOOGLE_REDIRECT_URI").filter(_.nonEmpty),
+      frontendUrl = env.get("FRONTEND_URL").filter(_.nonEmpty).getOrElse("/"),
+      adminEmail = env.get("ADMIN_EMAIL").filter(_.nonEmpty),
+      mockAuth = mockAuth
     )
 
   private def parseHost(value: String): Either[String, Host] =
@@ -66,13 +86,14 @@ object AppConfig:
     * form used by the Python app) and converts them to JDBC.
     */
   def parseDatabaseUrl(url: String): Either[String, DbConfig] =
+    val pgPrefix   = "postgresql://"
     val normalized = url
-      .replaceFirst("^postgresql\\+[a-z0-9]+://", "postgresql://")
-      .replaceFirst("^postgres://", "postgresql://")
-    if !normalized.startsWith("postgresql://") then Left(s"Unsupported DATABASE_URL scheme: $url")
+      .replaceFirst("^postgresql\\+[a-z0-9]+://", pgPrefix)
+      .replaceFirst("^postgres://", pgPrefix)
+    if !normalized.startsWith(pgPrefix) then Left(s"Unsupported DATABASE_URL scheme: $url")
     else
       try
-        val uri              = URI("dummy://" + normalized.stripPrefix("postgresql://"))
+        val uri              = URI("dummy://" + normalized.stripPrefix(pgPrefix))
         val userInfo         = Option(uri.getUserInfo).getOrElse("")
         val (user, password) = userInfo.split(":", 2) match
           case Array(u, p) => (u, p)
