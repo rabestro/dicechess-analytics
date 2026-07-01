@@ -16,8 +16,14 @@ object Endpoints:
   private val notFound =
     statusCode(StatusCode.NotFound).and(jsonBody[ApiError].description("Entity not found"))
 
-  private val fenQueryDescription = "Position FEN (normalized server-side)"
-  private val openingBookSegment  = "opening-book"
+  private val fenQueryDescription       = "Position FEN (normalized server-side)"
+  private val openingBookSegment        = "opening-book"
+  private val modeQueryDescription      = "Game mode: classic or x2 (omit for all)"
+  private val sourceQueryDescription    = "Filter by game source, e.g. dicechess.com"
+  private val minRatingQueryDescription =
+    "Keep only games where both players were rated at least this high"
+  private val dateFromDescription = "Earliest start date, inclusive"
+  private val dateToDescription   = "Latest start date, inclusive"
 
   val root: PublicEndpoint[Unit, Unit, Welcome, Any] =
     endpoint.get
@@ -66,8 +72,8 @@ object Endpoints:
           .description("Stake tier on the pot: free, low, medium or high")
           .validateOption(Validator.enumeration(List("free", "low", "medium", "high")))
       )
-      .in(query[Option[LocalDate]]("date_from").description("Earliest start date, inclusive"))
-      .in(query[Option[LocalDate]]("date_to").description("Latest start date, inclusive"))
+      .in(query[Option[LocalDate]]("date_from").description(dateFromDescription))
+      .in(query[Option[LocalDate]]("date_to").description(dateToDescription))
       .in(
         query[Option[String]]("sort")
           .description("Sort field: started_at (default) or total_turns")
@@ -142,8 +148,8 @@ object Endpoints:
           .description("Stake tier on the pot: free, low, medium or high")
           .validateOption(Validator.enumeration(List("free", "low", "medium", "high")))
       )
-      .and(query[Option[LocalDate]]("date_from").description("Earliest start date, inclusive"))
-      .and(query[Option[LocalDate]]("date_to").description("Latest start date, inclusive"))
+      .and(query[Option[LocalDate]]("date_from").description(dateFromDescription))
+      .and(query[Option[LocalDate]]("date_to").description(dateToDescription))
 
   val playerStats: PublicEndpoint[PlayerStatsQuery, ApiError, PlayerStats, Any] =
     endpoint.get
@@ -170,8 +176,8 @@ object Endpoints:
   val profitHistory: PublicEndpoint[ProfitHistoryQuery, ApiError, ProfitHistory, Any] =
     endpoint.get
       .in("api" / "players" / path[UUID]("player_id") / "profit-history")
-      .in(query[Option[LocalDate]]("date_from").description("Earliest start date, inclusive"))
-      .in(query[Option[LocalDate]]("date_to").description("Latest start date, inclusive"))
+      .in(query[Option[LocalDate]]("date_from").description(dateFromDescription))
+      .in(query[Option[LocalDate]]("date_to").description(dateToDescription))
       .mapInTo[ProfitHistoryQuery]
       .out(jsonBody[ProfitHistory])
       .errorOut(notFound)
@@ -187,8 +193,8 @@ object Endpoints:
           .description("Game mode: classic or x2 (omit for both)")
           .validateOption(Validator.enumeration(List("classic", "x2")))
       )
-      .in(query[Option[LocalDate]]("date_from").description("Earliest start date, inclusive"))
-      .in(query[Option[LocalDate]]("date_to").description("Latest start date, inclusive"))
+      .in(query[Option[LocalDate]]("date_from").description(dateFromDescription))
+      .in(query[Option[LocalDate]]("date_to").description(dateToDescription))
       .mapInTo[RatingHistoryQuery]
       .out(jsonBody[RatingHistory])
       .errorOut(notFound)
@@ -203,13 +209,13 @@ object Endpoints:
       .in(query[String]("dice").description("Dice roll as sorted piece letters, e.g. BPQ"))
       .in(
         query[Option[String]]("mode")
-          .description("Game mode: classic or x2 (omit for all)")
+          .description(modeQueryDescription)
           .validateOption(Validator.enumeration(List("classic", "x2")))
       )
-      .in(query[Option[String]]("source").description("Filter by game source, e.g. dicechess.com"))
+      .in(query[Option[String]]("source").description(sourceQueryDescription))
       .in(
         query[Option[Int]]("min_rating")
-          .description("Keep only games where both players were rated at least this high")
+          .description(minRatingQueryDescription)
           .validateOption(Validator.min(0))
       )
       .in(
@@ -229,13 +235,13 @@ object Endpoints:
       .in(query[String]("fen").description(fenQueryDescription))
       .in(
         query[Option[String]]("mode")
-          .description("Game mode: classic or x2 (omit for all)")
+          .description(modeQueryDescription)
           .validateOption(Validator.enumeration(List("classic", "x2")))
       )
-      .in(query[Option[String]]("source").description("Filter by game source, e.g. dicechess.com"))
+      .in(query[Option[String]]("source").description(sourceQueryDescription))
       .in(
         query[Option[Int]]("min_rating")
-          .description("Keep only games where both players were rated at least this high")
+          .description(minRatingQueryDescription)
           .validateOption(Validator.min(0))
       )
       .mapInTo[PositionEquityQuery]
@@ -250,13 +256,13 @@ object Endpoints:
       .in(query[String]("fen").description(fenQueryDescription))
       .in(
         query[Option[String]]("mode")
-          .description("Game mode: classic or x2 (omit for all)")
+          .description(modeQueryDescription)
           .validateOption(Validator.enumeration(List("classic", "x2")))
       )
-      .in(query[Option[String]]("source").description("Filter by game source, e.g. dicechess.com"))
+      .in(query[Option[String]]("source").description(sourceQueryDescription))
       .in(
         query[Option[Int]]("min_rating")
-          .description("Keep only games where both players were rated at least this high")
+          .description(minRatingQueryDescription)
           .validateOption(Validator.min(0))
       )
       .mapInTo[PositionEquityQuery]
@@ -332,6 +338,39 @@ object Endpoints:
       .errorOut(statusCode.and(jsonBody[ApiError]))
       .description("Delete a curated opening-book favorite (bearer auth required)")
 
+  val listUsers: PublicEndpoint[Option[String], Unit, List[UserResponse], Any] =
+    endpoint.get
+      .in("api" / "admin" / "users")
+      .in(
+        query[Option[String]]("status")
+          .validateOption(Validator.enumeration(List("pending", "approved", "blocked", "admins")))
+          .description("Filter users by status: pending, approved, blocked, admins")
+      )
+      .out(jsonBody[List[UserResponse]])
+      .description("List all users (Admin only)")
+
+  val updateUser: PublicEndpoint[
+    (UUID, AdminUserUpdateRequest),
+    (StatusCode, ApiError),
+    MessageResponse,
+    Any
+  ] =
+    endpoint.patch
+      .in("api" / "admin" / "users" / path[UUID]("user_id"))
+      .in(jsonBody[AdminUserUpdateRequest])
+      .out(jsonBody[MessageResponse])
+      // Runtime status: 404 (unknown user), 400 (invalid role), 409 (would remove the last admin).
+      .errorOut(statusCode.and(jsonBody[ApiError]))
+      .description("Update user approval, role or active state (Admin only)")
+
+  val deleteUser: PublicEndpoint[UUID, (StatusCode, ApiError), MessageResponse, Any] =
+    endpoint.delete
+      .in("api" / "admin" / "users" / path[UUID]("user_id"))
+      .out(jsonBody[MessageResponse])
+      // Runtime status: 404 (unknown user), 409 (would remove the last admin).
+      .errorOut(statusCode.and(jsonBody[ApiError]))
+      .description("Delete a user (Admin only)")
+
   val all: List[AnyEndpoint] =
     List(
       root,
@@ -351,5 +390,8 @@ object Endpoints:
       replaceGame,
       getFavorites,
       putFavorite,
-      deleteFavorite
+      deleteFavorite,
+      listUsers,
+      updateUser,
+      deleteUser
     )

@@ -121,6 +121,13 @@ Environment variables (compatible with docker-compose):
 | `POSTGRES_HOST/PORT/DB/USER/PASSWORD` | docker-compose defaults | used when `DATABASE_URL` is absent |
 | `HTTP_HOST` / `HTTP_PORT` | `0.0.0.0` / `8000` | |
 | `CORS_ORIGINS` | `http://localhost:5173,http://localhost:3000` | comma-separated |
+| `SECRET_KEY` | — | signs the session cookie (HMAC). **Required** — the app refuses to start without it unless `MOCK_AUTH=true` |
+| `MOCK_AUTH` | `false` | `true` bypasses Google login, treating every request as a pre-approved admin. Local/dev only |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | — | Google OAuth2 client credentials; required unless `MOCK_AUTH=true` |
+| `GOOGLE_REDIRECT_URI` | — | must match the Google console and point at `<api-host>/api/auth/callback` |
+| `FRONTEND_URL` | `/` | where the OAuth callback redirects the browser after login |
+| `ADMIN_EMAIL` | — | auto-provisioned and re-promoted on every login as an approved admin (first-admin bootstrap) |
+| `INGEST_TOKEN` / `CURATION_TOKEN` | — | bearer secrets for the machine write endpoints (ingest / opening-book curation) |
 
 ---
 

@@ -62,6 +62,13 @@ lazy val root = (project in file("."))
       // Position hashing: xxHash64, bit-compatible with the historical fen_hash values
       "net.openhft" % "zero-allocation-hashing" % ZeroAllocHashingVersion,
 
+      // Authentication and JWT
+      "com.auth0" % "java-jwt" % "4.5.2",
+      // Fetches & caches Google's public keys (JWKS) to verify the OAuth id_token signature
+      "com.auth0" % "jwks-rsa" % "0.24.1",
+      // SLF4J API for server-side logging (bound by logback-classic at runtime)
+      "org.slf4j" % "slf4j-api" % "2.0.17",
+
       // HTTP server & typed endpoints (Swagger UI served at /docs)
       "org.http4s"                  %% "http4s-ember-server"     % Http4sVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-http4s-server"     % TapirVersion,

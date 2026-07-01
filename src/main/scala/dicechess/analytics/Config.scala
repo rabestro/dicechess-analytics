@@ -24,13 +24,41 @@ final case class AppConfig(
     ingestToken: Option[String],
     // Bearer secret required to write opening-book favorites (PUT/DELETE /api/opening-book/favorites).
     // None ⇒ curation writes are rejected; the read endpoint (GET) is always public.
-    curatorToken: Option[String]
+    curatorToken: Option[String],
+    secretKey: Option[String],
+    googleClientId: Option[String],
+    googleClientSecret: Option[String],
+    googleRedirectUri: Option[String],
+    frontendUrl: String,
+    adminEmail: Option[String],
+    mockAuth: Boolean
 )
 
 object AppConfig:
 
   def load(env: Map[String, String] = sys.env): Either[String, AppConfig] =
+    val mockAuth = env.get("MOCK_AUTH").flatMap(_.toBooleanOption).getOrElse(false)
+    def nonEmpty(name: String): Option[String] = env.get(name).filter(_.nonEmpty)
+    val secretKey                              = nonEmpty("SECRET_KEY")
+    val googleClientId                         = nonEmpty("GOOGLE_CLIENT_ID")
+    val googleClientSecret                     = nonEmpty("GOOGLE_CLIENT_SECRET")
+    val googleRedirectUri                      = nonEmpty("GOOGLE_REDIRECT_URI")
+
+    // Real-auth mode needs the session secret and the full Google client config. Fail on load with a
+    // precise message rather than booting into a login flow that can only 500 on the first attempt.
+    val authRequirements: Either[String, Unit] =
+      if mockAuth then Right(())
+      else
+        List(
+          "SECRET_KEY"           -> secretKey,
+          "GOOGLE_CLIENT_ID"     -> googleClientId,
+          "GOOGLE_CLIENT_SECRET" -> googleClientSecret,
+          "GOOGLE_REDIRECT_URI"  -> googleRedirectUri
+        ).collectFirst { case (name, None) => s"$name must be provided unless MOCK_AUTH=true" }
+          .toLeft(())
+
     for
+      _    <- authRequirements
       db   <- dbConfig(env)
       host <- parseHost(env.getOrElse("HTTP_HOST", "0.0.0.0"))
       port <- parsePort(env.getOrElse("HTTP_PORT", "8000"))
@@ -45,7 +73,14 @@ object AppConfig:
         .getOrElse(List("http://localhost:5173", "http://localhost:3000")),
       dbPoolSize = pool,
       ingestToken = env.get("INGEST_TOKEN").filter(_.nonEmpty),
-      curatorToken = env.get("CURATION_TOKEN").filter(_.nonEmpty)
+      curatorToken = env.get("CURATION_TOKEN").filter(_.nonEmpty),
+      secretKey = secretKey,
+      googleClientId = googleClientId,
+      googleClientSecret = googleClientSecret,
+      googleRedirectUri = googleRedirectUri,
+      frontendUrl = env.get("FRONTEND_URL").filter(_.nonEmpty).getOrElse("/"),
+      adminEmail = env.get("ADMIN_EMAIL").filter(_.nonEmpty),
+      mockAuth = mockAuth
     )
 
   private def parseHost(value: String): Either[String, Host] =
@@ -66,13 +101,14 @@ object AppConfig:
     * form used by the Python app) and converts them to JDBC.
     */
   def parseDatabaseUrl(url: String): Either[String, DbConfig] =
+    val pgPrefix   = "postgresql://"
     val normalized = url
-      .replaceFirst("^postgresql\\+[a-z0-9]+://", "postgresql://")
-      .replaceFirst("^postgres://", "postgresql://")
-    if !normalized.startsWith("postgresql://") then Left(s"Unsupported DATABASE_URL scheme: $url")
+      .replaceFirst("^postgresql\\+[a-z0-9]+://", pgPrefix)
+      .replaceFirst("^postgres://", pgPrefix)
+    if !normalized.startsWith(pgPrefix) then Left(s"Unsupported DATABASE_URL scheme: $url")
     else
       try
-        val uri              = URI("dummy://" + normalized.stripPrefix("postgresql://"))
+        val uri              = URI("dummy://" + normalized.stripPrefix(pgPrefix))
         val userInfo         = Option(uri.getUserInfo).getOrElse("")
         val (user, password) = userInfo.split(":", 2) match
           case Array(u, p) => (u, p)

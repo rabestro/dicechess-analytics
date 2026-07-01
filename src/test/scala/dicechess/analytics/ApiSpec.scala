@@ -89,7 +89,23 @@ class ApiSpec extends CatsEffectSuite with TestContainerForAll:
   private val testVersion = VersionInfo("dicechess-analytics-backend", "test-9.9.9", "3.8.3")
 
   private def withClient[A](pg: PostgreSQLContainer)(run: Client[IO] => IO[A]): IO[A] =
-    val app = Routes(transactor(pg), List("http://localhost:5173"), None, None, testVersion).httpApp
+    val config = AppConfig(
+      db = DbConfig("", "", ""),
+      host = com.comcast.ip4s.Host.fromString("0.0.0.0").get,
+      port = com.comcast.ip4s.Port.fromInt(8000).get,
+      corsOrigins = List("http://localhost:5173"),
+      dbPoolSize = 1,
+      ingestToken = None,
+      curatorToken = None,
+      secretKey = Some("test-secret-key"),
+      googleClientId = None,
+      googleClientSecret = None,
+      googleRedirectUri = None,
+      frontendUrl = "http://localhost:5173",
+      adminEmail = None,
+      mockAuth = true
+    )
+    val app = Routes(transactor(pg), config, testVersion).httpApp
     run(Client.fromHttpApp(app))
 
   private def getJson(client: Client[IO], uri: String): IO[Json] =

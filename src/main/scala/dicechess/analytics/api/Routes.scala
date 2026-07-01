@@ -13,12 +13,14 @@ import sttp.model.StatusCode
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 
+import dicechess.analytics.AppConfig
 import dicechess.analytics.ingest.{GameReplay, ReplayError, TurnInput}
 import dicechess.analytics.repository.{
   GamesRepository,
   IngestRepository,
   PlayersRepository,
-  PositionsRepository
+  PositionsRepository,
+  UserRepository
 }
 import IngestProtocol.*
 import Protocol.*
@@ -26,13 +28,19 @@ import Protocol.*
 /** Wires endpoint definitions to repository logic and assembles the HTTP application. */
 final class Routes(
     xa: Transactor[IO],
-    corsOrigins: List[String],
-    ingestToken: Option[String],
-    curatorToken: Option[String],
+    config: AppConfig,
     version: VersionInfo
 ):
 
+  private val ingestToken  = config.ingestToken
+  private val curatorToken = config.curatorToken
+  private val corsOrigins  = config.corsOrigins
+
   private val defaultLimit = 50
+
+  private val playerNotFound = "Player not found"
+
+  private val noOp = doobie.free.connection.pure(0)
 
   private val rootLogic = Endpoints.root.serverLogicSuccess[IO](_ =>
     IO.pure(Welcome(message = "Welcome to Dice Chess Analytics API", docs = "/docs"))
@@ -63,35 +71,35 @@ final class Routes(
     PlayersRepository
       .get(playerId)
       .transact(xa)
-      .map(_.toRight(ApiError("Player not found")))
+      .map(_.toRight(ApiError(playerNotFound)))
   }
 
   private val playerStatsLogic = Endpoints.playerStats.serverLogic[IO] { query =>
     PlayersRepository
       .stats(query)
       .transact(xa)
-      .map(_.toRight(ApiError("Player not found")))
+      .map(_.toRight(ApiError(playerNotFound)))
   }
 
   private val breakdownsLogic = Endpoints.breakdowns.serverLogic[IO] { query =>
     PlayersRepository
       .breakdowns(query)
       .transact(xa)
-      .map(_.toRight(ApiError("Player not found")))
+      .map(_.toRight(ApiError(playerNotFound)))
   }
 
   private val profitHistoryLogic = Endpoints.profitHistory.serverLogic[IO] { query =>
     PlayersRepository
       .profitHistory(query)
       .transact(xa)
-      .map(_.toRight(ApiError("Player not found")))
+      .map(_.toRight(ApiError(playerNotFound)))
   }
 
   private val ratingHistoryLogic = Endpoints.ratingHistory.serverLogic[IO] { query =>
     PlayersRepository
       .ratingHistory(query)
       .transact(xa)
-      .map(_.toRight(ApiError("Player not found")))
+      .map(_.toRight(ApiError(playerNotFound)))
   }
 
   private val continuationsLogic = Endpoints.continuations.serverLogicSuccess[IO] { query =>
@@ -241,11 +249,90 @@ final class Routes(
         }
       }
 
+  private val listUsersLogic = Endpoints.listUsers.serverLogic[IO] { status =>
+    UserRepository.list(status).transact(xa).map { users =>
+      Right(
+        users.map(u =>
+          UserResponse(
+            u.id,
+            u.email,
+            u.name,
+            u.pictureUrl,
+            u.role,
+            u.isApproved,
+            u.isActive,
+            u.lastLoginAt,
+            u.createdAt
+          )
+        )
+      )
+    }
+  }
+
+  // Admin user-management results share one error channel (runtime status code + message).
+  private type AdminResult = Either[(StatusCode, ApiError), MessageResponse]
+
+  private val userNotFound: AdminResult = Left((StatusCode.NotFound, ApiError("User not found")))
+  private val lastAdminBlocked: AdminResult =
+    Left((StatusCode.Conflict, ApiError("Cannot demote, disable or delete the last active admin")))
+  private def updated: AdminResult = Right(MessageResponse("User updated successfully"))
+
+  private val updateUserLogic = Endpoints.updateUser.serverLogic[IO] { case (userId, update) =>
+    val invalidRole = update.role.exists(r => r != "USER" && r != "ADMIN")
+    // Any change that would drop this user out of the active-admin set.
+    val removesAdmin =
+      update.role.contains("USER") ||
+        update.isApproved.contains(false) ||
+        update.isActive.contains(false)
+
+    val action: doobie.ConnectionIO[AdminResult] = UserRepository.get(userId).flatMap {
+      case None                   => doobie.free.connection.pure(userNotFound)
+      case Some(_) if invalidRole =>
+        doobie.free.connection.pure(
+          Left((StatusCode.BadRequest, ApiError("Invalid role. Must be USER or ADMIN")))
+        )
+      case Some(_) =>
+        val applyUpdate: doobie.ConnectionIO[AdminResult] =
+          for
+            _ <- update.isApproved.fold(noOp)(UserRepository.updateApproval(userId, _))
+            _ <- update.isActive.fold(noOp)(UserRepository.updateActive(userId, _))
+            _ <- update.role.fold(noOp)(UserRepository.updateRole(userId, _))
+          yield updated
+        // Only the changes that could drop this user out of the admin set need to serialize against
+        // concurrent demotions; the common case (e.g. approving a pending user) applies directly.
+        if !removesAdmin then applyUpdate
+        else
+          UserRepository.lockActiveAdmins().flatMap { adminIds =>
+            if adminIds.contains(userId) && adminIds.sizeIs <= 1 then
+              doobie.free.connection.pure(lastAdminBlocked)
+            else applyUpdate
+          }
+    }
+    action.transact(xa)
+  }
+
+  private val deleteUserLogic = Endpoints.deleteUser.serverLogic[IO] { userId =>
+    val action: doobie.ConnectionIO[AdminResult] = UserRepository.get(userId).flatMap {
+      case None    => doobie.free.connection.pure(userNotFound)
+      case Some(_) =>
+        UserRepository.lockActiveAdmins().flatMap { adminIds =>
+          if adminIds.contains(userId) && adminIds.sizeIs <= 1 then
+            doobie.free.connection.pure(lastAdminBlocked)
+          else
+            UserRepository.delete(userId).map { count =>
+              if count > 0 then Right(MessageResponse("User deleted successfully"))
+              else userNotFound
+            }
+        }
+    }
+    action.transact(xa)
+  }
+
   private val swagger = SwaggerInterpreter()
     .fromEndpoints[IO](Endpoints.all, "Dice Chess Analytics API", version.version)
 
   def httpApp: HttpApp[IO] =
-    val routes = Http4sServerInterpreter[IO]().toRoutes(
+    val tapirRoutes = Http4sServerInterpreter[IO]().toRoutes(
       swagger ++ List(
         listGamesLogic,
         getGameLogic,
@@ -264,13 +351,19 @@ final class Routes(
         replaceGameLogic,
         getFavoritesLogic,
         putFavoriteLogic,
-        deleteFavoriteLogic
+        deleteFavoriteLogic,
+        listUsersLogic,
+        updateUserLogic,
+        deleteUserLogic
       )
     )
-    val cors = CORS.policy
+    val authRoutes     = AuthRoutes.routes(xa, config)
+    val combinedRoutes = authRoutes <+> tapirRoutes
+    val securedRoutes  = CookieAuthMiddleware(xa, config.secretKey, config.mockAuth)(combinedRoutes)
+    val cors           = CORS.policy
       .withAllowOriginHost(corsOrigins.flatMap(originHost).toSet)
       .withAllowCredentials(true)
-      .apply(routes)
+      .apply(securedRoutes)
     cors.orNotFound
 
   private def originHost(origin: String): Option[org.http4s.headers.Origin.Host] =
