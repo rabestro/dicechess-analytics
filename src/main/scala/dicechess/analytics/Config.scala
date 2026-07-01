@@ -86,13 +86,14 @@ object AppConfig:
     * form used by the Python app) and converts them to JDBC.
     */
   def parseDatabaseUrl(url: String): Either[String, DbConfig] =
+    val pgPrefix   = "postgresql://"
     val normalized = url
-      .replaceFirst("^postgresql\\+[a-z0-9]+://", "postgresql://")
-      .replaceFirst("^postgres://", "postgresql://")
-    if !normalized.startsWith("postgresql://") then Left(s"Unsupported DATABASE_URL scheme: $url")
+      .replaceFirst("^postgresql\\+[a-z0-9]+://", pgPrefix)
+      .replaceFirst("^postgres://", pgPrefix)
+    if !normalized.startsWith(pgPrefix) then Left(s"Unsupported DATABASE_URL scheme: $url")
     else
       try
-        val uri              = URI("dummy://" + normalized.stripPrefix("postgresql://"))
+        val uri              = URI("dummy://" + normalized.stripPrefix(pgPrefix))
         val userInfo         = Option(uri.getUserInfo).getOrElse("")
         val (user, password) = userInfo.split(":", 2) match
           case Array(u, p) => (u, p)

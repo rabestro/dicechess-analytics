@@ -94,14 +94,15 @@ object PlayersRepository:
       fr"((g.white_player_id = $pid AND g.result = -1) OR (g.black_player_id = $pid AND g.result = 1))"
     val rating =
       fr"CASE WHEN g.white_player_id = $pid THEN g.white_rating ELSE g.black_rating END"
-    val select =
+    val countFilter = fr"count(*) FILTER (WHERE"
+    val select      =
       fr"SELECT p.id, p.username, p.player_type," ++
-        fr"count(*) FILTER (WHERE" ++ fp ++ fr")," ++
-        fr"count(*) FILTER (WHERE" ++ fp ++ fr" AND" ++ win ++ fr")," ++
-        fr"count(*) FILTER (WHERE" ++ fp ++ fr" AND g.result = 0)," ++
-        fr"count(*) FILTER (WHERE" ++ fp ++ fr" AND" ++ loss ++ fr")," ++
-        fr"count(*) FILTER (WHERE" ++ fp ++ fr" AND g.white_player_id = $pid)," ++
-        fr"count(*) FILTER (WHERE" ++ fp ++ fr" AND g.black_player_id = $pid)," ++
+        countFilter ++ fp ++ fr")," ++
+        countFilter ++ fp ++ fr" AND" ++ win ++ fr")," ++
+        countFilter ++ fp ++ fr" AND g.result = 0)," ++
+        countFilter ++ fp ++ fr" AND" ++ loss ++ fr")," ++
+        countFilter ++ fp ++ fr" AND g.white_player_id = $pid)," ++
+        countFilter ++ fp ++ fr" AND g.black_player_id = $pid)," ++
         fr"min(g.started_at) FILTER (WHERE" ++ fp ++ fr")," ++
         fr"max(g.started_at) FILTER (WHERE" ++ fp ++ fr")," ++
         fr"(array_agg(" ++ rating ++

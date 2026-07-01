@@ -38,6 +38,8 @@ final class Routes(
 
   private val defaultLimit = 50
 
+  private val playerNotFound = "Player not found"
+
   private val rootLogic = Endpoints.root.serverLogicSuccess[IO](_ =>
     IO.pure(Welcome(message = "Welcome to Dice Chess Analytics API", docs = "/docs"))
   )
@@ -67,35 +69,35 @@ final class Routes(
     PlayersRepository
       .get(playerId)
       .transact(xa)
-      .map(_.toRight(ApiError("Player not found")))
+      .map(_.toRight(ApiError(playerNotFound)))
   }
 
   private val playerStatsLogic = Endpoints.playerStats.serverLogic[IO] { query =>
     PlayersRepository
       .stats(query)
       .transact(xa)
-      .map(_.toRight(ApiError("Player not found")))
+      .map(_.toRight(ApiError(playerNotFound)))
   }
 
   private val breakdownsLogic = Endpoints.breakdowns.serverLogic[IO] { query =>
     PlayersRepository
       .breakdowns(query)
       .transact(xa)
-      .map(_.toRight(ApiError("Player not found")))
+      .map(_.toRight(ApiError(playerNotFound)))
   }
 
   private val profitHistoryLogic = Endpoints.profitHistory.serverLogic[IO] { query =>
     PlayersRepository
       .profitHistory(query)
       .transact(xa)
-      .map(_.toRight(ApiError("Player not found")))
+      .map(_.toRight(ApiError(playerNotFound)))
   }
 
   private val ratingHistoryLogic = Endpoints.ratingHistory.serverLogic[IO] { query =>
     PlayersRepository
       .ratingHistory(query)
       .transact(xa)
-      .map(_.toRight(ApiError("Player not found")))
+      .map(_.toRight(ApiError(playerNotFound)))
   }
 
   private val continuationsLogic = Endpoints.continuations.serverLogicSuccess[IO] { query =>
