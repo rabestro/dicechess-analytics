@@ -24,7 +24,14 @@ final case class AppConfig(
     ingestToken: Option[String],
     // Bearer secret required to write opening-book favorites (PUT/DELETE /api/opening-book/favorites).
     // None ⇒ curation writes are rejected; the read endpoint (GET) is always public.
-    curatorToken: Option[String]
+    curatorToken: Option[String],
+    secretKey: Option[String],
+    googleClientId: Option[String],
+    googleClientSecret: Option[String],
+    googleRedirectUri: Option[String],
+    frontendUrl: String,
+    adminEmail: Option[String],
+    mockAuth: Boolean
 )
 
 object AppConfig:
@@ -45,7 +52,14 @@ object AppConfig:
         .getOrElse(List("http://localhost:5173", "http://localhost:3000")),
       dbPoolSize = pool,
       ingestToken = env.get("INGEST_TOKEN").filter(_.nonEmpty),
-      curatorToken = env.get("CURATION_TOKEN").filter(_.nonEmpty)
+      curatorToken = env.get("CURATION_TOKEN").filter(_.nonEmpty),
+      secretKey = env.get("SECRET_KEY").filter(_.nonEmpty),
+      googleClientId = env.get("GOOGLE_CLIENT_ID").filter(_.nonEmpty),
+      googleClientSecret = env.get("GOOGLE_CLIENT_SECRET").filter(_.nonEmpty),
+      googleRedirectUri = env.get("GOOGLE_REDIRECT_URI").filter(_.nonEmpty),
+      frontendUrl = env.get("FRONTEND_URL").filter(_.nonEmpty).getOrElse("/"),
+      adminEmail = env.get("ADMIN_EMAIL").filter(_.nonEmpty),
+      mockAuth = env.get("MOCK_AUTH").flatMap(_.toBooleanOption).getOrElse(false)
     )
 
   private def parseHost(value: String): Either[String, Host] =

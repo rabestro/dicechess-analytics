@@ -39,8 +39,23 @@ class IngestEndpointSpec extends CatsEffectSuite with TestContainerForAll:
     )
 
   private def withClient[A](pg: PostgreSQLContainer)(run: Client[IO] => IO[A]): IO[A] =
-    val app =
-      Routes(transactor(pg), List("http://localhost:5173"), Some(token), None, testVersion).httpApp
+    val config = AppConfig(
+      db = DbConfig("", "", ""),
+      host = com.comcast.ip4s.Host.fromString("0.0.0.0").get,
+      port = com.comcast.ip4s.Port.fromInt(8000).get,
+      corsOrigins = List("http://localhost:5173"),
+      dbPoolSize = 1,
+      ingestToken = Some(token),
+      curatorToken = None,
+      secretKey = Some("test-secret-key"),
+      googleClientId = None,
+      googleClientSecret = None,
+      googleRedirectUri = None,
+      frontendUrl = "http://localhost:5173",
+      adminEmail = None,
+      mockAuth = true
+    )
+    val app = Routes(transactor(pg), config, testVersion).httpApp
     run(Client.fromHttpApp(app))
 
   private val start = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"

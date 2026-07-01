@@ -332,6 +332,31 @@ object Endpoints:
       .errorOut(statusCode.and(jsonBody[ApiError]))
       .description("Delete a curated opening-book favorite (bearer auth required)")
 
+  val listUsers: PublicEndpoint[Option[String], Unit, List[UserResponse], Any] =
+    endpoint.get
+      .in("api" / "admin" / "users")
+      .in(
+        query[Option[String]]("status")
+          .description("Filter users by status: pending, approved, blocked, admins")
+      )
+      .out(jsonBody[List[UserResponse]])
+      .description("List all users (Admin only)")
+
+  val updateUser: PublicEndpoint[(UUID, AdminUserUpdateRequest), ApiError, MessageResponse, Any] =
+    endpoint.patch
+      .in("api" / "admin" / "users" / path[UUID]("user_id"))
+      .in(jsonBody[AdminUserUpdateRequest])
+      .out(jsonBody[MessageResponse])
+      .errorOut(notFound)
+      .description("Update user approval, role or active state (Admin only)")
+
+  val deleteUser: PublicEndpoint[UUID, ApiError, MessageResponse, Any] =
+    endpoint.delete
+      .in("api" / "admin" / "users" / path[UUID]("user_id"))
+      .out(jsonBody[MessageResponse])
+      .errorOut(notFound)
+      .description("Delete a user (Admin only)")
+
   val all: List[AnyEndpoint] =
     List(
       root,
@@ -351,5 +376,8 @@ object Endpoints:
       replaceGame,
       getFavorites,
       putFavorite,
-      deleteFavorite
+      deleteFavorite,
+      listUsers,
+      updateUser,
+      deleteUser
     )

@@ -13,12 +13,14 @@ import sttp.model.StatusCode
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 
+import dicechess.analytics.AppConfig
 import dicechess.analytics.ingest.{GameReplay, ReplayError, TurnInput}
 import dicechess.analytics.repository.{
   GamesRepository,
   IngestRepository,
   PlayersRepository,
-  PositionsRepository
+  PositionsRepository,
+  UserRepository
 }
 import IngestProtocol.*
 import Protocol.*
@@ -26,11 +28,13 @@ import Protocol.*
 /** Wires endpoint definitions to repository logic and assembles the HTTP application. */
 final class Routes(
     xa: Transactor[IO],
-    corsOrigins: List[String],
-    ingestToken: Option[String],
-    curatorToken: Option[String],
+    config: AppConfig,
     version: VersionInfo
 ):
+
+  private val ingestToken  = config.ingestToken
+  private val curatorToken = config.curatorToken
+  private val corsOrigins  = config.corsOrigins
 
   private val defaultLimit = 50
 
@@ -241,11 +245,59 @@ final class Routes(
         }
       }
 
+  private val listUsersLogic = Endpoints.listUsers.serverLogic[IO] { status =>
+    UserRepository.list(status).transact(xa).map { users =>
+      Right(
+        users.map(u =>
+          UserResponse(
+            u.id,
+            u.email,
+            u.name,
+            u.pictureUrl,
+            u.role,
+            u.isApproved,
+            u.isActive,
+            u.lastLoginAt,
+            u.createdAt
+          )
+        )
+      )
+    }
+  }
+
+  private val updateUserLogic = Endpoints.updateUser.serverLogic[IO] { case (userId, update) =>
+    val action = for
+      existing <- UserRepository.get(userId)
+      res      <- existing match
+        case None    => doobie.free.connection.pure(Left(ApiError("User not found")))
+        case Some(_) =>
+          for
+            _ <- update.isApproved
+              .map(UserRepository.updateApproval(userId, _))
+              .getOrElse(doobie.free.connection.pure(0))
+            _ <- update.isActive
+              .map(UserRepository.updateActive(userId, _))
+              .getOrElse(doobie.free.connection.pure(0))
+            _ <- update.role
+              .map(UserRepository.updateRole(userId, _))
+              .getOrElse(doobie.free.connection.pure(0))
+          yield Right(MessageResponse("User updated successfully"))
+    yield res
+    action.transact(xa)
+  }
+
+  private val deleteUserLogic = Endpoints.deleteUser.serverLogic[IO] { userId =>
+    UserRepository.delete(userId).transact(xa).map { count =>
+      if count > 0 then Right(MessageResponse("User deleted successfully"))
+      else Left(ApiError("User not found"))
+    }
+  }
+
   private val swagger = SwaggerInterpreter()
     .fromEndpoints[IO](Endpoints.all, "Dice Chess Analytics API", version.version)
 
   def httpApp: HttpApp[IO] =
-    val routes = Http4sServerInterpreter[IO]().toRoutes(
+    val tapirRoutes = Http4sServerInterpreter[IO]().toRoutes(
       swagger ++ List(
         listGamesLogic,
         getGameLogic,
@@ -264,13 +316,19 @@ final class Routes(
         replaceGameLogic,
         getFavoritesLogic,
         putFavoriteLogic,
-        deleteFavoriteLogic
+        deleteFavoriteLogic,
+        listUsersLogic,
+        updateUserLogic,
+        deleteUserLogic
       )
     )
-    val cors = CORS.policy
+    val authRoutes     = AuthRoutes.routes(xa, config)
+    val combinedRoutes = authRoutes <+> tapirRoutes
+    val securedRoutes  = AuthMiddleware(xa, config.secretKey, config.mockAuth)(combinedRoutes)
+    val cors           = CORS.policy
       .withAllowOriginHost(corsOrigins.flatMap(originHost).toSet)
       .withAllowCredentials(true)
-      .apply(routes)
+      .apply(securedRoutes)
     cors.orNotFound
 
   private def originHost(origin: String): Option[org.http4s.headers.Origin.Host] =

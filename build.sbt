@@ -62,6 +62,9 @@ lazy val root = (project in file("."))
       // Position hashing: xxHash64, bit-compatible with the historical fen_hash values
       "net.openhft" % "zero-allocation-hashing" % ZeroAllocHashingVersion,
 
+      // Authentication and JWT
+      "com.auth0" % "java-jwt" % "4.4.0",
+
       // HTTP server & typed endpoints (Swagger UI served at /docs)
       "org.http4s"                  %% "http4s-ember-server"     % Http4sVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-http4s-server"     % TapirVersion,

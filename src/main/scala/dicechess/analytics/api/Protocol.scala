@@ -399,3 +399,28 @@ object Protocol:
       items: List[FavoriteEntry]
   ) derives ConfiguredCodec,
         Schema
+
+  final case class MessageResponse(
+      detail: String
+  ) derives ConfiguredCodec,
+        Schema
+
+  final case class UserResponse(
+      id: UUID,
+      email: String,
+      name: Option[String],
+      pictureUrl: Option[String],
+      role: String,
+      isApproved: Boolean,
+      isActive: Boolean,
+      lastLoginAt: Option[OffsetDateTime],
+      createdAt: OffsetDateTime
+  ) derives ConfiguredCodec,
+        Schema
+
+  final case class AdminUserUpdateRequest(
+      isApproved: Option[Boolean],
+      role: Option[String],
+      isActive: Option[Boolean]
+  ) derives ConfiguredCodec,
+        Schema
