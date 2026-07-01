@@ -33,8 +33,8 @@ class UserRepositorySpec extends CatsEffectSuite with TestContainerForAll:
   test("UserRepository lifecycle: create, get, list, update, delete") {
     withContainers { pg =>
       val transactor = xa(pg)
-      val userId = UUID.randomUUID()
-      val user = User(
+      val userId     = UUID.randomUUID()
+      val user       = User(
         id = userId,
         email = "test@example.com",
         name = Some("Test User"),
@@ -46,7 +46,7 @@ class UserRepositorySpec extends CatsEffectSuite with TestContainerForAll:
         createdAt = OffsetDateTime.now()
       )
 
-      for {
+      for
         // 1. Create User
         createResult <- UserRepository.create(user).transact(transactor)
         _ = assertEquals(createResult, 1)
@@ -71,25 +71,27 @@ class UserRepositorySpec extends CatsEffectSuite with TestContainerForAll:
         _ = assertEquals(approvedUsers.size, 0)
 
         // 5. Update Approval
-        _ <- UserRepository.updateApproval(userId, true).transact(transactor)
+        _                  <- UserRepository.updateApproval(userId, true).transact(transactor)
         approvedUsersAfter <- UserRepository.list(Some("approved")).transact(transactor)
         _ = assertEquals(approvedUsersAfter.size, 1)
 
         // 6. Update Role
-        _ <- UserRepository.updateRole(userId, "ADMIN").transact(transactor)
+        _          <- UserRepository.updateRole(userId, "ADMIN").transact(transactor)
         adminUsers <- UserRepository.list(Some("admins")).transact(transactor)
         _ = assertEquals(adminUsers.size, 1)
 
         // 7. Update Login
         now = OffsetDateTime.now()
-        _ <- UserRepository.updateLogin(userId, now, Some("New Name"), Some("new-pic.jpg")).transact(transactor)
+        _ <- UserRepository
+          .updateLogin(userId, now, Some("New Name"), Some("new-pic.jpg"))
+          .transact(transactor)
         updatedUser <- UserRepository.get(userId).transact(transactor)
         _ = assert(updatedUser.isDefined)
         _ = assertEquals(updatedUser.get.name, Some("New Name"))
         _ = assertEquals(updatedUser.get.pictureUrl, Some("new-pic.jpg"))
 
         // 8. Update Active Status
-        _ <- UserRepository.updateActive(userId, false).transact(transactor)
+        _            <- UserRepository.updateActive(userId, false).transact(transactor)
         blockedUsers <- UserRepository.list(Some("blocked")).transact(transactor)
         _ = assertEquals(blockedUsers.size, 1)
 
@@ -98,6 +100,6 @@ class UserRepositorySpec extends CatsEffectSuite with TestContainerForAll:
         _ = assertEquals(deleteResult, 1)
         deletedUser <- UserRepository.get(userId).transact(transactor)
         _ = assert(deletedUser.isEmpty)
-      } yield ()
+      yield ()
     }
   }

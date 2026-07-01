@@ -269,28 +269,64 @@ final class Routes(
     val action = for
       existing <- UserRepository.get(userId)
       res      <- existing match
-        case None    => doobie.free.connection.pure(Left(ApiError("User not found")))
-        case Some(_) =>
-          for
-            _ <- update.isApproved
-              .map(UserRepository.updateApproval(userId, _))
-              .getOrElse(doobie.free.connection.pure(0))
-            _ <- update.isActive
-              .map(UserRepository.updateActive(userId, _))
-              .getOrElse(doobie.free.connection.pure(0))
-            _ <- update.role
-              .map(UserRepository.updateRole(userId, _))
-              .getOrElse(doobie.free.connection.pure(0))
-          yield Right(MessageResponse("User updated successfully"))
+        case None       => doobie.free.connection.pure(Left(ApiError("User not found")))
+        case Some(user) =>
+          val invalidRole = update.role.exists(r => r != "USER" && r != "ADMIN")
+          if invalidRole then
+            doobie.free.connection.pure(Left(ApiError("Invalid role. Must be USER or ADMIN")))
+          else
+            val demoting  = user.role == "ADMIN" && update.role.contains("USER")
+            val disabling = user.role == "ADMIN" && (update.isActive.contains(
+              false
+            ) || update.isApproved.contains(false))
+            for
+              adminCount <-
+                if demoting || disabling then UserRepository.countActiveAdmins()
+                else doobie.free.connection.pure(2)
+              result <-
+                if (demoting || disabling) && adminCount <= 1 then
+                  doobie.free.connection.pure(
+                    Left(ApiError("Cannot demote or disable the last active admin"))
+                  )
+                else
+                  for
+                    _ <- update.isApproved
+                      .map(UserRepository.updateApproval(userId, _))
+                      .getOrElse(doobie.free.connection.pure(0))
+                    _ <- update.isActive
+                      .map(UserRepository.updateActive(userId, _))
+                      .getOrElse(doobie.free.connection.pure(0))
+                    _ <- update.role
+                      .map(UserRepository.updateRole(userId, _))
+                      .getOrElse(doobie.free.connection.pure(0))
+                  yield Right(MessageResponse("User updated successfully"))
+            yield result
     yield res
     action.transact(xa)
   }
 
   private val deleteUserLogic = Endpoints.deleteUser.serverLogic[IO] { userId =>
-    UserRepository.delete(userId).transact(xa).map { count =>
-      if count > 0 then Right(MessageResponse("User deleted successfully"))
-      else Left(ApiError("User not found"))
-    }
+    val action = for
+      existing <- UserRepository.get(userId)
+      res      <- existing match
+        case None       => doobie.free.connection.pure(Left(ApiError("User not found")))
+        case Some(user) =>
+          for
+            adminCount <-
+              if user.role == "ADMIN" && user.isApproved && user.isActive then
+                UserRepository.countActiveAdmins()
+              else doobie.free.connection.pure(2)
+            result <-
+              if user.role == "ADMIN" && user.isApproved && user.isActive && adminCount <= 1 then
+                doobie.free.connection.pure(Left(ApiError("Cannot delete the last active admin")))
+              else
+                UserRepository.delete(userId).map { count =>
+                  if count > 0 then Right(MessageResponse("User deleted successfully"))
+                  else Left(ApiError("User not found"))
+                }
+          yield result
+    yield res
+    action.transact(xa)
   }
 
   private val swagger = SwaggerInterpreter()

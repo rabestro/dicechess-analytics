@@ -21,7 +21,10 @@ object AuthMiddleware:
       secretKeyOpt: Option[String],
       mockAuth: Boolean
   )(routes: HttpRoutes[IO]): HttpRoutes[IO] =
-    val secretKey = secretKeyOpt.getOrElse("temporary-secret-key-for-development")
+    val secretKey = secretKeyOpt.getOrElse(
+      if mockAuth then "temporary-secret-key-for-development"
+      else throw new IllegalStateException("SECRET_KEY must be provided unless MOCK_AUTH=true")
+    )
     val algorithm = Algorithm.HMAC256(secretKey)
     val verifier  = JWT.require(algorithm).build()
 
@@ -35,11 +38,11 @@ object AuthMiddleware:
         path.startsWith("/swagger-ui") ||
         path.startsWith("/api/auth/")
 
-      if isPublic then
-        routes(req)
+      if isPublic then routes(req)
       else
         // 2. Check if this is an ingest/curator write path carrying a Bearer token
-        val hasBearer = req.headers.get[Authorization].exists(_.credentials.toString.startsWith("Bearer"))
+        val hasBearer =
+          req.headers.get[Authorization].exists(_.credentials.toString.startsWith("Bearer"))
 
         if hasBearer then
           // Delegate validation to the Tapir endpoint security logic
@@ -48,11 +51,11 @@ object AuthMiddleware:
           // 3. Otherwise, cookie authentication is required
           if mockAuth then
             val mockEmail = "dev@local"
-            val action = for {
+            val action    = for
               existing <- UserRepository.getByEmail(mockEmail)
-              user <- existing match {
+              user     <- existing match
                 case Some(u) => doobie.free.connection.pure(u)
-                case None =>
+                case None    =>
                   val newUser = User(
                     id = UUID.randomUUID(),
                     email = mockEmail,
@@ -65,14 +68,12 @@ object AuthMiddleware:
                     createdAt = java.time.OffsetDateTime.now()
                   )
                   UserRepository.create(newUser).map(_ => newUser)
-              }
-            } yield user
+            yield user
 
             OptionT.liftF(action.transact(xa)).flatMap { user =>
               if !user.isApproved || !user.isActive then
                 OptionT.pure[IO](Response[IO](status = Status.Forbidden))
-              else
-                routes(req)
+              else routes(req)
             }
           else
             val tokenOpt = req.cookies.find(_.name == "access_token").map(_.content)
@@ -100,8 +101,6 @@ object AuthMiddleware:
                               OptionT.pure[IO](Response[IO](status = Status.Forbidden))
                             else if path.startsWith("/api/admin/") && user.role != "ADMIN" then
                               OptionT.pure[IO](Response[IO](status = Status.Forbidden))
-                            else
-                              routes(req)
+                            else routes(req)
                         }
     }
-

@@ -37,7 +37,13 @@ final case class AppConfig(
 object AppConfig:
 
   def load(env: Map[String, String] = sys.env): Either[String, AppConfig] =
+    val mockAuth  = env.get("MOCK_AUTH").flatMap(_.toBooleanOption).getOrElse(false)
+    val secretKey = env.get("SECRET_KEY").filter(_.nonEmpty)
     for
+      _ <-
+        if !mockAuth && secretKey.isEmpty then
+          Left("SECRET_KEY must be provided unless MOCK_AUTH=true")
+        else Right(())
       db   <- dbConfig(env)
       host <- parseHost(env.getOrElse("HTTP_HOST", "0.0.0.0"))
       port <- parsePort(env.getOrElse("HTTP_PORT", "8000"))
@@ -59,7 +65,7 @@ object AppConfig:
       googleRedirectUri = env.get("GOOGLE_REDIRECT_URI").filter(_.nonEmpty),
       frontendUrl = env.get("FRONTEND_URL").filter(_.nonEmpty).getOrElse("/"),
       adminEmail = env.get("ADMIN_EMAIL").filter(_.nonEmpty),
-      mockAuth = env.get("MOCK_AUTH").flatMap(_.toBooleanOption).getOrElse(false)
+      mockAuth = mockAuth
     )
 
   private def parseHost(value: String): Either[String, Host] =

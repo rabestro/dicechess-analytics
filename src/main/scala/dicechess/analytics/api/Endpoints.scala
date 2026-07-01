@@ -337,6 +337,7 @@ object Endpoints:
       .in("api" / "admin" / "users")
       .in(
         query[Option[String]]("status")
+          .validateOption(Validator.enumeration(List("pending", "approved", "blocked", "admins")))
           .description("Filter users by status: pending, approved, blocked, admins")
       )
       .out(jsonBody[List[UserResponse]])

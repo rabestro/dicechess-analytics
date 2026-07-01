@@ -19,6 +19,17 @@ object Protocol:
   given TapirConfiguration = TapirConfiguration.default.withSnakeCaseMemberNames
   given Schema[Json]       = Schema.any[Json]
 
+  final case class MeResponse(
+      id: UUID,
+      email: String,
+      name: Option[String],
+      pictureUrl: Option[String],
+      role: String,
+      isApproved: Boolean,
+      isActive: Boolean
+  ) derives ConfiguredCodec,
+        Schema
+
   /** Generic pagination envelope returned by list endpoints. `total` is the count of rows matching
     * the current filters (independent of `limit`/`offset`), so the client can render "found N ·
     * page X of Y". Reused across all list endpoints.

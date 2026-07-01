@@ -34,7 +34,9 @@ class AuthRoutesSpec extends CatsEffectSuite with TestContainerForAll:
 
   private val testVersion = VersionInfo("test", "test", "test")
 
-  private def withClient[A](pg: PostgreSQLContainer, mockAuth: Boolean)(run: Client[IO] => IO[A]): IO[A] =
+  private def withClient[A](pg: PostgreSQLContainer, mockAuth: Boolean)(
+      run: Client[IO] => IO[A]
+  ): IO[A] =
     val config = AppConfig(
       db = DbConfig("", "", ""),
       host = com.comcast.ip4s.Host.fromString("0.0.0.0").get,
@@ -54,6 +56,24 @@ class AuthRoutesSpec extends CatsEffectSuite with TestContainerForAll:
     val app = Routes(transactor(pg), config, testVersion).httpApp
     run(Client.fromHttpApp(app))
 
+  test("GET /api/auth/login redirects to Google OAuth") {
+    withContainers { pg =>
+      withClient(pg, mockAuth = false) { client =>
+        // Need to prevent client from following redirects to see the 303 status
+        val request = Request[IO](Method.GET, Uri.unsafeFromString("/api/auth/login"))
+        client.run(request).use { response =>
+          assertEquals(response.status, Status.SeeOther)
+          val location = response.headers.get[org.http4s.headers.Location]
+          assert(location.isDefined)
+          assert(
+            location.get.uri.renderString.startsWith("https://accounts.google.com/o/oauth2/v2/auth")
+          )
+          IO.unit
+        }
+      }
+    }
+  }
+
   test("GET /api/auth/me in mock mode returns mock admin user") {
     withContainers { pg =>
       withClient(pg, mockAuth = true) { client =>
@@ -63,7 +83,7 @@ class AuthRoutesSpec extends CatsEffectSuite with TestContainerForAll:
             val json = parse(body).getOrElse(Json.Null)
             assertEquals(json.hcursor.downField("email").as[String], Right("dev@local"))
             assertEquals(json.hcursor.downField("role").as[String], Right("ADMIN"))
-            assertEquals(json.hcursor.downField("isApproved").as[Boolean], Right(true))
+            assertEquals(json.hcursor.downField("is_approved").as[Boolean], Right(true))
           }
         }
       }
@@ -73,11 +93,12 @@ class AuthRoutesSpec extends CatsEffectSuite with TestContainerForAll:
   test("GET /api/auth/login in mock mode redirects to frontendUrl") {
     withContainers { pg =>
       withClient(pg, mockAuth = true) { client =>
-        client.run(Request[IO](Method.GET, Uri.unsafeFromString("/api/auth/login"))).use { response =>
-          assertEquals(response.status, Status.SeeOther)
-          val loc = response.headers.get[org.http4s.headers.Location].map(_.uri.renderString)
-          assertEquals(loc, Some("http://localhost:5173"))
-          IO.unit
+        client.run(Request[IO](Method.GET, Uri.unsafeFromString("/api/auth/login"))).use {
+          response =>
+            assertEquals(response.status, Status.SeeOther)
+            val loc = response.headers.get[org.http4s.headers.Location].map(_.uri.renderString)
+            assertEquals(loc, Some("http://localhost:5173"))
+            IO.unit
         }
       }
     }
@@ -86,14 +107,15 @@ class AuthRoutesSpec extends CatsEffectSuite with TestContainerForAll:
   test("POST /api/auth/logout clears access token cookie") {
     withContainers { pg =>
       withClient(pg, mockAuth = true) { client =>
-        client.run(Request[IO](Method.POST, Uri.unsafeFromString("/api/auth/logout"))).use { response =>
-          assertEquals(response.status, Status.Ok)
-          val cookies = response.cookies
-          val tokenCookie = cookies.find(_.name == "access_token")
-          assert(tokenCookie.isDefined)
-          assertEquals(tokenCookie.get.content, "")
-          assertEquals(tokenCookie.get.maxAge, Some(0L))
-          IO.unit
+        client.run(Request[IO](Method.POST, Uri.unsafeFromString("/api/auth/logout"))).use {
+          response =>
+            assertEquals(response.status, Status.Ok)
+            val cookies     = response.cookies
+            val tokenCookie = cookies.find(_.name == "access_token")
+            assert(tokenCookie.isDefined)
+            assertEquals(tokenCookie.get.content, "")
+            assertEquals(tokenCookie.get.maxAge, Some(0L))
+            IO.unit
         }
       }
     }
@@ -106,7 +128,7 @@ class AuthRoutesSpec extends CatsEffectSuite with TestContainerForAll:
           assertEquals(response.status, Status.Unauthorized)
           response.as[String].map { body =>
             val json = parse(body).getOrElse(Json.Null)
-            assertEquals(json.hcursor.downField("isApproved").as[Boolean], Right(false))
+            assertEquals(json.hcursor.downField("is_approved").as[Boolean], Right(false))
           }
         }
       }
@@ -129,12 +151,13 @@ class AuthRoutesSpec extends CatsEffectSuite with TestContainerForAll:
   test("GET /api/admin/users in mock mode returns list of users for admin") {
     withContainers { pg =>
       withClient(pg, mockAuth = true) { client =>
-        client.run(Request[IO](Method.GET, Uri.unsafeFromString("/api/admin/users"))).use { response =>
-          assertEquals(response.status, Status.Ok)
-          response.as[String].map { body =>
-            val json = parse(body).getOrElse(Json.Null)
-            assert(json.isArray)
-          }
+        client.run(Request[IO](Method.GET, Uri.unsafeFromString("/api/admin/users"))).use {
+          response =>
+            assertEquals(response.status, Status.Ok)
+            response.as[String].map { body =>
+              val json = parse(body).getOrElse(Json.Null)
+              assert(json.isArray)
+            }
         }
       }
     }
@@ -142,7 +165,7 @@ class AuthRoutesSpec extends CatsEffectSuite with TestContainerForAll:
 
   test("GET /api/admin/users in non-mock mode for non-admin user returns 403 Forbidden") {
     withContainers { pg =>
-      val t = transactor(pg)
+      val t      = transactor(pg)
       val userId = java.util.UUID.randomUUID()
       // Seed the user in database first so that AuthMiddleware can find them
       val user = dicechess.analytics.repository.User(
@@ -157,12 +180,13 @@ class AuthRoutesSpec extends CatsEffectSuite with TestContainerForAll:
         createdAt = java.time.OffsetDateTime.now()
       )
 
-      for {
-        _ <- dicechess.analytics.repository.UserRepository.create(user).transact(t)
+      for
+        _   <- dicechess.analytics.repository.UserRepository.create(user).transact(t)
         res <- withClient(pg, mockAuth = false) { client =>
           val algorithm = com.auth0.jwt.algorithms.Algorithm.HMAC256("test-secret-key")
           val expiresAt = new java.util.Date(System.currentTimeMillis() + 3600 * 1000)
-          val token = com.auth0.jwt.JWT.create()
+          val token     = com.auth0.jwt.JWT
+            .create()
             .withSubject(userId.toString)
             .withClaim("role", "USER")
             .withExpiresAt(expiresAt)
@@ -176,15 +200,15 @@ class AuthRoutesSpec extends CatsEffectSuite with TestContainerForAll:
             IO.unit
           }
         }
-      } yield res
+      yield res
     }
   }
 
   test("GET /api/auth/me in non-mock mode with valid token returns user info") {
     withContainers { pg =>
-      val t = transactor(pg)
+      val t      = transactor(pg)
       val userId = java.util.UUID.randomUUID()
-      val user = dicechess.analytics.repository.User(
+      val user   = dicechess.analytics.repository.User(
         id = userId,
         email = "member@example.com",
         name = Some("Member User"),
@@ -196,12 +220,13 @@ class AuthRoutesSpec extends CatsEffectSuite with TestContainerForAll:
         createdAt = java.time.OffsetDateTime.now()
       )
 
-      for {
-        _ <- dicechess.analytics.repository.UserRepository.create(user).transact(t)
+      for
+        _   <- dicechess.analytics.repository.UserRepository.create(user).transact(t)
         res <- withClient(pg, mockAuth = false) { client =>
           val algorithm = com.auth0.jwt.algorithms.Algorithm.HMAC256("test-secret-key")
           val expiresAt = new java.util.Date(System.currentTimeMillis() + 3600 * 1000)
-          val token = com.auth0.jwt.JWT.create()
+          val token     = com.auth0.jwt.JWT
+            .create()
             .withSubject(userId.toString)
             .withClaim("role", "USER")
             .withExpiresAt(expiresAt)
@@ -216,19 +241,21 @@ class AuthRoutesSpec extends CatsEffectSuite with TestContainerForAll:
               val json = parse(body).getOrElse(Json.Null)
               assertEquals(json.hcursor.downField("email").as[String], Right("member@example.com"))
               assertEquals(json.hcursor.downField("role").as[String], Right("USER"))
-              assertEquals(json.hcursor.downField("isApproved").as[Boolean], Right(true))
+              assertEquals(json.hcursor.downField("is_approved").as[Boolean], Right(true))
             }
           }
         }
-      } yield res
+      yield res
     }
   }
 
-  test("PATCH /api/admin/users/{id} updates user details and DELETE /api/admin/users/{id} deletes user") {
+  test(
+    "PATCH /api/admin/users/{id} updates user details and DELETE /api/admin/users/{id} deletes user"
+  ) {
     withContainers { pg =>
-      val t = transactor(pg)
+      val t      = transactor(pg)
       val userId = java.util.UUID.randomUUID()
-      val user = dicechess.analytics.repository.User(
+      val user   = dicechess.analytics.repository.User(
         id = userId,
         email = "target@example.com",
         name = Some("Target User"),
@@ -240,27 +267,29 @@ class AuthRoutesSpec extends CatsEffectSuite with TestContainerForAll:
         createdAt = java.time.OffsetDateTime.now()
       )
 
-      for {
-        _ <- dicechess.analytics.repository.UserRepository.create(user).transact(t)
+      for
+        _   <- dicechess.analytics.repository.UserRepository.create(user).transact(t)
         res <- withClient(pg, mockAuth = true) { client =>
           // 1. PATCH User
-          val patchRequest = Request[IO](Method.PATCH, Uri.unsafeFromString(s"/api/admin/users/$userId"))
-            .withEntity("""{"isApproved":true,"role":"ADMIN"}""")
-            .withContentType(org.http4s.headers.`Content-Type`(org.http4s.MediaType.application.json))
+          val patchRequest =
+            Request[IO](Method.PATCH, Uri.unsafeFromString(s"/api/admin/users/$userId"))
+              .withEntity("""{"is_approved":true,"role":"ADMIN"}""")
+              .withContentType(
+                org.http4s.headers.`Content-Type`(org.http4s.MediaType.application.json)
+              )
 
           client.run(patchRequest).use { patchResponse =>
             assertEquals(patchResponse.status, Status.Ok)
 
             // 2. DELETE User
-            val deleteRequest = Request[IO](Method.DELETE, Uri.unsafeFromString(s"/api/admin/users/$userId"))
+            val deleteRequest =
+              Request[IO](Method.DELETE, Uri.unsafeFromString(s"/api/admin/users/$userId"))
             client.run(deleteRequest).use { deleteResponse =>
               assertEquals(deleteResponse.status, Status.Ok)
               IO.unit
             }
           }
         }
-      } yield res
+      yield res
     }
   }
-
-
