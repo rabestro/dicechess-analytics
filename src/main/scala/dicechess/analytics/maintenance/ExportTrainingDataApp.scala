@@ -65,11 +65,25 @@ object ExportTrainingDataApp extends IOApp:
     out.write(line)
     out.newLine()
 
+  /** `0` (the mise default) disables the floor; anything unparseable or negative fails fast — a
+    * typo must not silently export the full dataset instead of the intended slice.
+    */
+  private[analytics] def parseMinRating(arg: Option[String]): Either[String, Option[Int]] =
+    arg match
+      case None    => Right(None)
+      case Some(s) =>
+        s.toIntOption match
+          case Some(0)          => Right(None)
+          case Some(n) if n > 0 => Right(Some(n))
+          case _                => Left(s"minRating must be a non-negative integer, got: '$s'")
+
   def run(args: List[String]): IO[ExitCode] =
     val outputPath = args.headOption.getOrElse("training_data.csv.gz")
-    val minRating  = args.lift(1).flatMap(_.toIntOption).filter(_ > 0)
 
     for
+      minRating <- IO.fromEither(
+        parseMinRating(args.lift(1)).left.map(msg => IllegalArgumentException(msg))
+      )
       config <- IO.fromEither(AppConfig.load().left.map(msg => IllegalArgumentException(msg)))
       // Surface the target DB (never the password) so the dataset is not exported from the wrong database by mistake.
       _ <- IO.println(

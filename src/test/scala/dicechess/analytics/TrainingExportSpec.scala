@@ -48,7 +48,8 @@ class TrainingExportSpec extends CatsEffectSuite with TestContainerForAll:
 
   private def newGame(
       result: Option[Int],
-      rating: Option[Int],
+      whiteRating: Option[Int],
+      blackRating: Option[Int],
       white: Option[UUID],
       black: Option[UUID]
   ): ConnectionIO[UUID] =
@@ -56,7 +57,7 @@ class TrainingExportSpec extends CatsEffectSuite with TestContainerForAll:
     sql"""INSERT INTO games (id, source, mode, result, started_at,
                              white_rating, black_rating, white_player_id, black_player_id)
           VALUES ($id, 'test', 'classic'::game_mode_enum, $result, now(),
-                  $rating, $rating, $white, $black)""".update.run.as(id)
+                  $whiteRating, $blackRating, $white, $black)""".update.run.as(id)
 
   private def addTurn(
       game: UUID,
@@ -83,18 +84,21 @@ class TrainingExportSpec extends CatsEffectSuite with TestContainerForAll:
           human    <- newPlayer("human")
           bot      <- newPlayer("bot")
           // Decided, strong, with player rows: a move, a pass, and a terminal capture.
-          decided <- newGame(Some(1), Some(2200), Some(human), Some(bot))
+          decided <- newGame(Some(1), Some(2200), Some(2200), Some(human), Some(bot))
           _       <- addTurn(decided, 1, "w", "PPQ", Some(List("e2e4", "d2d4")), pStart, pAfterW)
           _ <- addTurn(decided, 2, "b", "bnp", Some(Nil), pAfterW, pStart) // legal pass: side flips
           _ <- addTurn(decided, 3, "w", "QQR", Some(List("h5f7", "f7e8")), pStart, pNoKing)
           // NULL played_moves (nullable column) must export as an empty move list, not crash.
           _ <- addTurn(decided, 4, "b", "brr", None, pAfterW, pStart)
           // Unfinished game: result IS NULL — excluded entirely.
-          unfinished <- newGame(None, Some(2200), None, None)
+          unfinished <- newGame(None, Some(2200), Some(2200), None, None)
           _          <- addTurn(unfinished, 1, "w", "PPP", Some(List("e2e4")), pStart, pAfterW)
           // Weak game without player rows: kept only when no rating floor is set.
-          weak <- newGame(Some(-1), Some(1200), None, None)
+          weak <- newGame(Some(-1), Some(1200), Some(1200), None, None)
           _    <- addTurn(weak, 1, "w", "NNP", Some(List("g1f3")), pStart, pAfterW)
+          // Asymmetric ratings: one side qualifies, the other does not — the floor needs BOTH.
+          lopsided <- newGame(Some(1), Some(2500), Some(1000), None, None)
+          _        <- addTurn(lopsided, 1, "w", "BBP", Some(List("f1c4")), pStart, pAfterW)
           // Junk: a no-op self-loop and an abandoned partial turn — always excluded.
           _ <- addTurn(decided, 5, "b", "ppp", Some(Nil), pAfterW, pAfterW)
           _ <- addTurn(weak, 2, "w", "PPP", Some(List("d2d4")), pStart, pPartial)
@@ -107,10 +111,12 @@ class TrainingExportSpec extends CatsEffectSuite with TestContainerForAll:
         countAll <- TrainingExportRepository.counts(None).transact(t)
         countStr <- TrainingExportRepository.counts(Some(2000)).transact(t)
       yield
-        assertEquals(all.size, 5)
-        assertEquals(countAll, (5L, 2L))
+        assertEquals(all.size, 6)
+        assertEquals(countAll, (6L, 3L))
         assertEquals(strong.size, 4)
         assertEquals(countStr, (4L, 1L))
+        // The rating floor requires BOTH players to qualify: 2500-vs-1000 stays out.
+        assert(strong.forall(_.dice != "BBP"))
 
         val move = all.find(r => r.turnNumber == 1 && r.dice == "PPQ").get
         assertEquals(move.fen, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -")
@@ -165,3 +171,10 @@ class TrainingExportSpec extends CatsEffectSuite with TestContainerForAll:
     // A field containing a comma or quote is quoted with doubled inner quotes (RFC 4180).
     val tricky = ExportTrainingDataApp.csvLine(row.copy(source = "a,\"b\""))
     assert(tricky.contains("\"a,\"\"b\"\"\""))
+
+  test("parseMinRating: 0/absent disable the floor, typos and negatives fail fast"):
+    assertEquals(ExportTrainingDataApp.parseMinRating(None), Right(None))
+    assertEquals(ExportTrainingDataApp.parseMinRating(Some("0")), Right(None))
+    assertEquals(ExportTrainingDataApp.parseMinRating(Some("2000")), Right(Some(2000)))
+    assert(ExportTrainingDataApp.parseMinRating(Some("2000x")).isLeft)
+    assert(ExportTrainingDataApp.parseMinRating(Some("-5")).isLeft)
