@@ -1,6 +1,6 @@
 package dicechess.analytics.maintenance
 
-import java.io.{BufferedWriter, OutputStreamWriter, PrintWriter}
+import java.io.{BufferedWriter, OutputStreamWriter}
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.{Files, Path}
 import java.util.zip.GZIPOutputStream
@@ -53,11 +53,17 @@ object ExportTrainingDataApp extends IOApp:
       r.blackType.getOrElse("")
     ).map(csvField).mkString(",")
 
-  private def gzipWriter(path: Path): Resource[IO, PrintWriter] =
+  // A plain BufferedWriter, not PrintWriter: PrintWriter swallows IOExceptions (disk full would
+  // silently truncate the dataset while the run still reports success); the writer must throw.
+  private def gzipWriter(path: Path): Resource[IO, BufferedWriter] =
     Resource.fromAutoCloseable(IO.blocking {
       val gz = GZIPOutputStream(Files.newOutputStream(path))
-      PrintWriter(BufferedWriter(OutputStreamWriter(gz, UTF_8), 1 << 20))
+      BufferedWriter(OutputStreamWriter(gz, UTF_8), 1 << 20)
     })
+
+  private def writeLine(out: BufferedWriter, line: String): Unit =
+    out.write(line)
+    out.newLine()
 
   def run(args: List[String]): IO[ExitCode] =
     val outputPath = args.headOption.getOrElse("training_data.csv.gz")
@@ -73,13 +79,14 @@ object ExportTrainingDataApp extends IOApp:
       written <- Database.transactor(config.db, 4).use { xa =>
         gzipWriter(Path.of(outputPath)).use { out =>
           for
-            _       <- IO.blocking(out.println(Header))
+            _       <- IO.blocking(writeLine(out, Header))
             written <- TrainingExportRepository
               .rows(minRating)
               .transact(xa)
               .chunks
               .evalMap(chunk =>
-                IO.blocking(chunk.foreach(row => out.println(csvLine(row)))).as(chunk.size.toLong)
+                IO.blocking(chunk.foreach(row => writeLine(out, csvLine(row))))
+                  .as(chunk.size.toLong)
               )
               .compile
               .foldMonoid

@@ -63,7 +63,7 @@ class TrainingExportSpec extends CatsEffectSuite with TestContainerForAll:
       n: Int,
       color: String,
       dice: String,
-      moves: List[String],
+      moves: Option[List[String]],
       position: Long,
       after: Long
   ): ConnectionIO[Unit] =
@@ -84,18 +84,20 @@ class TrainingExportSpec extends CatsEffectSuite with TestContainerForAll:
           bot      <- newPlayer("bot")
           // Decided, strong, with player rows: a move, a pass, and a terminal capture.
           decided <- newGame(Some(1), Some(2200), Some(human), Some(bot))
-          _       <- addTurn(decided, 1, "w", "PPQ", List("e2e4", "d2d4"), pStart, pAfterW)
-          _       <- addTurn(decided, 2, "b", "bnp", Nil, pAfterW, pStart) // legal pass: side flips
-          _       <- addTurn(decided, 3, "w", "QQR", List("h5f7", "f7e8"), pStart, pNoKing)
+          _       <- addTurn(decided, 1, "w", "PPQ", Some(List("e2e4", "d2d4")), pStart, pAfterW)
+          _ <- addTurn(decided, 2, "b", "bnp", Some(Nil), pAfterW, pStart) // legal pass: side flips
+          _ <- addTurn(decided, 3, "w", "QQR", Some(List("h5f7", "f7e8")), pStart, pNoKing)
+          // NULL played_moves (nullable column) must export as an empty move list, not crash.
+          _ <- addTurn(decided, 4, "b", "brr", None, pAfterW, pStart)
           // Unfinished game: result IS NULL — excluded entirely.
           unfinished <- newGame(None, Some(2200), None, None)
-          _          <- addTurn(unfinished, 1, "w", "PPP", List("e2e4"), pStart, pAfterW)
+          _          <- addTurn(unfinished, 1, "w", "PPP", Some(List("e2e4")), pStart, pAfterW)
           // Weak game without player rows: kept only when no rating floor is set.
           weak <- newGame(Some(-1), Some(1200), None, None)
-          _    <- addTurn(weak, 1, "w", "NNP", List("g1f3"), pStart, pAfterW)
+          _    <- addTurn(weak, 1, "w", "NNP", Some(List("g1f3")), pStart, pAfterW)
           // Junk: a no-op self-loop and an abandoned partial turn — always excluded.
-          _ <- addTurn(decided, 4, "b", "ppp", Nil, pAfterW, pAfterW)
-          _ <- addTurn(weak, 2, "w", "PPP", List("d2d4"), pStart, pPartial)
+          _ <- addTurn(decided, 5, "b", "ppp", Some(Nil), pAfterW, pAfterW)
+          _ <- addTurn(weak, 2, "w", "PPP", Some(List("d2d4")), pStart, pPartial)
         yield ()
 
       for
@@ -105,10 +107,10 @@ class TrainingExportSpec extends CatsEffectSuite with TestContainerForAll:
         countAll <- TrainingExportRepository.counts(None).transact(t)
         countStr <- TrainingExportRepository.counts(Some(2000)).transact(t)
       yield
-        assertEquals(all.size, 4)
-        assertEquals(countAll, (4L, 2L))
-        assertEquals(strong.size, 3)
-        assertEquals(countStr, (3L, 1L))
+        assertEquals(all.size, 5)
+        assertEquals(countAll, (5L, 2L))
+        assertEquals(strong.size, 4)
+        assertEquals(countStr, (4L, 1L))
 
         val move = all.find(r => r.turnNumber == 1 && r.dice == "PPQ").get
         assertEquals(move.fen, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -")
@@ -124,6 +126,9 @@ class TrainingExportSpec extends CatsEffectSuite with TestContainerForAll:
 
         val pass = all.find(_.dice == "bnp").get
         assertEquals(pass.moves, "") // forced pass survives with an empty move list
+
+        val nullMoves = all.find(_.dice == "brr").get
+        assertEquals(nullMoves.moves, "") // NULL played_moves coalesces to empty, not a crash
 
         val terminal = all.find(_.dice == "QQR").get
         assertEquals(terminal.moves, "h5f7 f7e8") // unflipped king-capture kept

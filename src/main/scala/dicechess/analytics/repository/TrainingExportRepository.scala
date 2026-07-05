@@ -48,7 +48,7 @@ object TrainingExportRepository:
 
   private def selectFrom(minRating: Option[Int]): Fragment =
     fr"""SELECT t.game_id, t.turn_number, p.normalized_fen, t.dice_sorted, t.active_color,
-                array_to_string(t.played_moves, ' '),
+                coalesce(array_to_string(t.played_moves, ' '), ''),
                 g.result, g.termination::text, g.mode::text, g.source,
                 g.white_rating, g.black_rating,
                 wp.player_type::text, bp.player_type::text""" ++
