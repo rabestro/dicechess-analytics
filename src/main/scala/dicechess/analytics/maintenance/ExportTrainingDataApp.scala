@@ -9,15 +9,19 @@ import cats.effect.{ExitCode, IO, IOApp, Resource}
 import doobie.implicits.*
 
 import dicechess.analytics.repository.TrainingExportRepository
-import dicechess.analytics.repository.TrainingExportRepository.TrainingRow
+import dicechess.analytics.repository.TrainingExportRepository.{Filters, TrainingRow}
 import dicechess.analytics.{AppConfig, Database}
 
 /** Exports ML training rows for the EV model to a gzip-compressed CSV file.
   *
-  * Usage: `ExportTrainingDataApp [outputPath] [minRating]`
+  * Usage: `ExportTrainingDataApp [outputPath] [minRating] [mode] [termination]`
   *   - `outputPath` (default `training_data.csv.gz`).
   *   - `minRating` (default 0 = everything): keep only games where BOTH players are at least this
   *     strong. Unrated games (NULL rating) are excluded when the filter is active.
+  *   - `mode` (default unset = both): restrict to one `games.mode` value (`classic` | `x2`).
+  *   - `termination` (default unset = all): restrict to one `games.termination` value
+  *     (`king_captured` | `timeout` | `resign` | `draw_agreement` | `double_declined` | `unknown`)
+  *     — e.g. `king_captured` for turns from decisive, over-the-board finishes only.
   *
   * One row per completed, outcome-labeled turn (the explorer's semantics — see
   * [[dicechess.analytics.repository.TrainingExportRepository]]). The export streams through a
@@ -65,6 +69,10 @@ object ExportTrainingDataApp extends IOApp:
     out.write(line)
     out.newLine()
 
+  private val ValidModes        = Set("classic", "x2")
+  private val ValidTerminations =
+    Set("king_captured", "timeout", "resign", "draw_agreement", "double_declined", "unknown")
+
   /** `0` (the mise default) disables the floor; anything unparseable or negative fails fast — a
     * typo must not silently export the full dataset instead of the intended slice.
     */
@@ -77,6 +85,19 @@ object ExportTrainingDataApp extends IOApp:
           case Some(n) if n > 0 => Right(Some(n))
           case _                => Left(s"minRating must be a non-negative integer, got: '$s'")
 
+  /** Blank/absent means unfiltered; anything else must be one of `valid`, or fail fast — a typo
+    * must not silently export zero rows or the wrong slice.
+    */
+  private[analytics] def parseEnumFilter(
+      arg: Option[String],
+      valid: Set[String],
+      name: String
+  ): Either[String, Option[String]] =
+    arg.map(_.trim).filter(_.nonEmpty) match
+      case None                         => Right(None)
+      case Some(v) if valid.contains(v) => Right(Some(v))
+      case Some(v) => Left(s"$name must be one of ${valid.toList.sorted.mkString(", ")}, got: '$v'")
+
   def run(args: List[String]): IO[ExitCode] =
     val outputPath = args.headOption.getOrElse("training_data.csv.gz")
 
@@ -84,18 +105,29 @@ object ExportTrainingDataApp extends IOApp:
       minRating <- IO.fromEither(
         parseMinRating(args.lift(1)).left.map(msg => IllegalArgumentException(msg))
       )
+      mode <- IO.fromEither(
+        parseEnumFilter(args.lift(2), ValidModes, "mode").left.map(msg =>
+          IllegalArgumentException(msg)
+        )
+      )
+      termination <- IO.fromEither(
+        parseEnumFilter(args.lift(3), ValidTerminations, "termination").left
+          .map(msg => IllegalArgumentException(msg))
+      )
+      filters = Filters(minRating, mode, termination)
       config <- IO.fromEither(AppConfig.load().left.map(msg => IllegalArgumentException(msg)))
       // Surface the target DB (never the password) so the dataset is not exported from the wrong database by mistake.
       _ <- IO.println(
         s"Exporting training data from ${config.db.jdbcUrl} (user=${config.db.user}); " +
-          s"minRating=${minRating.fold("none")(_.toString)} -> $outputPath ..."
+          s"minRating=${minRating.fold("none")(_.toString)}, mode=${mode.getOrElse("any")}, " +
+          s"termination=${termination.getOrElse("any")} -> $outputPath ..."
       )
       written <- Database.transactor(config.db, 4).use { xa =>
         gzipWriter(Path.of(outputPath)).use { out =>
           for
             _       <- IO.blocking(writeLine(out, Header))
             written <- TrainingExportRepository
-              .rows(minRating)
+              .rows(filters)
               .transact(xa)
               .chunks
               .evalMap(chunk =>
@@ -104,7 +136,7 @@ object ExportTrainingDataApp extends IOApp:
               )
               .compile
               .foldMonoid
-            (turns, games) <- TrainingExportRepository.counts(minRating).transact(xa)
+            (turns, games) <- TrainingExportRepository.counts(filters).transact(xa)
             _              <- IO.println(s"Filters match $turns turns across $games games.")
           yield written
         }
