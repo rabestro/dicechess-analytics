@@ -287,13 +287,21 @@ class TrainingExportSpec extends CatsEffectSuite with TestContainerForAll:
     assert(ExportTrainingDataApp.parseMinRating(Some("2000x")).isLeft)
     assert(ExportTrainingDataApp.parseMinRating(Some("-5")).isLeft)
 
-  test("parseEnumFilter: blank/absent disable the filter, valid values pass, typos fail fast"):
+  test("parseEnumFilter: blank/absent/dash disable the filter, valid values pass, typos fail fast"):
     val modes = Set("classic", "x2")
     assertEquals(ExportTrainingDataApp.parseEnumFilter(None, modes, "mode"), Right(None))
     assertEquals(ExportTrainingDataApp.parseEnumFilter(Some(""), modes, "mode"), Right(None))
     assertEquals(ExportTrainingDataApp.parseEnumFilter(Some("  "), modes, "mode"), Right(None))
+    // "-" is the CLI-safe placeholder mise's task passes when a filter is meant to stay unset —
+    // it must never collide with a real enum value.
+    assertEquals(ExportTrainingDataApp.parseEnumFilter(Some("-"), modes, "mode"), Right(None))
     assertEquals(
       ExportTrainingDataApp.parseEnumFilter(Some("classic"), modes, "mode"),
+      Right(Some("classic"))
+    )
+    // Case-insensitive: a hand-typed "CLASSIC" or "King_Captured" must not fail.
+    assertEquals(
+      ExportTrainingDataApp.parseEnumFilter(Some("CLASSIC"), modes, "mode"),
       Right(Some("classic"))
     )
     val result = ExportTrainingDataApp.parseEnumFilter(Some("clasic"), modes, "mode")

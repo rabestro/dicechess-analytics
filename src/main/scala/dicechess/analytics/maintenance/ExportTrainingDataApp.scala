@@ -18,10 +18,12 @@ import dicechess.analytics.{AppConfig, Database}
   *   - `outputPath` (default `training_data.csv.gz`).
   *   - `minRating` (default 0 = everything): keep only games where BOTH players are at least this
   *     strong. Unrated games (NULL rating) are excluded when the filter is active.
-  *   - `mode` (default unset = both): restrict to one `games.mode` value (`classic` | `x2`).
-  *   - `termination` (default unset = all): restrict to one `games.termination` value
-  *     (`king_captured` | `timeout` | `resign` | `draw_agreement` | `double_declined` | `unknown`)
-  *     — e.g. `king_captured` for turns from decisive, over-the-board finishes only.
+  *   - `mode` (default/`-` = both, case-insensitive): restrict to one `games.mode` value (`classic` |
+  *     `x2`).
+  *   - `termination` (default/`-` = all, case-insensitive): restrict to one `games.termination`
+  *     value (`king_captured` | `timeout` | `resign` | `draw_agreement` | `double_declined` |
+  *     `unknown`) — e.g. `king_captured` for turns from decisive, over-the-board finishes only.
+  *     Pass `-` to leave `mode` unset while still setting `termination` (or vice versa).
   *
   * One row per completed, outcome-labeled turn (the explorer's semantics — see
   * [[dicechess.analytics.repository.TrainingExportRepository]]). The export streams through a
@@ -85,15 +87,20 @@ object ExportTrainingDataApp extends IOApp:
           case Some(n) if n > 0 => Right(Some(n))
           case _                => Left(s"minRating must be a non-negative integer, got: '$s'")
 
-  /** Blank/absent means unfiltered; anything else must be one of `valid`, or fail fast — a typo
-    * must not silently export zero rows or the wrong slice.
+  /** Blank, absent, or `-` means unfiltered (case-insensitive otherwise); anything else must be one
+    * of `valid`, or fail fast — a typo must not silently export zero rows or the wrong slice.
+    *
+    * `-` is the CLI-safe placeholder for "skip this filter": `mise run db:export-training` builds
+    * one space-joined string for `sbt runMain`, where an actually-empty argument collapses into the
+    * surrounding whitespace and silently shifts every later positional argument one slot to the
+    * left — `-` is always a distinct, non-empty token, so it can't be swallowed that way.
     */
   private[analytics] def parseEnumFilter(
       arg: Option[String],
       valid: Set[String],
       name: String
   ): Either[String, Option[String]] =
-    arg.map(_.trim).filter(_.nonEmpty) match
+    arg.map(_.trim.toLowerCase).filter(v => v.nonEmpty && v != "-") match
       case None                         => Right(None)
       case Some(v) if valid.contains(v) => Right(Some(v))
       case Some(v) => Left(s"$name must be one of ${valid.toList.sorted.mkString(", ")}, got: '$v'")
