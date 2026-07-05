@@ -13,7 +13,7 @@ import munit.CatsEffectSuite
 import org.testcontainers.utility.DockerImageName
 
 import dicechess.analytics.maintenance.ExportTrainingDataApp
-import dicechess.analytics.repository.TrainingExportRepository.TrainingRow
+import dicechess.analytics.repository.TrainingExportRepository.{Filters, TrainingRow}
 import dicechess.analytics.repository.{PositionsRepository, TrainingExportRepository}
 
 /** `TrainingExportRepository` streaming/filters against a fresh PostgreSQL, plus the CSV shape. */
@@ -51,13 +51,15 @@ class TrainingExportSpec extends CatsEffectSuite with TestContainerForAll:
       whiteRating: Option[Int],
       blackRating: Option[Int],
       white: Option[UUID],
-      black: Option[UUID]
+      black: Option[UUID],
+      mode: String = "classic",
+      termination: String = "unknown"
   ): ConnectionIO[UUID] =
     val id = UUID.randomUUID()
-    sql"""INSERT INTO games (id, source, mode, result, started_at,
+    sql"""INSERT INTO games (id, source, mode, termination, result, started_at,
                              white_rating, black_rating, white_player_id, black_player_id)
-          VALUES ($id, 'test', 'classic'::game_mode_enum, $result, now(),
-                  $whiteRating, $blackRating, $white, $black)""".update.run.as(id)
+          VALUES ($id, 'test', $mode::game_mode_enum, $termination::game_termination_enum, $result,
+                  now(), $whiteRating, $blackRating, $white, $black)""".update.run.as(id)
 
   private def addTurn(
       game: UUID,
@@ -72,11 +74,17 @@ class TrainingExportSpec extends CatsEffectSuite with TestContainerForAll:
                              dice_sorted, played_moves, position_after_id)
           VALUES ($game, $n, $color, $position, $dice, $moves, $after)""".update.run.void
 
+  // TestContainerForAll shares one Postgres for the whole class; reset before each test so one
+  // test's seed data can't leak into another's assertions.
+  private val resetTables: ConnectionIO[Unit] =
+    sql"TRUNCATE turns, games, positions, players RESTART IDENTITY CASCADE".update.run.void
+
   test("rows/counts apply the explorer guards, keep passes, and join player metadata"):
     withContainers { pg =>
       val t    = xa(pg)
       val seed =
         for
+          _        <- resetTables
           pStart   <- PositionsRepository.getOrCreate(fenStart)
           pAfterW  <- PositionsRepository.getOrCreate(fenAfterW)
           pNoKing  <- PositionsRepository.getOrCreate(fenNoKing)
@@ -105,11 +113,15 @@ class TrainingExportSpec extends CatsEffectSuite with TestContainerForAll:
         yield ()
 
       for
-        _        <- seed.transact(t)
-        all      <- TrainingExportRepository.rows(None).transact(t).compile.toList
-        strong   <- TrainingExportRepository.rows(Some(2000)).transact(t).compile.toList
-        countAll <- TrainingExportRepository.counts(None).transact(t)
-        countStr <- TrainingExportRepository.counts(Some(2000)).transact(t)
+        _      <- seed.transact(t)
+        all    <- TrainingExportRepository.rows(Filters()).transact(t).compile.toList
+        strong <- TrainingExportRepository
+          .rows(Filters(minRating = Some(2000)))
+          .transact(t)
+          .compile
+          .toList
+        countAll <- TrainingExportRepository.counts(Filters()).transact(t)
+        countStr <- TrainingExportRepository.counts(Filters(minRating = Some(2000))).transact(t)
       yield
         assertEquals(all.size, 6)
         assertEquals(countAll, (6L, 3L))
@@ -142,6 +154,102 @@ class TrainingExportSpec extends CatsEffectSuite with TestContainerForAll:
         val weakRow = all.find(_.dice == "NNP").get
         assertEquals(weakRow.whiteType, None) // LEFT JOIN: no player rows
         assert(strong.forall(_.whiteRating == Some(2200)))
+    }
+
+  test("rows/counts compose mode and termination filters with minRating"):
+    withContainers { pg =>
+      val t    = xa(pg)
+      val seed =
+        for
+          _       <- resetTables
+          pStart  <- PositionsRepository.getOrCreate(fenStart)
+          pAfterW <- PositionsRepository.getOrCreate(fenAfterW)
+          // Classic, decisive by king capture, strong — survives every filter combination below.
+          captured <- newGame(
+            Some(1),
+            Some(2200),
+            Some(2200),
+            None,
+            None,
+            mode = "classic",
+            termination = "king_captured"
+          )
+          _ <- addTurn(captured, 1, "w", "PPP", Some(List("e2e4")), pStart, pAfterW)
+          // Classic, but ended by timeout — excluded once termination=king_captured is set.
+          timedOut <- newGame(
+            Some(1),
+            Some(2200),
+            Some(2200),
+            None,
+            None,
+            mode = "classic",
+            termination = "timeout"
+          )
+          _ <- addTurn(timedOut, 1, "w", "NNP", Some(List("g1f3")), pStart, pAfterW)
+          // x2 mode, otherwise identical — excluded once mode=classic is set.
+          doubled <- newGame(
+            Some(1),
+            Some(2200),
+            Some(2200),
+            None,
+            None,
+            mode = "x2",
+            termination = "king_captured"
+          )
+          _ <- addTurn(doubled, 1, "w", "RRQ", Some(List("h1h4")), pStart, pAfterW)
+          // Classic, king-captured, but weak — excluded once minRating joins the other two filters.
+          weakCaptured <- newGame(
+            Some(1),
+            Some(900),
+            Some(900),
+            None,
+            None,
+            mode = "classic",
+            termination = "king_captured"
+          )
+          _ <- addTurn(weakCaptured, 1, "w", "BBP", Some(List("f1c4")), pStart, pAfterW)
+        yield ()
+
+      for
+        _           <- seed.transact(t)
+        classicOnly <- TrainingExportRepository
+          .rows(Filters(mode = Some("classic")))
+          .transact(t)
+          .compile
+          .toList
+        capturedOnly <- TrainingExportRepository
+          .rows(Filters(termination = Some("king_captured")))
+          .transact(t)
+          .compile
+          .toList
+        strongCapturedClassic <- TrainingExportRepository
+          .rows(
+            Filters(
+              minRating = Some(2000),
+              mode = Some("classic"),
+              termination = Some("king_captured")
+            )
+          )
+          .transact(t)
+          .compile
+          .toList
+        combinedCounts <- TrainingExportRepository
+          .counts(
+            Filters(
+              minRating = Some(2000),
+              mode = Some("classic"),
+              termination = Some("king_captured")
+            )
+          )
+          .transact(t)
+      yield
+        assertEquals(classicOnly.map(_.dice).toSet, Set("PPP", "NNP", "BBP")) // x2 (RRQ) excluded
+        assertEquals(
+          capturedOnly.map(_.dice).toSet,
+          Set("PPP", "RRQ", "BBP")
+        ) // timeout (NNP) excluded
+        assertEquals(strongCapturedClassic.map(_.dice), List("PPP"))
+        assertEquals(combinedCounts, (1L, 1L))
     }
 
   test("csvLine renders 14 columns, quotes only when needed, and blanks missing optionals"):
@@ -178,3 +286,24 @@ class TrainingExportSpec extends CatsEffectSuite with TestContainerForAll:
     assertEquals(ExportTrainingDataApp.parseMinRating(Some("2000")), Right(Some(2000)))
     assert(ExportTrainingDataApp.parseMinRating(Some("2000x")).isLeft)
     assert(ExportTrainingDataApp.parseMinRating(Some("-5")).isLeft)
+
+  test("parseEnumFilter: blank/absent/dash disable the filter, valid values pass, typos fail fast"):
+    val modes = Set("classic", "x2")
+    assertEquals(ExportTrainingDataApp.parseEnumFilter(None, modes, "mode"), Right(None))
+    assertEquals(ExportTrainingDataApp.parseEnumFilter(Some(""), modes, "mode"), Right(None))
+    assertEquals(ExportTrainingDataApp.parseEnumFilter(Some("  "), modes, "mode"), Right(None))
+    // "-" is the CLI-safe placeholder mise's task passes when a filter is meant to stay unset —
+    // it must never collide with a real enum value.
+    assertEquals(ExportTrainingDataApp.parseEnumFilter(Some("-"), modes, "mode"), Right(None))
+    assertEquals(
+      ExportTrainingDataApp.parseEnumFilter(Some("classic"), modes, "mode"),
+      Right(Some("classic"))
+    )
+    // Case-insensitive: a hand-typed "CLASSIC" or "King_Captured" must not fail.
+    assertEquals(
+      ExportTrainingDataApp.parseEnumFilter(Some("CLASSIC"), modes, "mode"),
+      Right(Some("classic"))
+    )
+    val result = ExportTrainingDataApp.parseEnumFilter(Some("clasic"), modes, "mode")
+    assert(result.isLeft)
+    assert(result.left.exists(_.contains("mode")))

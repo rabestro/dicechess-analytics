@@ -11,8 +11,9 @@ import fs2.Stream
   *
   * Shares the explorer's data-quality semantics ([[PositionsRepository.completedTurn]] plus the
   * self-loop guard), so a model trained on this export sees exactly the turns the Openings Explorer
-  * counts. `termination` is intentionally NOT filtered — the legacy backfill stores `unknown` for
-  * all its games and would otherwise vanish from the dataset.
+  * counts. `termination` is NOT filtered unless [[Filters.termination]] is set — the legacy
+  * backfill stores `unknown` for all its games and would otherwise vanish from an unfiltered
+  * export.
   */
 object TrainingExportRepository:
 
@@ -39,14 +40,29 @@ object TrainingExportRepository:
       blackType: Option[String]
   )
 
-  private def conditions(minRating: Option[Int]): Fragment =
+  /** Optional, independently composable slice of the export: `minRating` requires BOTH players at
+    * least that strong, `mode`/`termination` restrict to one `games.mode` / `games.termination`
+    * value. `None` means unfiltered for that dimension.
+    */
+  final case class Filters(
+      minRating: Option[Int] = None,
+      mode: Option[String] = None,
+      termination: Option[String] = None
+  )
+
+  private def conditions(filters: Filters): Fragment =
     val base =
       fr"""WHERE g.result IS NOT NULL
            AND t.position_after_id <> t.position_id
            AND""" ++ PositionsRepository.completedTurn
-    minRating.fold(base)(r => base ++ fr"AND g.white_rating >= $r AND g.black_rating >= $r")
+    val withRating =
+      filters.minRating.fold(base)(r =>
+        base ++ fr"AND g.white_rating >= $r AND g.black_rating >= $r"
+      )
+    val withMode = filters.mode.fold(withRating)(m => withRating ++ fr"AND g.mode::text = $m")
+    filters.termination.fold(withMode)(t => withMode ++ fr"AND g.termination::text = $t")
 
-  private def selectFrom(minRating: Option[Int]): Fragment =
+  private def selectFrom(filters: Filters): Fragment =
     fr"""SELECT t.game_id, t.turn_number, p.normalized_fen, t.dice_sorted, t.active_color,
                 coalesce(array_to_string(t.played_moves, ' '), ''),
                 g.result, g.termination::text, g.mode::text, g.source,
@@ -55,14 +71,14 @@ object TrainingExportRepository:
       PositionsRepository.turnsJoin ++
       fr"""LEFT JOIN players wp ON wp.id = g.white_player_id
            LEFT JOIN players bp ON bp.id = g.black_player_id""" ++
-      conditions(minRating)
+      conditions(filters)
 
-  /** Streams every exportable turn; constant memory via a server-side cursor. */
-  def rows(minRating: Option[Int], chunkSize: Int = 4096): Stream[ConnectionIO, TrainingRow] =
-    selectFrom(minRating).query[TrainingRow].streamWithChunkSize(chunkSize)
+  /** Streams every exportable turn matching `filters`; constant memory via a server-side cursor. */
+  def rows(filters: Filters, chunkSize: Int = 4096): Stream[ConnectionIO, TrainingRow] =
+    selectFrom(filters).query[TrainingRow].streamWithChunkSize(chunkSize)
 
-  /** `(turns, distinct games)` matching the export filters — the summary printed after a run. */
-  def counts(minRating: Option[Int]): ConnectionIO[(Long, Long)] =
+  /** `(turns, distinct games)` matching `filters` — the summary printed after a run. */
+  def counts(filters: Filters): ConnectionIO[(Long, Long)] =
     (fr"SELECT count(*), count(DISTINCT t.game_id)" ++
       PositionsRepository.turnsJoin ++
-      conditions(minRating)).query[(Long, Long)].unique
+      conditions(filters)).query[(Long, Long)].unique

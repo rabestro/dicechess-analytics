@@ -96,9 +96,9 @@ sbt "runMain dicechess.analytics.maintenance.ExportOpeningBookApp ${1:-100} ${2:
 """
 
 [tasks."db:export-training"]
-description = "🎓 Export ML training rows to a gzip CSV. Usage: `mise run db:export-training [outputPath] [minRating]`"
+description = "🎓 Export ML training rows to a gzip CSV. Usage: `mise run db:export-training [outputPath] [minRating] [mode] [termination]` (pass `-` to skip mode/termination)"
 run = """
 #!/usr/bin/env bash
-sbt "runMain dicechess.analytics.maintenance.ExportTrainingDataApp ${1:-training_data.csv.gz} ${2:-0}"
+sbt "runMain dicechess.analytics.maintenance.ExportTrainingDataApp ${1:-training_data.csv.gz} ${2:-0} ${3:--} ${4:--}"
 """
 
