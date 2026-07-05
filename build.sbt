@@ -1,6 +1,6 @@
 ThisBuild / organization := "lv.id.jc"
 ThisBuild / version      := "0.1.0-SNAPSHOT"
-ThisBuild / scalaVersion := "3.8.3"
+ThisBuild / scalaVersion := "3.8.4"
 
 ThisBuild / description := "Dice Chess Analytics backend: REST API over the games database."
 
