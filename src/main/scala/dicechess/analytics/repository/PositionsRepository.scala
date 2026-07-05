@@ -26,7 +26,7 @@ object PositionsRepository:
     * leave both kings on the board without flipping the side, plus no-op self-loops. Requires the
     * queried position joined as `p` and `position_after` as `pa`.
     */
-  private val completedTurn: Fragment =
+  private[repository] val completedTurn: Fragment =
     fr"(pa.active_color <> p.active_color OR pa.piece_placement NOT LIKE '%K%' OR pa.piece_placement NOT LIKE '%k%')"
 
   /** `count(*)` plus win/draw/loss tallies from the moving side's perspective — the outcome columns
@@ -41,7 +41,7 @@ object PositionsRepository:
                              OR (t.active_color = 'b' AND g.result = 1))"""
 
   /** Turns joined to their before/after positions (`p` / `pa`) and game (`g`). */
-  private val turnsJoin: Fragment =
+  private[repository] val turnsJoin: Fragment =
     fr"""FROM turns t
          JOIN positions p  ON p.id = t.position_id
          JOIN positions pa ON pa.id = t.position_after_id
