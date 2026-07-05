@@ -12,8 +12,6 @@ updates:
       include: "scope"
     assignees:
       - "rabestro"
-    reviewers:
-      - "rabestro"
     rebase-strategy: "auto"
 
   - package-ecosystem: "sbt"
@@ -26,8 +24,6 @@ updates:
     commit-message:
       prefix: "chore"
     assignees:
-      - "rabestro"
-    reviewers:
       - "rabestro"
     labels:
       - "dependencies"
@@ -50,8 +46,6 @@ updates:
       prefix: "chore"
     assignees:
       - "rabestro"
-    reviewers:
-      - "rabestro"
 
   - package-ecosystem: "docker-compose"
     directory: "/"
@@ -63,6 +57,4 @@ updates:
     commit-message:
       prefix: "chore"
     assignees:
-      - "rabestro"
-    reviewers:
       - "rabestro"
