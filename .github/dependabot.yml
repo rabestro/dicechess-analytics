@@ -1,19 +1,5 @@
 version: 2
 updates:
-  - package-ecosystem: "uv"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "08:00"
-    open-pull-requests-limit: 5
-    commit-message:
-      prefix: "chore"
-      include: "scope"
-    assignees:
-      - "rabestro"
-    rebase-strategy: "auto"
-
   - package-ecosystem: "sbt"
     directory: "/"
     schedule:
