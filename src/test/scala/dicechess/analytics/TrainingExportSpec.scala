@@ -1,5 +1,6 @@
 package dicechess.analytics
 
+import java.io.{BufferedWriter, StringWriter}
 import java.util.UUID
 
 import cats.effect.IO
@@ -251,6 +252,116 @@ class TrainingExportSpec extends CatsEffectSuite with TestContainerForAll:
         assertEquals(strongCapturedClassic.map(_.dice), List("PPP"))
         assertEquals(combinedCounts, (1L, 1L))
     }
+
+  test("filteredGameIds pages through every matching game exactly once"):
+    withContainers { pg =>
+      val t    = xa(pg)
+      val seed =
+        for
+          _   <- resetTables
+          ids <- (1 to 10).toList.traverse(_ =>
+            newGame(Some(1), Some(2000), Some(2000), None, None, mode = "classic")
+          )
+          // One weak game that must never appear in a page.
+          _ <- newGame(Some(1), Some(500), Some(500), None, None, mode = "classic")
+        yield ids
+
+      def collectAllPages(filters: Filters, batchSize: Int): IO[List[UUID]] =
+        def loop(afterId: Option[UUID], acc: List[UUID]): IO[List[UUID]] =
+          TrainingExportRepository
+            .filteredGameIds(filters, afterId, batchSize)
+            .transact(t)
+            .flatMap {
+              case Nil   => IO.pure(acc)
+              case batch => loop(Some(batch.last), acc ++ batch)
+            }
+        loop(None, Nil)
+
+      for
+        seeded <- seed.transact(t)
+        paged  <- collectAllPages(
+          Filters(minRating = Some(2000), mode = Some("classic")),
+          batchSize = 3
+        )
+      yield
+        // Together these two prove completeness AND no duplication: the weak game is excluded,
+        // and every other seeded id shows up exactly once across however many pages it took.
+        // (NOT checked against `paged.sorted`: Java's UUID#compareTo orders by signed long halves,
+        // which disagrees with Postgres's byte-wise uuid ordering on roughly half of all random
+        // UUIDs — the two orders simply aren't comparable, regardless of query correctness.)
+        assertEquals(paged.size, 10)
+        assertEquals(paged.toSet, seeded.toSet)
+    }
+
+  test("rowsForGames applies the same turn-level guards as rows, for an explicit id batch"):
+    withContainers { pg =>
+      val t    = xa(pg)
+      val seed =
+        for
+          _        <- resetTables
+          pStart   <- PositionsRepository.getOrCreate(fenStart)
+          pAfterW  <- PositionsRepository.getOrCreate(fenAfterW)
+          pNoKing  <- PositionsRepository.getOrCreate(fenNoKing)
+          pPartial <- PositionsRepository.getOrCreate(fenPartial)
+          game     <- newGame(Some(1), Some(2000), Some(2000), None, None)
+          _        <- addTurn(game, 1, "w", "PPQ", Some(List("e2e4", "d2d4")), pStart, pAfterW)
+          _        <- addTurn(game, 2, "b", "bnp", Some(Nil), pAfterW, pStart) // legal pass
+          _ <- addTurn(game, 3, "w", "QQR", Some(List("h5f7", "f7e8")), pStart, pNoKing) // terminal
+          _ <- addTurn(game, 4, "b", "ppp", Some(Nil), pAfterW, pAfterW) // self-loop: excluded
+          _ <- addTurn(
+            game,
+            5,
+            "w",
+            "PPP",
+            Some(List("d2d4")),
+            pStart,
+            pPartial
+          ) // partial: excluded
+        yield game
+
+      for
+        gameId <- seed.transact(t)
+        rows   <- TrainingExportRepository.rowsForGames(List(gameId)).transact(t).compile.toList
+        empty  <- TrainingExportRepository.rowsForGames(Nil).transact(t).compile.toList
+      yield
+        assertEquals(rows.map(_.dice).toSet, Set("PPQ", "bnp", "QQR"))
+        assertEquals(empty, Nil) // an empty id batch short-circuits to no rows, not "all rows"
+    }
+
+  test("exportInBatches pages a small dataset to completion without skipping or duplicating games"):
+    withContainers { pg =>
+      val t    = xa(pg)
+      val seed =
+        for
+          _       <- resetTables
+          pStart  <- PositionsRepository.getOrCreate(fenStart)
+          pAfterW <- PositionsRepository.getOrCreate(fenAfterW)
+          _       <- (1 to 7).toList.traverse_ { _ =>
+            for
+              game <- newGame(Some(1), Some(2000), Some(2000), None, None, mode = "classic")
+              _    <- addTurn(game, 1, "w", "PPP", Some(List("e2e4")), pStart, pAfterW)
+            yield ()
+          }
+        yield ()
+
+      val writer = BufferedWriter(StringWriter())
+      for
+        _      <- seed.transact(t)
+        result <- ExportTrainingDataApp.exportInBatches(
+          t,
+          Filters(minRating = Some(2000), mode = Some("classic")),
+          batchSize = 2,
+          writer
+        )
+      yield assertEquals(result, (7L, 7L))
+    }
+
+  test("parseBatchSize: absent defaults to 2000, non-positive and unparseable fail fast"):
+    assertEquals(ExportTrainingDataApp.parseBatchSize(None), Right(2000))
+    assertEquals(ExportTrainingDataApp.parseBatchSize(Some("500")), Right(500))
+    assert(ExportTrainingDataApp.parseBatchSize(Some("0")).isLeft)
+    assert(ExportTrainingDataApp.parseBatchSize(Some("-5")).isLeft)
+    assert(ExportTrainingDataApp.parseBatchSize(Some("abc")).isLeft)
 
   test("csvLine renders 14 columns, quotes only when needed, and blanks missing optionals"):
     val row = TrainingRow(

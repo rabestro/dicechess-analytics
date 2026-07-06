@@ -227,6 +227,10 @@ project/project/
 mise.local.toml
 mise.*.local.toml
 
+# Generated maintenance-app output (db:export-book, db:export-training defaults)
+opening_book.json
+*.csv.gz
+
 # Node (docs site)
 node_modules/
 
