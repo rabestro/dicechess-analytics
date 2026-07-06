@@ -267,13 +267,15 @@ class TrainingExportSpec extends CatsEffectSuite with TestContainerForAll:
         yield ids
 
       def collectAllPages(filters: Filters, batchSize: Int): IO[List[UUID]] =
-        def loop(afterId: Option[UUID], acc: List[UUID]): IO[List[UUID]] =
+        // Prepend each page (O(1)) and reverse+flatten once at the end, instead of `acc ++ batch`
+        // per page, which is O(page count) per call and O(n²) overall for a `List`.
+        def loop(afterId: Option[UUID], pages: List[List[UUID]]): IO[List[UUID]] =
           TrainingExportRepository
             .filteredGameIds(filters, afterId, batchSize)
             .transact(t)
             .flatMap {
-              case Nil   => IO.pure(acc)
-              case batch => loop(Some(batch.last), acc ++ batch)
+              case Nil   => IO.pure(pages.reverse.flatten)
+              case batch => loop(Some(batch.last), batch :: pages)
             }
         loop(None, Nil)
 
@@ -354,6 +356,37 @@ class TrainingExportSpec extends CatsEffectSuite with TestContainerForAll:
           writer
         )
       yield assertEquals(result, (7L, 7L))
+    }
+
+  test(
+    "exportInBatches does not count a filter-matching game that contributes zero surviving rows"
+  ):
+    withContainers { pg =>
+      val t    = xa(pg)
+      val seed =
+        for
+          _       <- resetTables
+          pStart  <- PositionsRepository.getOrCreate(fenStart)
+          pAfterW <- PositionsRepository.getOrCreate(fenAfterW)
+          // Matches the games-level filter and has one real, exportable turn.
+          withRows <- newGame(Some(1), Some(2000), Some(2000), None, None, mode = "classic")
+          _        <- addTurn(withRows, 1, "w", "PPP", Some(List("e2e4")), pStart, pAfterW)
+          // Also matches the games-level filter, but its only turn is a no-op self-loop — zero
+          // rows survive turnGuards, so it must not be counted as a "game" in the result either.
+          selfLoopOnly <- newGame(Some(1), Some(2000), Some(2000), None, None, mode = "classic")
+          _            <- addTurn(selfLoopOnly, 1, "w", "NNP", Some(Nil), pStart, pStart)
+        yield ()
+
+      val writer = BufferedWriter(StringWriter())
+      for
+        _      <- seed.transact(t)
+        result <- ExportTrainingDataApp.exportInBatches(
+          t,
+          Filters(minRating = Some(2000), mode = Some("classic")),
+          batchSize = 10,
+          writer
+        )
+      yield assertEquals(result, (1L, 1L)) // 2 games match the filter, but only 1 contributes rows
     }
 
   test("parseBatchSize: absent defaults to 2000, non-positive and unparseable fail fast"):

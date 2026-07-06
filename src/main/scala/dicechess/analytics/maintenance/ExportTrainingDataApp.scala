@@ -128,7 +128,11 @@ object ExportTrainingDataApp extends IOApp:
           .toRight(s"batchSize must be a positive integer, got: '$s'")
 
   /** Pages through every game matching `filters` in batches of `batchSize`, writing each batch's
-    * rows before fetching the next. Returns `(rows written, games covered)`.
+    * rows before fetching the next. Returns `(rows written, distinct games that contributed at
+    * least one row)` — a game matching the games-level filter but with no turns surviving
+    * [[TrainingExportRepository.rowsForGames]]'s guards (no turns recorded, or only self-loops)
+    * contributes 0 rows and is not counted, matching what the old single-shot `counts` query
+    * (`count(DISTINCT t.game_id)` over the joined, guarded rows) reported.
     */
   private[analytics] def exportInBatches(
       xa: Transactor[IO],
@@ -141,20 +145,22 @@ object ExportTrainingDataApp extends IOApp:
         case Nil      => IO.pure((rowsSoFar, gamesSoFar))
         case batchIds =>
           for
-            written <- TrainingExportRepository
+            (written, gamesWithRows) <- TrainingExportRepository
               .rowsForGames(batchIds)
               .transact(xa)
               .chunks
               .evalMap(chunk =>
                 IO.blocking(chunk.foreach(row => writeLine(out, csvLine(row))))
-                  .as(chunk.size.toLong)
+                  .as((chunk.size.toLong, chunk.foldLeft(Set.empty[UUID])(_ + _.gameId)))
               )
               .compile
-              .foldMonoid
+              .fold((0L, Set.empty[UUID])) { case ((count, games), (chunkCount, chunkGames)) =>
+                (count + chunkCount, games ++ chunkGames)
+              }
             totalRows  = rowsSoFar + written
-            totalGames = gamesSoFar + batchIds.size
+            totalGames = gamesSoFar + gamesWithRows.size
             _ <- IO.println(
-              s"  batch of ${batchIds.size} games -> $written rows " +
+              s"  batch of ${batchIds.size} games -> $written rows from ${gamesWithRows.size} of them " +
                 s"(running total: $totalRows rows, $totalGames games)"
             )
             _    <- IO.sleep(PauseBetweenBatches)
