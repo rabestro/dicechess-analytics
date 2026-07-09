@@ -62,6 +62,15 @@ class EnrichTrainingDataSpec extends CatsEffectSuite:
       "4k3/8/8/8/8/8/8/4K3 w - - 5 9"
     )
 
+  test("parseParallelism defaults on absent/blank and validates otherwise"):
+    assert(EnrichTrainingDataApp.parseParallelism(None).isRight)
+    assert(
+      EnrichTrainingDataApp.parseParallelism(Some("   ")).isRight
+    ) // a shell wrapper's empty arg
+    assertEquals(EnrichTrainingDataApp.parseParallelism(Some("4")), Right(4))
+    assert(EnrichTrainingDataApp.parseParallelism(Some("0")).isLeft)
+    assert(EnrichTrainingDataApp.parseParallelism(Some("nope")).isLeft)
+
   test("enrichRow appends columnNames-many values and preserves the original row"):
     val enriched = EnrichTrainingDataApp.enrichRow(columns, startRow).fold(fail(_), identity)
     assert(enriched.startsWith(startRow + ","))
@@ -140,3 +149,10 @@ class EnrichTrainingDataSpec extends CatsEffectSuite:
       _         <- writeGzip(in, List(header, "too,few,fields"))
       result    <- EnrichTrainingDataApp.run(List(in.toString, out.toString)).attempt
     yield assert(result.isLeft)
+
+  test("run refuses to write its output over its own input"):
+    for
+      (in, _) <- tempFiles
+      _       <- writeGzip(in, List(header, startRow))
+      result  <- EnrichTrainingDataApp.run(List(in.toString, in.toString)).attempt
+    yield assert(result.isLeft, "writing over the input would truncate it before any row is read")

@@ -81,13 +81,16 @@ object EnrichTrainingDataApp extends IOApp:
     else
       (parseColor(fields(columns.side)), FenParser.parse(padFen(fields(columns.fen)))).mapN {
         (color, state) =>
-          val features = RichFeatures.extract(state, color).iterator.map(_.toString).mkString(",")
+          val features = RichFeatures.extract(state, color).mkString(",")
           s"$line,$features"
       }
 
   private def gzipReader(path: Path): Resource[IO, BufferedReader] =
     Resource.fromAutoCloseable(IO.blocking {
-      BufferedReader(InputStreamReader(GZIPInputStream(Files.newInputStream(path)), UTF_8), 1 << 20)
+      BufferedReader(
+        InputStreamReader(GZIPInputStream(Files.newInputStream(path), 1 << 16), UTF_8),
+        1 << 20
+      )
     })
 
   // A plain BufferedWriter, not PrintWriter: PrintWriter swallows IOExceptions (a full disk would
@@ -95,7 +98,7 @@ object EnrichTrainingDataApp extends IOApp:
   private def gzipWriter(path: Path): Resource[IO, BufferedWriter] =
     Resource.fromAutoCloseable(IO.blocking {
       BufferedWriter(
-        OutputStreamWriter(GZIPOutputStream(Files.newOutputStream(path)), UTF_8),
+        OutputStreamWriter(GZIPOutputStream(Files.newOutputStream(path), 1 << 16), UTF_8),
         1 << 20
       )
     })
@@ -103,8 +106,11 @@ object EnrichTrainingDataApp extends IOApp:
   private def writeLine(out: BufferedWriter, line: String): IO[Unit] =
     IO.blocking { out.write(line); out.newLine() }
 
+  /** Blank/absent (including the empty string a shell wrapper's `${3:-}` can pass) falls back to
+    * the CPU count; anything non-numeric or non-positive fails fast.
+    */
   private[analytics] def parseParallelism(arg: Option[String]): Either[String, Int] =
-    arg match
+    arg.map(_.trim).filter(_.nonEmpty) match
       case None    => Right(Runtime.getRuntime.availableProcessors())
       case Some(s) =>
         s.toIntOption.filter(_ > 0).toRight(s"parallelism must be a positive integer, got: '$s'")
@@ -134,6 +140,16 @@ object EnrichTrainingDataApp extends IOApp:
     val inputPath  = args.headOption.getOrElse(DefaultInput)
     val outputPath = args.lift(1).getOrElse(DefaultOutput)
     for
+      // Opening the writer truncates the output; if it resolves to the input, the data is gone
+      // before a single row is read. Refuse rather than destroy the source.
+      _ <- IO.raiseWhen(
+        Path.of(inputPath).toAbsolutePath.normalize == Path.of(outputPath).toAbsolutePath.normalize
+      )(
+        IllegalArgumentException(
+          s"input and output must be different files (both resolve to '$inputPath'): " +
+            "writing would truncate the input before it is read"
+        )
+      )
       parallelism <- IO.fromEither(
         parseParallelism(args.lift(2)).leftMap(IllegalArgumentException(_))
       )
