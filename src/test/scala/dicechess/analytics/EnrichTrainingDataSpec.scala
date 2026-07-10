@@ -13,7 +13,7 @@ import munit.CatsEffectSuite
 import dicechess.analytics.maintenance.EnrichTrainingDataApp
 import dicechess.analytics.maintenance.EnrichTrainingDataApp.Columns
 import dicechess.analytics.maintenance.ExportTrainingDataApp
-import dicechess.engine.search.RichFeatures
+import dicechess.engine.search.{KcpFeatures, RichFeatures}
 
 /** [[EnrichTrainingDataApp]] — pure row/header logic plus one end-to-end gzip round-trip. No
   * database: enrichment is a CSV→CSV pass, so it needs no container.
@@ -24,6 +24,8 @@ class EnrichTrainingDataSpec extends CatsEffectSuite:
   private val header    = ExportTrainingDataApp.Header
   private val baseWidth = header.split(",", -1).length
   private val columns   = EnrichTrainingDataApp.parseHeader(header).fold(fail(_), identity)
+  private val rich      = EnrichTrainingDataApp.featureSet("rich").fold(fail(_), identity)
+  private val kcp       = EnrichTrainingDataApp.featureSet("kcp").fold(fail(_), identity)
 
   private def mobilityIndex   = baseWidth + RichFeatures.columnNames.indexOf("mobility_diff")
   private def kingSafetyIndex = baseWidth + RichFeatures.columnNames.indexOf("king_safety_diff")
@@ -43,7 +45,7 @@ class EnrichTrainingDataSpec extends CatsEffectSuite:
 
   test("enrichedHeader appends the RichFeatures columns after the originals"):
     assertEquals(
-      EnrichTrainingDataApp.enrichedHeader(header),
+      EnrichTrainingDataApp.enrichedHeader(header, rich),
       header + "," + RichFeatures.columnNames.mkString(",")
     )
 
@@ -72,7 +74,7 @@ class EnrichTrainingDataSpec extends CatsEffectSuite:
     assert(EnrichTrainingDataApp.parseParallelism(Some("nope")).isLeft)
 
   test("enrichRow appends columnNames-many values and preserves the original row"):
-    val enriched = EnrichTrainingDataApp.enrichRow(columns, startRow).fold(fail(_), identity)
+    val enriched = EnrichTrainingDataApp.enrichRow(columns, rich, startRow).fold(fail(_), identity)
     assert(enriched.startsWith(startRow + ","))
     val fields = enriched.split(",", -1)
     assertEquals(fields.length, baseWidth + RichFeatures.columnNames.length)
@@ -82,14 +84,17 @@ class EnrichTrainingDataSpec extends CatsEffectSuite:
 
   test("enrichRow gets mobility_diff sign right for a lopsided position"):
     val fields =
-      EnrichTrainingDataApp.enrichRow(columns, queenRow).fold(fail(_), identity).split(",", -1)
+      EnrichTrainingDataApp
+        .enrichRow(columns, rich, queenRow)
+        .fold(fail(_), identity)
+        .split(",", -1)
     assert(fields(mobilityIndex).toFloat > 0f, "White (queen vs lone king) must have more mobility")
 
   test("enrichRow rejects a row with the wrong field count"):
-    assert(EnrichTrainingDataApp.enrichRow(columns, "too,few,fields").isLeft)
+    assert(EnrichTrainingDataApp.enrichRow(columns, rich, "too,few,fields").isLeft)
 
   test("enrichRow rejects an unparseable FEN"):
-    assert(EnrichTrainingDataApp.enrichRow(columns, row("not-a-fen", "w")).isLeft)
+    assert(EnrichTrainingDataApp.enrichRow(columns, rich, row("not-a-fen", "w")).isLeft)
 
   // --- end-to-end gzip round-trip -------------------------------------------------------------
 
@@ -123,7 +128,7 @@ class EnrichTrainingDataSpec extends CatsEffectSuite:
       _         <- EnrichTrainingDataApp.run(List(in.toString, out.toString, "2"))
       lines     <- readGzip(out)
     yield
-      assertEquals(lines.head, EnrichTrainingDataApp.enrichedHeader(header))
+      assertEquals(lines.head, EnrichTrainingDataApp.enrichedHeader(header, rich))
       assertEquals(lines.length, 3)
       assert(lines(1).startsWith(startRow + ","), "first data row preserved and in order")
       assert(lines(2).startsWith(queenRow + ","), "second data row preserved and in order")
@@ -156,3 +161,30 @@ class EnrichTrainingDataSpec extends CatsEffectSuite:
       _       <- writeGzip(in, List(header, startRow))
       result  <- EnrichTrainingDataApp.run(List(in.toString, in.toString)).attempt
     yield assert(result.isLeft, "writing over the input would truncate it before any row is read")
+
+  test("featureSet resolves rich/kcp, defaults to rich, rejects the unknown"):
+    assertEquals(EnrichTrainingDataApp.featureSet("").map(_.name), Right("rich"))
+    assertEquals(EnrichTrainingDataApp.featureSet("KCP").map(_.name), Right("kcp"))
+    assert(EnrichTrainingDataApp.featureSet("bogus").isLeft)
+
+  test("enrichRow with the kcp set appends KcpFeatures columns and king_capture_danger fires"):
+    // Black rook e2 bears on the White (mover) king e1 — the mover's king is capturable.
+    val threatened = row("4k3/8/8/8/8/8/4r3/4K3 w - -", "w")
+    val fields     =
+      EnrichTrainingDataApp
+        .enrichRow(columns, kcp, threatened)
+        .fold(fail(_), identity)
+        .split(",", -1)
+    assertEquals(fields.length, baseWidth + KcpFeatures.columnNames.length)
+    val dangerIndex = baseWidth + KcpFeatures.columnNames.indexOf("king_capture_danger")
+    assert(fields(dangerIndex).toFloat > 0f, "the mover's king is under a capturable threat")
+
+  test("run with featureSet=kcp writes the KcpFeatures header and columns"):
+    for
+      (in, out) <- tempFiles
+      _         <- writeGzip(in, List(header, startRow))
+      _         <- EnrichTrainingDataApp.run(List(in.toString, out.toString, "2", "kcp"))
+      lines     <- readGzip(out)
+    yield
+      assertEquals(lines.head, EnrichTrainingDataApp.enrichedHeader(header, kcp))
+      assertEquals(lines(1).split(",", -1).length, baseWidth + KcpFeatures.columnNames.length)

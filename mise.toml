@@ -103,9 +103,10 @@ sbt "runMain dicechess.analytics.maintenance.ExportTrainingDataApp ${1:-training
 """
 
 [tasks."ml:enrich-training"]
-description = "🧠 Enrich an exported training CSV with engine RichFeatures columns (CSV→CSV, no DB). Usage: `mise run ml:enrich-training [inputPath] [outputPath] [parallelism]`"
+description = "🧠 Enrich an exported training CSV with an engine feature set (CSV→CSV, no DB). Usage: `mise run ml:enrich-training [inputPath] [outputPath] [parallelism] [featureSet=rich|kcp]` (kcp is far heavier — the cloud-CPU run)"
 run = """
 #!/usr/bin/env bash
-sbt "runMain dicechess.analytics.maintenance.EnrichTrainingDataApp ${1:-training_data.csv.gz} ${2:-training_data_rich.csv.gz} ${3:-}"
+FS="${4:-rich}"
+sbt "runMain dicechess.analytics.maintenance.EnrichTrainingDataApp ${1:-training_data.csv.gz} ${2:-training_data_${FS}.csv.gz} ${3:-} ${FS}"
 """
 
