@@ -154,7 +154,11 @@ object EnrichTrainingDataApp extends IOApp:
       .unNoneTerminate
       .filter(_.nonEmpty)
       .parEvalMap(parallelism)(line =>
-        IO.fromEither(enrichRow(columns, features, line).leftMap(IllegalArgumentException(_)))
+        // Suspend in IO so each row's (CPU-bound) feature extraction runs on a
+        // parEvalMap fiber. Handing the already-evaluated Either to IO.fromEither
+        // would run enrichRow eagerly on the single pulling fiber, collapsing the
+        // whole pass onto one core (measured: 1.04 cores with parallelism=8).
+        IO(enrichRow(columns, features, line).leftMap(IllegalArgumentException(_))).rethrow
       )
       .evalMap(writeLine(out, _))
       .compile
