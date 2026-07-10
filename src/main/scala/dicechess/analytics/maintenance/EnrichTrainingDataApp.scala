@@ -9,16 +9,19 @@ import cats.effect.{ExitCode, IO, IOApp, Resource}
 import cats.syntax.all.*
 import fs2.Stream
 
-import dicechess.engine.domain.{Color, FenParser}
-import dicechess.engine.search.RichFeatures
+import dicechess.engine.domain.{Color, FenParser, GameState}
+import dicechess.engine.search.{KcpFeatures, RichFeatures}
 
-/** Enriches an already-exported training CSV (see [[ExportTrainingDataApp]]) with the engine's
-  * [[RichFeatures]] columns, appending them to every row.
+/** Enriches an already-exported training CSV (see [[ExportTrainingDataApp]]) with an engine feature
+  * set — [[RichFeatures]] (`rich`, default) or [[KcpFeatures]] (`kcp`) — appending its columns to
+  * every row.
   *
-  * Usage: `EnrichTrainingDataApp [inputPath] [outputPath] [parallelism]`
+  * Usage: `EnrichTrainingDataApp [inputPath] [outputPath] [parallelism] [featureSet]`
   *   - `inputPath` (default `training_data.csv.gz`): a gzip CSV produced by the exporter.
-  *   - `outputPath` (default `training_data_rich.csv.gz`).
+  *   - `outputPath` (default `training_data_<featureSet>.csv.gz`).
   *   - `parallelism` (default = CPU count): rows enriched concurrently.
+  *   - `featureSet` (default `rich`): `rich` (mobility + king-safety) or `kcp` (also king/queen
+  *     capture probability — far heavier per row, the many-core cloud run).
   *
   * Why here, and why not in `features.py`: the model's Python feature code can only see material
   * (it has no move generator), so positional signal — mobility, king safety — has to come from the
@@ -37,8 +40,24 @@ import dicechess.engine.search.RichFeatures
   */
 object EnrichTrainingDataApp extends IOApp:
 
-  private val DefaultInput  = "training_data.csv.gz"
-  private val DefaultOutput = "training_data_rich.csv.gz"
+  private val DefaultInput = "training_data.csv.gz"
+
+  /** A named engine feature set: the column headers it writes and the mover-perspective extractor
+    * that fills them. Both sets are dice-independent, so a re-run is byte-stable. `kcp` is far
+    * heavier per row (each king/queen capture probability is a 216-outcome DFS) — that run is the
+    * one meant for a many-core cloud CPU.
+    */
+  private[analytics] final case class FeatureSet(
+      name: String,
+      columnNames: List[String],
+      extract: (GameState, Color) => Array[Float]
+  )
+
+  private[analytics] def featureSet(name: String): Either[String, FeatureSet] =
+    name.trim.toLowerCase match
+      case "" | "rich" => Right(FeatureSet("rich", RichFeatures.columnNames, RichFeatures.extract))
+      case "kcp"       => Right(FeatureSet("kcp", KcpFeatures.columnNames, KcpFeatures.extract))
+      case other       => Left(s"unknown feature set '$other' (expected 'rich' or 'kcp')")
 
   /** The columns [[enrichRow]] reads, resolved from the header by name so a future column reorder
     * can't silently shift them. `width` pins the expected field count for every data row.
@@ -53,9 +72,9 @@ object EnrichTrainingDataApp extends IOApp:
         case i  => Right(i)
     (index("fen"), index("side")).mapN((fen, side) => Columns(fen, side, cols.length))
 
-  /** The enriched header: the original columns plus [[RichFeatures.columnNames]]. */
-  private[analytics] def enrichedHeader(header: String): String =
-    (header :: RichFeatures.columnNames).mkString(",")
+  /** The enriched header: the original columns plus the chosen feature set's column names. */
+  private[analytics] def enrichedHeader(header: String, features: FeatureSet): String =
+    (header :: features.columnNames).mkString(",")
 
   private[analytics] def parseColor(side: String): Either[String, Color] =
     side.trim match
@@ -71,18 +90,22 @@ object EnrichTrainingDataApp extends IOApp:
   private[analytics] def padFen(fen: String): String =
     if fen.trim.split(' ').length == 4 then s"$fen 0 1" else fen
 
-  /** Appends the [[RichFeatures]] values (in [[RichFeatures.columnNames]] order) to `line`, or a
-    * message describing why the row is unusable.
+  /** Appends the feature set's values (in `features.columnNames` order) to `line`, or a message
+    * describing why the row is unusable.
     */
-  private[analytics] def enrichRow(columns: Columns, line: String): Either[String, String] =
+  private[analytics] def enrichRow(
+      columns: Columns,
+      features: FeatureSet,
+      line: String
+  ): Either[String, String] =
     val fields = line.split(",", -1)
     if fields.length != columns.width then
       Left(s"row has ${fields.length} fields, expected ${columns.width}: $line")
     else
       (parseColor(fields(columns.side)), FenParser.parse(padFen(fields(columns.fen)))).mapN {
         (color, state) =>
-          val features = RichFeatures.extract(state, color).mkString(",")
-          s"$line,$features"
+          val values = features.extract(state, color).mkString(",")
+          s"$line,$values"
       }
 
   private def gzipReader(path: Path): Resource[IO, BufferedReader] =
@@ -123,6 +146,7 @@ object EnrichTrainingDataApp extends IOApp:
       in: BufferedReader,
       out: BufferedWriter,
       columns: Columns,
+      features: FeatureSet,
       parallelism: Int
   ): IO[Long] =
     Stream
@@ -130,16 +154,19 @@ object EnrichTrainingDataApp extends IOApp:
       .unNoneTerminate
       .filter(_.nonEmpty)
       .parEvalMap(parallelism)(line =>
-        IO.fromEither(enrichRow(columns, line).leftMap(IllegalArgumentException(_)))
+        IO.fromEither(enrichRow(columns, features, line).leftMap(IllegalArgumentException(_)))
       )
       .evalMap(writeLine(out, _))
       .compile
       .count
 
   def run(args: List[String]): IO[ExitCode] =
-    val inputPath  = args.headOption.getOrElse(DefaultInput)
-    val outputPath = args.lift(1).getOrElse(DefaultOutput)
     for
+      features <- IO.fromEither(
+        featureSet(args.lift(3).getOrElse("rich")).leftMap(IllegalArgumentException(_))
+      )
+      inputPath  = args.headOption.getOrElse(DefaultInput)
+      outputPath = args.lift(1).getOrElse(s"training_data_${features.name}.csv.gz")
       // Opening the writer truncates the output; if it resolves to the input, the data is gone
       // before a single row is read. Refuse rather than destroy the source.
       _ <- IO.raiseWhen(
@@ -154,8 +181,8 @@ object EnrichTrainingDataApp extends IOApp:
         parseParallelism(args.lift(2)).leftMap(IllegalArgumentException(_))
       )
       _ <- IO.println(
-        s"Enriching $inputPath -> $outputPath with ${RichFeatures.columnNames.size} " +
-          s"RichFeatures columns (parallelism=$parallelism) ..."
+        s"Enriching $inputPath -> $outputPath with ${features.columnNames.size} " +
+          s"${features.name} columns (parallelism=$parallelism) ..."
       )
       written <- (gzipReader(Path.of(inputPath)), gzipWriter(Path.of(outputPath))).tupled.use {
         (in, out) =>
@@ -164,8 +191,8 @@ object EnrichTrainingDataApp extends IOApp:
               .blocking(Option(in.readLine()))
               .flatMap(IO.fromOption(_)(IllegalArgumentException(s"$inputPath is empty")))
             columns <- IO.fromEither(parseHeader(header).leftMap(IllegalArgumentException(_)))
-            _       <- writeLine(out, enrichedHeader(header))
-            count   <- enrichRows(in, out, columns, parallelism)
+            _       <- writeLine(out, enrichedHeader(header, features))
+            count   <- enrichRows(in, out, columns, features, parallelism)
           yield count
       }
       _ <- IO.println(s"Wrote $written enriched rows to $outputPath")
