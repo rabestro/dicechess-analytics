@@ -107,6 +107,12 @@ description = "🧠 Enrich an exported training CSV with an engine feature set (
 run = """
 #!/usr/bin/env bash
 FS="${4:-rich}"
-sbt "runMain dicechess.analytics.maintenance.EnrichTrainingDataApp ${1:-training_data.csv.gz} ${2:-training_data_${FS}.csv.gz} ${3:-} ${FS}"
+# `sbt "runMain … a b c"` splits its single argument on whitespace, so an empty
+# token in the MIDDLE (a blank parallelism, ${3}) would vanish and shift the
+# feature set into the parallelism slot (parsed as "parallelism=kcp" -> failure).
+# Resolve parallelism to a concrete value here — the app's own default is the CPU
+# count — so ${FS} always lands last. nproc on Linux, sysctl on macOS, 4 otherwise.
+PAR="${3:-$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)}"
+sbt "runMain dicechess.analytics.maintenance.EnrichTrainingDataApp ${1:-training_data.csv.gz} ${2:-training_data_${FS}.csv.gz} ${PAR} ${FS}"
 """
 
