@@ -191,40 +191,49 @@ object PositionsRepository:
       PositionDiceDistribution(nf, side, items.map(_.games).sum, items)
     }
 
-  /** Builds the opening book consumed by the engine's `OpeningBookBot`: for every
-    * `(position, dice)` reached often enough in strong, completed turns, the single best
-    * continuation by the **moving side's** win rate (ties broken by sample size).
-    *
-    *   - Key: the canonical `normalized_fen + " " + dice_sorted` shared with the engine's
-    *     `OpeningBook.key` — `dice_sorted` is already the alphabetically sorted, side-cased dice,
-    *     so the strings match byte-for-byte.
-    *   - Value: the chosen continuation's representative micro-moves, comma-separated (e.g.
-    *     `"e2e4,f1c4"`); permutations collapse because continuations are grouped by the resulting
-    *     position.
-    *   - Win rate is from the mover's perspective (the shared [[winRate]] over [[outcomeCounts]]),
-    *     so Black positions are ranked by Black's success — not White's.
-    *   - Only continuations played at least `minGames` times after filtering are eligible;
-    *     `minRating`, when set, keeps only games where BOTH players are at least that strong;
-    *     abandoned partial turns and no-op self-loops are excluded exactly as elsewhere
-    *     ([[completedTurn]]).
-    *   - Forced passes (no legal move for the roll, so `played_moves` is empty) are dropped: an
-    *     empty move is not a bookable continuation. This filter is opening-book-specific — the
-    *     explorer (`continuations` / `equity` / `dice-distribution`) still surfaces passes as "—".
+  /** A single opening-book pick, carrying the corpus stats that justified it (for statistical
+    * entries) or its curator's note (for curated favorites) — the detail [[openingBook]] discards
+    * once it collapses everything down to a bare `key -> moves` map. Consumed by the opening-book
+    * visual catalog generator (issue #251).
     */
-  /** All curated favorites as a book-shaped map (canonical key → comma-separated moves). Entries
-    * with an empty `played_moves` array are excluded for safety, mirroring the statistical branch.
-    * Combined with the statistical result in [[openingBook]] via `statistical ++ curated` so a
+  final case class OpeningBookEntry(
+      normalizedFen: String,
+      diceSorted: String,
+      moves: String, // comma-separated micro-moves, e.g. "e2e4,f1c4"
+      games: Int,
+      wins: Int,
+      draws: Int,
+      losses: Int,
+      winRate: Double,
+      curated: Boolean,
+      note: Option[String]
+  )
+
+  /** All curated favorites as [[OpeningBookEntry]]s (no stats — curation is expert judgement, not a
+    * sample). Entries with an empty `played_moves` array are excluded for safety, mirroring the
+    * statistical branch. Combined with the statistical result in [[openingBookEntries]] so a
     * favorite always overrides the statistical pick for the same key.
     */
-  private val favoritesMap: ConnectionIO[Map[String, String]] =
-    sql"""SELECT normalized_fen, dice_sorted, array_to_string(played_moves, ',')
+  private val favoritesEntries: ConnectionIO[List[OpeningBookEntry]] =
+    sql"""SELECT normalized_fen, dice_sorted, array_to_string(played_moves, ','), note
           FROM opening_book_favorites
           WHERE cardinality(played_moves) > 0"""
-      .query[(String, String, String)]
+      .query[(String, String, String, Option[String])]
       .to[List]
-      .map(_.map { case (nf, d, m) =>
-        s"$nf $d" -> m
-      }.toMap)
+      .map(_.map { case (nf, d, m, note) =>
+        OpeningBookEntry(
+          nf,
+          d,
+          m,
+          games = 0,
+          wins = 0,
+          draws = 0,
+          losses = 0,
+          winRate = 0.0,
+          curated = true,
+          note
+        )
+      })
 
   /** Inserts or replaces the curated favorite for `(fen, dice)`. Dice are re-cased to the
     * position's side to move (white upper-case, black lower-case) so the stored key matches
@@ -271,7 +280,33 @@ object PositionsRepository:
         PositionFavorites(nf, items)
       }
 
-  def openingBook(minGames: Int, minRating: Option[Int]): ConnectionIO[Map[String, String]] =
+  /** Builds the opening book consumed by the engine's `OpeningBookBot`: for every
+    * `(position, dice)` reached often enough in strong, completed turns, the single best
+    * continuation by the **moving side's** win rate (ties broken by sample size), plus the stats
+    * that justified it.
+    *
+    *   - Key: the canonical `normalized_fen` + `dice_sorted` pair, shared with the engine's
+    *     `OpeningBook.key` (`normalized_fen + " " + dice_sorted`) — `dice_sorted` is already the
+    *     alphabetically sorted, side-cased dice, so the strings match byte-for-byte.
+    *   - Moves: the chosen continuation's representative micro-moves, comma-separated (e.g.
+    *     `"e2e4,f1c4"`); permutations collapse because continuations are grouped by the resulting
+    *     position.
+    *   - Win rate is from the mover's perspective (the shared [[winRate]] over [[outcomeCounts]]),
+    *     so Black positions are ranked by Black's success — not White's.
+    *   - Only continuations played at least `minGames` times after filtering are eligible;
+    *     `minRating`, when set, keeps only games where BOTH players are at least that strong;
+    *     abandoned partial turns and no-op self-loops are excluded exactly as elsewhere
+    *     ([[completedTurn]]).
+    *   - Forced passes (no legal move for the roll, so `played_moves` is empty) are dropped: an
+    *     empty move is not a bookable continuation. This filter is opening-book-specific — the
+    *     explorer (`continuations` / `equity` / `dice-distribution`) still surfaces passes as "—".
+    *   - Curated favorites ([[favoritesEntries]]) always override the statistical pick for the same
+    *     key, carrying `curated = true` and no stats instead.
+    */
+  def openingBookEntries(
+      minGames: Int,
+      minRating: Option[Int]
+  ): ConnectionIO[List[OpeningBookEntry]] =
     val select =
       fr"""SELECT p.normalized_fen, t.dice_sorted,
                   (array_agg(array_to_string(t.played_moves, ',')
@@ -295,13 +330,37 @@ object PositionsRepository:
         .to[List]
         .map { rows =>
           rows
-            .groupBy { case (pos, dice, _, _, _, _, _) => s"$pos $dice" }
-            .flatMap { case (key, group) =>
+            .groupBy { case (pos, dice, _, _, _, _, _) => (pos, dice) }
+            .toList
+            .flatMap { case ((pos, dice), group) =>
               val best =
                 group.maxBy { case (_, _, _, _, w, d, l) => (winRate(w, d, l), w + d + l) }
-              best._3.filter(_.nonEmpty).map(moves => key -> moves)
+              val (_, _, movesOpt, games, wins, draws, losses) = best
+              movesOpt
+                .filter(_.nonEmpty)
+                .map(moves =>
+                  OpeningBookEntry(
+                    pos,
+                    dice,
+                    moves,
+                    games,
+                    wins,
+                    draws,
+                    losses,
+                    winRate(wins, draws, losses),
+                    curated = false,
+                    note = None
+                  )
+                )
             }
-            .toMap
         }
-      curated <- favoritesMap
-    yield statistical ++ curated
+      curated <- favoritesEntries
+      curatedKeys = curated.map(e => (e.normalizedFen, e.diceSorted)).toSet
+    yield statistical.filterNot(e => curatedKeys((e.normalizedFen, e.diceSorted))) ++ curated
+
+  /** The book consumed by the engine's `OpeningBookBot`: [[openingBookEntries]] collapsed to its
+    * bare `key -> moves` shape (dropping the stats/curation detail the catalog generator needs).
+    */
+  def openingBook(minGames: Int, minRating: Option[Int]): ConnectionIO[Map[String, String]] =
+    openingBookEntries(minGames, minRating)
+      .map(_.map(e => s"${e.normalizedFen} ${e.diceSorted}" -> e.moves).toMap)
