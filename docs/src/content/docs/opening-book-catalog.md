@@ -20,7 +20,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -50,7 +50,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -82,7 +82,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -112,7 +112,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -144,7 +144,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -175,7 +175,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -207,7 +207,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -237,7 +237,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -268,7 +268,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -300,7 +300,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -332,7 +332,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -363,7 +363,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -393,7 +393,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -425,7 +425,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -456,7 +456,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -488,7 +488,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -518,7 +518,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -549,7 +549,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -581,7 +581,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -613,7 +613,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -644,7 +644,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -676,7 +676,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -708,7 +708,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -739,7 +739,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -771,7 +771,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -803,7 +803,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -835,7 +835,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -867,7 +867,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -897,7 +897,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -928,7 +928,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -959,7 +959,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -991,7 +991,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1023,7 +1023,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1055,7 +1055,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1087,7 +1087,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1119,7 +1119,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1150,7 +1150,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_w_KQkq_-_0_1&color=white&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1184,7 +1184,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2F1RBQKBNR_b_Kkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1214,7 +1214,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1244,7 +1244,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1274,7 +1274,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1306,7 +1306,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1338,7 +1338,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2F1RBQKBNR_b_Kkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1368,7 +1368,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1398,7 +1398,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1428,7 +1428,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2F1RBQKBNR_b_Kkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1460,7 +1460,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1492,7 +1492,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1524,7 +1524,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2F1RBQKBNR_b_Kkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1555,7 +1555,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1586,7 +1586,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1617,7 +1617,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2F1RBQKBNR_b_Kkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1649,7 +1649,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1681,7 +1681,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1713,7 +1713,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2F1RBQKBNR_b_Kkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1743,7 +1743,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1773,7 +1773,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1803,7 +1803,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2F1RBQKBNR_b_Kkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1834,7 +1834,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1865,7 +1865,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1896,7 +1896,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1928,7 +1928,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2F1RBQKBNR_b_Kkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1960,7 +1960,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -1992,7 +1992,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2024,7 +2024,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2F1RBQKBNR_b_Kkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2055,7 +2055,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2086,7 +2086,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2117,7 +2117,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2F1RBQKBNR_b_Kkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2147,7 +2147,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2177,7 +2177,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2207,7 +2207,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2239,7 +2239,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2270,7 +2270,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2301,7 +2301,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2F1RBQKBNR_b_Kkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2333,7 +2333,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2365,7 +2365,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2397,7 +2397,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2F1RBQKBNR_b_Kkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2427,7 +2427,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2457,7 +2457,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2487,7 +2487,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2F1RBQKBNR_b_Kkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2518,7 +2518,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2549,7 +2549,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2580,7 +2580,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2612,7 +2612,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2F1RBQKBNR_b_Kkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2644,7 +2644,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2676,7 +2676,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2708,7 +2708,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2F1RBQKBNR_b_Kkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2739,7 +2739,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2770,7 +2770,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2801,7 +2801,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2833,7 +2833,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2865,7 +2865,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2F1RBQKBNR_b_Kkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2896,7 +2896,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2927,7 +2927,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2958,7 +2958,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -2990,7 +2990,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -3022,7 +3022,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -3054,7 +3054,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2F1RBQKBNR_b_Kkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -3086,7 +3086,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -3118,7 +3118,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -3150,7 +3150,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2F1RBQKBNR_b_Kkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -3182,7 +3182,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -3214,7 +3214,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -3246,7 +3246,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2F1RBQKBNR_b_Kkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -3276,7 +3276,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -3306,7 +3306,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -3336,7 +3336,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2F1RBQKBNR_b_Kkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -3367,7 +3367,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -3398,7 +3398,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -3429,7 +3429,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -3461,7 +3461,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -3493,7 +3493,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -3525,7 +3525,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -3557,7 +3557,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -3589,7 +3589,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2F1RBQKBNR_b_Kkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -3620,7 +3620,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F2N5%2FPPPPPPPP%2FR1BQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -3651,7 +3651,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />
@@ -3682,7 +3682,7 @@ description: Visual catalog of the exported opening book — board, dice, contin
   </div>
   <div style="flex: 0 0 280px; width: 280px; min-width: 280px; margin: 0 auto; position: relative;">
     <img src="https://lichess1.org/export/fen.gif?fen=rnbqkbnr%2Fpppppppp%2F8%2F8%2F8%2F8%2FPPPPPPPP%2FRNBQKBNR_b_KQkq_-_0_1&color=black&theme=brown&piece=cburnett" alt="Board Position" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.08);" />
-    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 720 720" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 <marker id="arrowhead0" markerWidth="7" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 7 3, 0 6" fill="#1a9c1a" />

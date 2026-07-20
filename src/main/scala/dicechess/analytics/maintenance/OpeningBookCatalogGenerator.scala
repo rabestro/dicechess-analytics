@@ -75,7 +75,7 @@ object OpeningBookCatalogGenerator:
     else
       val box = boardPx.toInt
       s"""
-    <svg viewBox="0 0 $box $box" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;">
+    <svg viewBox="0 0 $box $box" style="position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; pointer-events: none;">
       <defs>
 $arrowMarkerDefs
       </defs>
