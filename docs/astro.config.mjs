@@ -30,6 +30,10 @@ export default defineConfig({
 					link: '/domain-conventions',
 				},
 				{
+					label: 'Opening Book Catalog',
+					link: '/opening-book-catalog',
+				},
+				{
 					label: 'Development & Setup',
 					link: '/development',
 				},

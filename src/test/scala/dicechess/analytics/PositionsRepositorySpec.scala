@@ -278,3 +278,63 @@ class PositionsRepositorySpec extends CatsEffectSuite with TestContainerForAll:
         // The expert override is present even though only 2 statistical games were played
         assertEquals(book.get(s"${Fen.normalize(pos)} BPR"), Some("h2h4"))
     }
+
+  // --- openingBookEntries tests (issue #251: stats/curation detail behind the book) ---
+
+  test("openingBookEntries carries the winning continuation's games/wins/draws/losses/winRate"):
+    withContainers { pg =>
+      val t   = xa(pg)
+      val pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      val a1  = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+      for
+        _       <- resetTables.transact(t)
+        idP     <- PositionsRepository.getOrCreate(pos).transact(t)
+        idA1    <- PositionsRepository.getOrCreate(a1).transact(t)
+        _       <- seedTurns("w", 1, 7, 2200, idP, "BPR", List("e2e4", "f1c4"), idA1).transact(t)
+        _       <- seedTurns("w", -1, 3, 2200, idP, "BPR", List("e2e4", "f1c4"), idA1).transact(t)
+        entries <- PositionsRepository
+          .openingBookEntries(minGames = 5, minRating = Some(2000))
+          .transact(t)
+      yield
+        assertEquals(entries.size, 1)
+        val entry = entries.head
+        assertEquals(entry.normalizedFen, Fen.normalize(pos))
+        assertEquals(entry.diceSorted, "BPR")
+        assertEquals(entry.moves, "e2e4,f1c4")
+        assertEquals(entry.games, 10)
+        assertEquals(entry.wins, 7)
+        assertEquals(entry.draws, 0)
+        assertEquals(entry.losses, 3)
+        assertEquals(entry.winRate, 0.7)
+        assertEquals(entry.curated, false)
+        assertEquals(entry.note, None)
+    }
+
+  test(
+    "openingBookEntries: curated favorite overrides the statistical entry and carries its note, no stats"
+  ):
+    withContainers { pg =>
+      val t   = xa(pg)
+      val pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      val a1  = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+      for
+        _    <- resetTables.transact(t)
+        idP  <- PositionsRepository.getOrCreate(pos).transact(t)
+        idA1 <- PositionsRepository.getOrCreate(a1).transact(t)
+        _    <- seedTurns("w", 1, 9, 2200, idP, "BPR", List("e2e4"), idA1).transact(t)
+        _    <- seedTurns("w", -1, 1, 2200, idP, "BPR", List("e2e4"), idA1).transact(t)
+        _    <- PositionsRepository
+          .setFavorite(pos, "BPR", List("g1f3", "f1c4"), Some("book line"))
+          .transact(t)
+        entries <- PositionsRepository
+          .openingBookEntries(minGames = 5, minRating = Some(2000))
+          .transact(t)
+      yield
+        assertEquals(entries.size, 1)
+        val entry = entries.head
+        assertEquals(entry.moves, "g1f3,f1c4")
+        assertEquals(entry.curated, true)
+        assertEquals(entry.note, Some("book line"))
+        assertEquals(entry.games, 0)
+        assertEquals(entry.winRate, 0.0)
+    }
