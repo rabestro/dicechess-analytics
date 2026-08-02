@@ -154,8 +154,10 @@ docker-java does not negotiate and its default (1.32) is rejected by Docker 29+ 
 
 `mise run setup` registers two [lefthook](https://github.com/evilmartians/lefthook) tiers:
 
-- **pre-commit**: betterleaks secret scan + native scalafmt check on staged files
-  (milliseconds per commit).
+- **pre-commit**: betterleaks secret scan, native scalafmt check, and an actionlint pass
+  over staged GitHub Actions workflows (milliseconds per commit). The workflow lint matters
+  because a malformed workflow does not fail CI — it silently stops running, so its checks
+  disappear instead of turning red.
 - **pre-push**: a hermetic full-module scalafmt check (~1s). Tests deliberately stay in CI.
 
 Run all pre-commit jobs manually across the whole codebase with `mise run hook:run`.
