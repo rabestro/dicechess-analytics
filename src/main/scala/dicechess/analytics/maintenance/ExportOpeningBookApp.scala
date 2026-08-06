@@ -1,6 +1,5 @@
 package dicechess.analytics.maintenance
 
-import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.{Files, Path}
 
 import cats.effect.{ExitCode, IO, IOApp}
@@ -40,7 +39,7 @@ object ExportOpeningBookApp extends IOApp:
       book <- Database.transactor(config.db, 4).use { xa =>
         PositionsRepository.openingBook(minGames, ratingArg).transact(xa)
       }
-      tsv = book.toList.sortBy(_._1).map((key, moves) => s"$key\t$moves").mkString("\n")
-      _ <- IO.blocking(Files.write(Path.of(outputPath), tsv.getBytes(UTF_8)))
+      bytes = OpeningBookSerializer.serializeTsvBytes(book)
+      _ <- IO.blocking(Files.write(Path.of(outputPath), bytes))
       _ <- IO.println(s"Wrote ${book.size} opening-book entries to $outputPath")
     yield ExitCode.Success
