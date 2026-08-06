@@ -7,7 +7,7 @@ Scala 3 backend serving the typed REST API over the Dice Chess games database �
 - Contracts this repo publishes:
   - Read API (snake_case JSON, `{"detail": ...}` errors) consumed by dicechess-analytics-ui — defined in `src/main/scala/dicechess/analytics/api/Endpoints.scala` + `Protocol.scala`. Breaking a field breaks the UI.
   - Write path: `POST /api/games` (bearer `INGEST_TOKEN`, idempotent first-writer-wins; contract in `docs/src/content/docs/ingestion.md` + `api/IngestProtocol.scala`) plus `PUT /api/games/{id}` (re-conversion replace path — documented only in the `Endpoints.scala` scaladoc). Used by trusted upstream writers holding the token (e.g. play-api).
-  - `opening_book.json` (from `db:export-book`) whose key must byte-match the engine's `OpeningBook.key` = `normalized_fen + ' ' + dice_sorted`.
+  - `opening_book.tsv` (from `db:export-book`) whose key must byte-match the engine's `OpeningBook.key` = `normalized_fen + ' ' + dice_sorted`.
 - Contract this repo consumes: game rules come exclusively from `lv.id.jc:dicechess-engine-scala` (GitHub Packages, version pinned in `build.sbt`). Never re-implement chess/dice rules here.
 - Ingest identity convention: site bots use their native negative `external_id`; our own engine bots use `bot:<algorithm>`.
 

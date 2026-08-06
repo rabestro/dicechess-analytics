@@ -178,13 +178,13 @@ game against `dicechess-engine-scala` before persisting it. See the
 
 ## Opening-book export
 
-`db:export-book` generates `opening_book.json` — the data-driven opening book the engine's
+`db:export-book` generates `opening_book.tsv` — the data-driven opening book the engine's
 bots consume (`OpeningBookBot`). For every `(position, dice)` reached often enough in strong
 games it stores the continuation with the best win rate **from the moving side's perspective**.
 
 ```bash
 mise run db:export-book [minGames] [minRating] [outputPath]
-# defaults: 100   2000   opening_book.json
+# defaults: 100   2000   opening_book.tsv
 ```
 
 - `minGames` — minimum games a continuation needs, after filtering, to be booked.
@@ -241,6 +241,6 @@ The `-E` flag scopes the environment to that one invocation.
 :::
 
 The export is read-only (a pure aggregation), so it is safe to run against production — prefer
-off-peak hours, as it scans the full `turns` / `games` history. The resulting `opening_book.json`
+off-peak hours, as it scans the full `turns` / `games` history. The resulting `opening_book.tsv`
 is keyed by the canonical position+dice key shared with the engine and is loaded into the bots
 at runtime via the engine's `registerOpeningBookBot`.
