@@ -98,7 +98,8 @@ mise -E prod run db:export-book 100 2000               # prod DB via gitignored 
 ## Git & PR workflow
 <!-- dc-shared:git-pr v2 — keep identical across dicechess repos -->
 - Never commit to `main`. Branch: `<type>/<short-desc>` or `<type>/<id>-<short-desc>`
-  (types: `task|feat|bug|refactor|chore|docs|ci|test|perf`). If the branch carries an issue
+  (types: `task|feat|bug|refactor|chore|docs|ci|test|perf`; `feature` is accepted as an alias
+  of `feat`). If the branch carries an issue
   id, the PR body must contain `Closes #<id>`.
 - **The branch type chooses the release-notes section** — `.github/labeler.yml` turns it into a
   PR label and `.github/release.yml` groups by that label. `task/` is issue-driven work and counts
